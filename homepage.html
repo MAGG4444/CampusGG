@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO -->
+  <title>CampusGG — Find Your Campus Duo</title>
+  <meta name="description" content="CampusGG is a verified, campus-exclusive gaming forum and matchmaking platform. Find trusted teammates at your own university." />
+  <meta name="theme-color" content="#0b0c10" />
+
+  <!-- Favicon (using the logo) -->
+  <link rel="icon" type="image/png" href="LOGO.png" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!-- ====================================================
+       NAVBAR
+       ==================================================== -->
+  <nav class="navbar" id="main-nav" role="navigation" aria-label="Main navigation">
+    <a href="/" class="navbar__brand">
+      <img src="LOGO.png" alt="CampusGG logo" class="navbar__logo" />
+      <span class="navbar__title">CAMPUSGG</span>
+    </a>
+
+    <ul class="navbar__links">
+      <li><a href="index.html" class="navbar__link navbar__link--active" id="nav-home">Home</a></li>
+      <li><a href="lobby.html" class="navbar__link" id="nav-lobby">Lobby</a></li>
+      <li><a href="#" class="navbar__link" id="nav-forums">Forums</a></li>
+      <li><a href="#" class="navbar__link" id="nav-leaderboards">Leaderboards</a></li>
+      <li>
+        <button class="btn btn--gold" id="nav-login" onclick="handleLogin()">
+          🔐 Login
+        </button>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- ====================================================
+       HERO SECTION
+       ==================================================== -->
+  <section class="hero" id="hero" aria-labelledby="hero-title">
+    <span class="hero__badge">
+      🎓 Verified Campus Gamers Only
+    </span>
+
+    <h1 class="hero__title" id="hero-title">
+      Find Your <span>Campus Duo</span>
+    </h1>
+
+    <p class="hero__subtitle">
+      The trusted matchmaking platform for university gamers.
+      Queue with verified students from your campus — no randoms, no toxicity.
+    </p>
+
+    <div class="hero__actions">
+      <button class="btn btn--gold" id="cta-find-match" onclick="handleFindMatch()">
+        🎮 Find a Match
+      </button>
+      <a href="#lobbies" class="btn btn--outline" id="cta-browse">
+        Browse Lobbies ↓
+      </a>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       STATS BAR
+       ==================================================== -->
+  <div class="stats-bar" id="stats-bar" aria-label="Platform statistics">
+    <div class="stat">
+      <div class="stat__number">XXX</div>
+      <div class="stat__label">Verified Players</div>
+    </div>
+    <div class="stat">
+      <div class="stat__number">XXX</div>
+      <div class="stat__label">Live Lobbies</div>
+    </div>
+    <div class="stat">
+      <div class="stat__number">XXX</div>
+      <div class="stat__label">Supported Games</div>
+    </div>
+    <div class="stat">
+      <div class="stat__number">XXX</div>
+      <div class="stat__label">Campus Clubs</div>
+    </div>
+  </div>
+
+  <!-- ====================================================
+       MAIN CONTENT — SPLIT LAYOUT
+       ==================================================== -->
+  <main class="main-content" id="lobbies">
+
+    <!-- ---- LEFT COLUMN: Matchmaking Lobbies ---- -->
+    <section aria-labelledby="lobbies-title">
+      <div class="section-header">
+        <h2 class="section-header__title" id="lobbies-title">
+          <span class="section-header__icon">🎮</span>
+          Active Lobbies
+        </h2>
+        <span class="section-header__count" id="lobby-count">Loading…</span>
+      </div>
+
+      <!-- Lobby cards will be injected here by app.js -->
+      <div class="lobby-feed" id="lobby-feed" role="list" aria-label="Active matchmaking lobbies">
+        <!-- Skeletons shown while loading -->
+      </div>
+    </section>
+
+    <!-- ---- RIGHT COLUMN: Forum Highlights ---- -->
+    <section aria-labelledby="forum-title">
+      <div class="section-header">
+        <h2 class="section-header__title" id="forum-title">
+          <span class="section-header__icon">💬</span>
+          Trending Discussions
+        </h2>
+        <a href="#" class="btn btn--outline btn--sm" id="view-all-forums">View All</a>
+      </div>
+
+      <!-- Forum cards will be injected here by app.js -->
+      <div class="forum-feed" id="forum-feed" role="list" aria-label="Trending forum discussions">
+        <!-- Skeletons shown while loading -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================================================
+       FOOTER
+       ==================================================== -->
+  <footer class="footer" id="main-footer">
+    <p>
+      © 2026 <a href="#">CampusGG</a> — Purdue University Senior Design Project
+    </p>
+    <p style="margin-top: 4px;">
+      Built by Jingwen Huang, Justin Samuel &amp; Tianyu Du
+    </p>
+  </footer>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
