@@ -1,0 +1,24 @@
+:root {
+  --bg: #0f1722;
+  --gold: #c9a84c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page-container {
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+.topbar {
+  width: 100%;
+  min-height: 72px;
+  background: var(--gold);
+}
