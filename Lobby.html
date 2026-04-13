@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO -->
+    <title>CampusGG — Lobby</title>
+    <meta name="description" content="Browse and join active gaming lobbies on CampusGG. Find verified campus teammates for CS2, Valorant, Overwatch 2, and more." />
+    <meta name="theme-color" content="#0b0c10" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="LOGO.png" />
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="lobby.css" />
+  </head>
+  <body>
+    <div class="page-container">
+      <!-- ====================================================
+           TOP BAR
+           ==================================================== -->
+      <header class="topbar">
+        <div class="topbar-inner">
+          <a href="index.html" class="brand">CAMPUSGG</a>
+          <nav class="nav">
+            <a class="nav-link" href="index.html">Home</a>
+            <a class="nav-link nav-link-active" href="lobby.html">Lobby</a>
+            <a class="nav-link" href="#">Forum</a>
+            <a class="nav-link login-button" href="#">🔐 Login</a>
+          </nav>
+        </div>
+      </header>
+
+      <!-- ====================================================
+           MAIN CONTENT
+           ==================================================== -->
+      <main class="main-wrapper">
+
+        <!-- Filter Row -->
+        <section class="filter-row">
+          <div class="filter-group">
+            <span class="filter-icon" aria-hidden="true">≡</span>
+            <span class="filter-chip filter-chip-selected">All Games</span>
+            <span class="filter-chip">Valorant</span>
+            <span class="filter-chip">CS2</span>
+            <span class="filter-chip">Overwatch 2</span>
+            <span class="filter-chip">Apex</span>
+          </div>
+          <div class="filter-group filter-group-right">
+            <span class="filter-icon" aria-hidden="true">≡</span>
+            <span class="filter-chip filter-chip-selected">Most Popular</span>
+            <span class="filter-chip">Beginner</span>
+            <span class="filter-chip">Intermediate</span>
+            <span class="filter-chip">Advanced</span>
+          </div>
+        </section>
+
+        <!-- Search Row -->
+        <section class="search-row">
+          <div class="search-bar">
+            <span class="search-icon" aria-hidden="true">⌕</span>
+            <input class="search-input" type="text" placeholder="Search lobbies…" />
+          </div>
+          <div class="action-stack">
+            <label class="toggle-row">
+              <span class="toggle toggle-on" aria-hidden="true">
+                <span class="toggle-knob"></span>
+              </span>
+              <span class="toggle-label">Set Lobby as Homepage</span>
+            </label>
+            <button class="create-lobby-button" type="button">+ Create Lobby</button>
+          </div>
+        </section>
+
+        <!-- Lobby Grid -->
+        <section class="lobby-grid">
+          <article class="lobby-card">
+            <div class="lobby-card-content">
+              <div class="lobby-line">Lobby Name</div>
+              <div class="lobby-line">User Name</div>
+              <div class="lobby-line">Details</div>
+            </div>
+            <button class="join-button" type="button">Join Lobby</button>
+          </article>
+          <article class="lobby-card">
+            <div class="lobby-card-content">
+              <div class="lobby-line">Lobby Name</div>
+              <div class="lobby-line">User Name</div>
+              <div class="lobby-line">Details</div>
+            </div>
+            <button class="join-button" type="button">Join Lobby</button>
+          </article>
+          <article class="lobby-card">
+            <div class="lobby-card-content">
+              <div class="lobby-line">Lobby Name</div>
+              <div class="lobby-line">User Name</div>
+              <div class="lobby-line">Details</div>
+            </div>
+            <button class="join-button" type="button">Join Lobby</button>
+          </article>
+          <article class="lobby-card">
+            <div class="lobby-card-content">
+              <div class="lobby-line">Lobby Name</div>
+              <div class="lobby-line">User Name</div>
+              <div class="lobby-line">Details</div>
+            </div>
+            <button class="join-button" type="button">Join Lobby</button>
+          </article>
+        </section>
+
+        <!-- Pagination -->
+        <nav class="pagination" aria-label="Pagination">
+          <span class="pagination-item">Previous</span>
+          <span class="pagination-item pagination-item-active">1</span>
+          <span class="pagination-item">2</span>
+          <span class="pagination-item">3</span>
+          <span class="pagination-item">...</span>
+          <span class="pagination-item">67</span>
+          <span class="pagination-item">68</span>
+          <span class="pagination-item">Next</span>
+        </nav>
+      </main>
+
+      <!-- Fixed Panels -->
+      <div class="connection-panel">Connected</div>
+      <img class="corner-logo" src="LOGO.png" alt="CampusGG logo" />
+    </div>
+  </body>
+</html>
