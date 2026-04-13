@@ -11,6 +11,14 @@ body {
   margin: 0;
 }
 
+.page-container,
+.topbar,
+.topbar-inner,
+.nav,
+.main-wrapper {
+  width: 100%;
+}
+
 .page-container {
   position: relative;
   min-height: 100vh;
@@ -18,7 +26,45 @@ body {
 }
 
 .topbar {
-  width: 100%;
   min-height: 72px;
   background: var(--gold);
+}
+
+.topbar-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+}
+
+.brand {
+  color: #111827;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.nav-link {
+  color: #111827;
+  text-decoration: none;
+  padding: 10px 16px;
+  border-radius: 999px;
+}
+
+.nav-link-active,
+.login-button {
+  background: #17212d;
+  color: #f8f3e3;
+}
+
+.main-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
 }
