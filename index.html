@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusGG Lobby</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-container">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="brand">CampusGG</div>
+          <nav class="nav">
+            <a class="nav-link nav-link-active" href="#">Lobby</a>
+            <a class="nav-link" href="#">Forum</a>
+            <a class="nav-link login-button" href="#">Login</a>
+          </nav>
+        </div>
+      </header>
+
+      <main class="main-wrapper">
+        <section id="lobby-page" class="page-view active-view">
+          <section class="filter-row">
+            <div class="filter-group">
+              <span class="filter-icon" aria-hidden="true">▽</span>
+              <span class="filter-chip filter-chip-selected">All Games</span>
+              <span class="filter-chip">Valorant</span>
+              <span class="filter-chip">CS2</span>
+              <span class="filter-chip">Overwatch 2</span>
+              <span class="filter-chip">Apex</span>
+            </div>
+            <div class="filter-group filter-group-right">
+              <span class="filter-icon" aria-hidden="true">▽</span>
+              <span class="filter-chip filter-chip-selected">Most Popular</span>
+              <span class="filter-chip">Beginner</span>
+              <span class="filter-chip">Intermediate</span>
+              <span class="filter-chip">Advanced</span>
+            </div>
+          </section>
+
+          <section class="search-row">
+            <div class="search-bar">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input class="search-input" type="text" placeholder="Search" />
+            </div>
+            <div class="action-stack">
+              <label class="toggle-row">
+                <span class="toggle toggle-on" aria-hidden="true">
+                  <span class="toggle-knob"></span>
+                </span>
+                <span class="toggle-label">Set Lobby as Homepage</span>
+              </label>
+              <button id="open-create-lobby" class="create-lobby-button" type="button">
+                + Create Lobby
+              </button>
+            </div>
+          </section>
+
+          <section class="lobby-grid">
+            <article class="lobby-card">
+              <div class="lobby-card-content">
+                <div class="lobby-line">Lobby Name</div>
+                <div class="lobby-line">User Name</div>
+                <div class="lobby-line">Details</div>
+              </div>
+              <button class="join-button" type="button">Join Lobby</button>
+            </article>
+            <article class="lobby-card">
+              <div class="lobby-card-content">
+                <div class="lobby-line">Lobby Name</div>
+                <div class="lobby-line">User Name</div>
+                <div class="lobby-line">Details</div>
+              </div>
+              <button class="join-button" type="button">Join Lobby</button>
+            </article>
+            <article class="lobby-card">
+              <div class="lobby-card-content">
+                <div class="lobby-line">Lobby Name</div>
+                <div class="lobby-line">User Name</div>
+                <div class="lobby-line">Details</div>
+              </div>
+              <button class="join-button" type="button">Join Lobby</button>
+            </article>
+            <article class="lobby-card">
+              <div class="lobby-card-content">
+                <div class="lobby-line">Lobby Name</div>
+                <div class="lobby-line">User Name</div>
+                <div class="lobby-line">Details</div>
+              </div>
+              <button class="join-button" type="button">Join Lobby</button>
+            </article>
+          </section>
+
+          <nav class="pagination" aria-label="Pagination">
+            <span class="pagination-item">&lt; Previous</span>
+            <span class="pagination-item">1</span>
+            <span class="pagination-item">2</span>
+            <span class="pagination-item">3</span>
+            <span class="pagination-item">...</span>
+            <span class="pagination-item">67</span>
+            <span class="pagination-item">68</span>
+            <span class="pagination-item">Next &gt;</span>
+          </nav>
+        </section>
+
+        <section id="create-page" class="page-view create-lobby-page" aria-hidden="true">
+          <button id="back-to-lobby" class="back-button" type="button" aria-label="Back to Lobby">
+            ←
+          </button>
+
+          <div class="create-page-header-row">
+            <div>
+              <h1 class="create-title">Type Lobby Name</h1>
+              <p class="create-subtitle">Subtitle</p>
+            </div>
+            <div class="invite-admin-wrap">
+              <span class="invite-label">Invite Administrator:</span>
+              <button class="small-add-button" type="button">+ ADD</button>
+              <div class="invite-helper">User Names</div>
+            </div>
+          </div>
+
+          <div class="create-form-group">
+            <label class="create-label">Choose Tags:</label>
+            <div class="tag-row">
+              <span class="mini-chip mini-chip-dark">▽ All Categories</span>
+              <span class="mini-chip">Strategy</span>
+              <span class="mini-chip">LFG</span>
+              <span class="mini-chip">Meta Analysis</span>
+              <span class="mini-chip">Tournaments</span>
+            </div>
+          </div>
+
+          <div class="create-form-group">
+            <div class="fake-input fake-input-wide">Information About this Lobby....</div>
+          </div>
+
+          <div class="create-form-group inline-group">
+            <label class="create-label">Participant Limit:</label>
+            <div class="tag-row">
+              <span class="mini-chip mini-chip-dark">▽ Unlimited</span>
+              <span class="mini-chip">20</span>
+              <span class="mini-chip">50</span>
+              <span class="mini-chip">100</span>
+            </div>
+          </div>
+
+          <div class="create-form-group inline-group">
+            <label class="create-label">Set Visibility:</label>
+            <div class="tag-row">
+              <span class="mini-chip mini-chip-dark">▽ Public</span>
+              <span class="mini-chip">Private</span>
+              <span class="mini-chip">Visible to Lobby Members</span>
+            </div>
+          </div>
+
+          <div class="create-actions">
+            <button class="footer-action footer-save" type="button">Save</button>
+            <button class="footer-action footer-publish" type="button">Publish</button>
+            <button class="footer-action footer-delete" type="button">Delete</button>
+          </div>
+        </section>
+      </main>
+
+      <div class="connection-panel">Connection</div>
+      <img class="corner-logo" src="LOGO.png" alt="CampusGG logo" />
+    </div>
+
+    <script>
+      const lobbyPage = document.getElementById('lobby-page');
+      const createPage = document.getElementById('create-page');
+      const openButton = document.getElementById('open-create-lobby');
+      const backButton = document.getElementById('back-to-lobby');
+
+      function showCreatePage() {
+        lobbyPage.classList.remove('active-view');
+        createPage.classList.add('active-view');
+        createPage.setAttribute('aria-hidden', 'false');
+      }
+
+      function showLobbyPage() {
+        createPage.classList.remove('active-view');
+        createPage.setAttribute('aria-hidden', 'true');
+        lobbyPage.classList.add('active-view');
+      }
+
+      async function loadLobbies() {
+        try {
+          const response = await fetch('http://localhost:3000/lobbies');
+
+          if (!response.ok) {
+            throw new Error('Failed to fetch lobbies');
+          }
+
+          const lobbies = await response.json();
+          const lobbyCards = document.querySelectorAll('.lobby-card');
+
+          lobbyCards.forEach((card, index) => {
+            if (lobbies[index]) {
+              const lines = card.querySelectorAll('.lobby-line');
+              lines[0].textContent = lobbies[index].name;
+              lines[1].textContent = lobbies[index].host;
+              lines[2].textContent = lobbies[index].details;
+            }
+          });
+        } catch (error) {
+          console.error('Error loading lobbies:', error);
+        }
+      }
+
+      openButton.addEventListener('click', showCreatePage);
+      backButton.addEventListener('click', showLobbyPage);
+
+      document.addEventListener('DOMContentLoaded', loadLobbies);
+    </script>
+  </body>
+</html>
