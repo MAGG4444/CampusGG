@@ -1,6 +1,8 @@
 :root {
   --bg: #0f1722;
   --gold: #c9a84c;
+  --chip-bg: #17212d;
+  --chip-text: #8a9199;
 }
 
 * {
@@ -67,4 +69,43 @@ body {
 .main-wrapper {
   max-width: 1200px;
   margin: 0 auto;
+  padding: 24px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-group-right {
+  justify-content: flex-end;
+}
+
+.filter-icon {
+  color: var(--gold);
+  font-size: 18px;
+  line-height: 1;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #ffffff;
+  color: var(--chip-text);
+}
+
+.filter-chip-selected {
+  background: var(--chip-bg);
+  color: #ffffff;
 }
