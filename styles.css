@@ -109,3 +109,37 @@ body {
   background: var(--chip-bg);
   color: #ffffff;
 }
+
+.search-row {
+  display: flex;
+  justify-content: center;
+  padding-top: 24px;
+}
+
+.search-bar {
+  width: 100%;
+  max-width: 560px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: #ffffff;
+}
+
+.search-icon {
+  color: #8a9199;
+  line-height: 1;
+}
+
+.search-input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #111827;
+}
+
+.search-input::placeholder {
+  color: #8a9199;
+}
