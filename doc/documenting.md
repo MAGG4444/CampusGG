@@ -34,6 +34,7 @@ CampusGG/
 │   └── documenting.md (this current file)
 ├──.gitignore
 └──README.md
+```
 
 ## Branching & Workflow Model
 *   **Main Branches:** We utilize two main branches for our workflow.
