@@ -54,6 +54,14 @@ CampusGG/
 *   **Linking Issues to PR:** 
 
     Each pull request should include `For issue #` in the PR description to indicate the related issue. If the PR completely resolves the issue, `Closes #` can be used instead so that GitHub automatically closes the issue after the PR is merged.
+
+    Example:
+
+    * Issue: #23 Build exact-match algorithm logic
+
+    * PR Title: B-Matchmaking-23-Build_exact_match_logic
+    
+    * PR Description: Closes #23
 *   **Code Review and Merging Policy:** 
 
     * Code Review: Every pull request must be reviewed by at least one team member before it is merged.
