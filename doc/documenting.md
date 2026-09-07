@@ -36,6 +36,18 @@ CampusGG/
 └──README.md
 ```
 
+Structure Descrption:
+- frontend/ contains the user-facing portion of CampusGG, including the HTML, CSS, and frontend assets.
+- React implementation will also be added using this frontend file
+- campusgg-backend/ contains the server-side application built with NestJS and TypeScript
+- src/ contains the backend source code, with feature-specific directories such as lobbies/.
+- test/ contains end-to-end tests for the backend.
+- doc/ contains the project's design, development, verification, and documentation files.
+- .gitignore contains files and directories that should not be tracked by Git.
+- README.md provides an overview and general information about the project.
+
+
+
 ## Branching & Workflow Model
 *   **Main Branches:** We utilize two main branches for our workflow.
     *   `main`: Represents the stable, production-ready release.
