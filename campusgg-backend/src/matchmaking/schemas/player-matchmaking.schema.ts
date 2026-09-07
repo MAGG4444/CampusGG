@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file player-matchmaking.schema.ts
  * @description Sub-issue 23.1 — Interface Contract (Data Schema)
  *
@@ -24,7 +24,14 @@
  * Supported games on the platform.
  * Extend this union as new titles are onboarded.
  */
-export type SupportedGame = 'CS2' | 'Valorant' | 'Rocket League' | 'League of Legends';
+export type SupportedGame =
+  | 'CS2'
+  | 'Valorant'
+  | 'Rocket League'
+  | 'League of Legends'
+  | 'Dota'
+  | 'OW2'
+  | 'It Takes Two';
 
 /**
  * CS2-specific in-game roles.
