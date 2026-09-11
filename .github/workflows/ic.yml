@@ -41,3 +41,31 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+  frontend-build-and-test:
+    name: Build and Test Frontend CampusGG
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: campusgg-frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: campusgg-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Build application
+        run: npm run build
