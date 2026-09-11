@@ -91,14 +91,9 @@
           </section>
 
           <nav class="pagination" aria-label="Pagination">
-            <span class="pagination-item">&lt; Previous</span>
-            <span class="pagination-item">1</span>
-            <span class="pagination-item">2</span>
-            <span class="pagination-item">3</span>
-            <span class="pagination-item">...</span>
-            <span class="pagination-item">67</span>
-            <span class="pagination-item">68</span>
-            <span class="pagination-item">Next &gt;</span>
+            <button class="pagination-item pagination-button" id="previous-page" type="button">&lt; Previous</button>
+            <div id="page-numbers" class="pagination-pages" aria-label="Page numbers"></div>
+            <button class="pagination-item pagination-button" id="next-page" type="button">Next &gt;</button>
           </nav>
         </section>
 
@@ -183,6 +178,62 @@
 
       openButton.addEventListener('click', showCreatePage);
       backButton.addEventListener('click', showLobbyPage);
+
+      // Lobby pagination
+      const lobbyGrid = document.querySelector('.lobby-grid');
+      const lobbyCards = Array.from(document.querySelectorAll('.lobby-card'));
+      const previousPageButton = document.getElementById('previous-page');
+      const nextPageButton = document.getElementById('next-page');
+      const pageNumbers = document.getElementById('page-numbers');
+
+      const lobbiesPerPage = 4;
+      const totalPages = Math.ceil(lobbyCards.length / lobbiesPerPage);
+      let currentPage = 1;
+
+      function displayPage(page) {
+        currentPage = page;
+
+        const start = (currentPage - 1) * lobbiesPerPage;
+        const end = start + lobbiesPerPage;
+
+        lobbyCards.forEach((card, index) => {
+          card.style.display = index >= start && index < end ? 'flex' : 'none';
+        });
+
+        pageNumbers.innerHTML = '';
+
+        for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'pagination-item pagination-button';
+          button.textContent = pageNumber;
+
+          if (pageNumber === currentPage) {
+            button.classList.add('pagination-current');
+            button.setAttribute('aria-current', 'page');
+          }
+
+          button.addEventListener('click', () => displayPage(pageNumber));
+          pageNumbers.appendChild(button);
+        }
+
+        previousPageButton.disabled = currentPage === 1;
+        nextPageButton.disabled = currentPage === totalPages;
+      }
+
+      previousPageButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+          displayPage(currentPage - 1);
+        }
+      });
+
+      nextPageButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+          displayPage(currentPage + 1);
+        }
+      });
+
+      displayPage(1);
     </script>
   </body>
 </html>

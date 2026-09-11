@@ -449,3 +449,32 @@ body {
     justify-content: flex-start;
   }
 }
+
+.pagination-pages {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pagination-button {
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+}
+
+.pagination-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.pagination-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-current {
+  font-weight: 700;
+  text-decoration: underline;
+}
