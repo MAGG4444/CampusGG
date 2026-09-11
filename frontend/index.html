@@ -24,18 +24,18 @@
           <section class="filter-row">
             <div class="filter-group">
               <span class="filter-icon" aria-hidden="true">▽</span>
-              <span class="filter-chip filter-chip-selected">All Games</span>
-              <span class="filter-chip">Valorant</span>
-              <span class="filter-chip">CS2</span>
-              <span class="filter-chip">Overwatch 2</span>
-              <span class="filter-chip">Apex</span>
+              <button class="filter-chip filter-chip-selected game-filter" type="button" data-game="all">All Games</button>
+              <button class="filter-chip game-filter" type="button" data-game="Valorant">Valorant</button>
+              <button class="filter-chip game-filter" type="button" data-game="CS2">CS2</button>
+              <button class="filter-chip game-filter" type="button" data-game="Overwatch 2">Overwatch 2</button>
+              <button class="filter-chip game-filter" type="button" data-game="Apex">Apex</button>
             </div>
             <div class="filter-group filter-group-right">
               <span class="filter-icon" aria-hidden="true">▽</span>
-              <span class="filter-chip filter-chip-selected">Most Popular</span>
-              <span class="filter-chip">Beginner</span>
-              <span class="filter-chip">Intermediate</span>
-              <span class="filter-chip">Advanced</span>
+              <button class="filter-chip filter-chip-selected level-filter" type="button" data-level="all">Most Popular</button>
+              <button class="filter-chip level-filter" type="button" data-level="Beginner">Beginner</button>
+              <button class="filter-chip level-filter" type="button" data-level="Intermediate">Intermediate</button>
+              <button class="filter-chip level-filter" type="button" data-level="Advanced">Advanced</button>
             </div>
           </section>
 
@@ -56,35 +56,38 @@
           </section>
 
           <section class="lobby-grid">
-            <article class="lobby-card">
+            <article class="lobby-card" data-game="Valorant" data-level="Beginner" data-lobby-name="Beginner Valorant Squad">
               <div class="lobby-card-content">
-                <div class="lobby-line">Lobby Name</div>
-                <div class="lobby-line">User Name</div>
-                <div class="lobby-line">Details</div>
+                <div class="lobby-line lobby-name">Beginner Valorant Squad</div>
+                <div class="lobby-line">User Name: Alex</div>
+                <div class="lobby-line">Details: Looking for new players</div>
               </div>
               <button class="join-button" type="button">Join Lobby</button>
             </article>
-            <article class="lobby-card">
+
+            <article class="lobby-card" data-game="CS2" data-level="Intermediate" data-lobby-name="CS2 Competitive">
               <div class="lobby-card-content">
-                <div class="lobby-line">Lobby Name</div>
-                <div class="lobby-line">User Name</div>
-                <div class="lobby-line">Details</div>
+                <div class="lobby-line lobby-name">CS2 Competitive</div>
+                <div class="lobby-line">User Name: Jordan</div>
+                <div class="lobby-line">Details: Competitive matchmaking</div>
               </div>
               <button class="join-button" type="button">Join Lobby</button>
             </article>
-            <article class="lobby-card">
+
+            <article class="lobby-card" data-game="Overwatch 2" data-level="Advanced" data-lobby-name="Overwatch Ranked">
               <div class="lobby-card-content">
-                <div class="lobby-line">Lobby Name</div>
-                <div class="lobby-line">User Name</div>
-                <div class="lobby-line">Details</div>
+                <div class="lobby-line lobby-name">Overwatch Ranked</div>
+                <div class="lobby-line">User Name: Taylor</div>
+                <div class="lobby-line">Details: Advanced players only</div>
               </div>
               <button class="join-button" type="button">Join Lobby</button>
             </article>
-            <article class="lobby-card">
+
+            <article class="lobby-card" data-game="Apex" data-level="Intermediate" data-lobby-name="Apex LFG">
               <div class="lobby-card-content">
-                <div class="lobby-line">Lobby Name</div>
-                <div class="lobby-line">User Name</div>
-                <div class="lobby-line">Details</div>
+                <div class="lobby-line lobby-name">Apex LFG</div>
+                <div class="lobby-line">User Name: Morgan</div>
+                <div class="lobby-line">Details: Looking for a regular squad</div>
               </div>
               <button class="join-button" type="button">Join Lobby</button>
             </article>
@@ -102,8 +105,8 @@
 
           <div class="create-page-header-row">
             <div>
-              <h1 class="create-title">Type Lobby Name</h1>
-              <p class="create-subtitle">Subtitle</p>
+              <input id="lobby-name-input" class="create-title-input" type="text" placeholder="Type Lobby Name" />
+              <p class="create-subtitle">Create a lobby for other CampusGG users to join.</p>
             </div>
             <div class="invite-admin-wrap">
               <span class="invite-label">Invite Administrator:</span>
@@ -113,43 +116,44 @@
           </div>
 
           <div class="create-form-group">
-            <label class="create-label">Choose Tags:</label>
-            <div class="tag-row">
-              <span class="mini-chip mini-chip-dark">▽ All Categories</span>
-              <span class="mini-chip">Strategy</span>
-              <span class="mini-chip">LFG</span>
-              <span class="mini-chip">Meta Analysis</span>
-              <span class="mini-chip">Tournaments</span>
-            </div>
+            <label class="create-label">Choose Game:</label>
+            <select id="lobby-game-input" class="create-select">
+              <option value="">Select a game</option>
+              <option value="Valorant">Valorant</option>
+              <option value="CS2">CS2</option>
+              <option value="Overwatch 2">Overwatch 2</option>
+              <option value="Apex">Apex</option>
+            </select>
           </div>
 
           <div class="create-form-group">
-            <div class="fake-input fake-input-wide">Information About this Lobby....</div>
+            <label class="create-label" for="lobby-description-input">Information About this Lobby:</label>
+            <textarea id="lobby-description-input" class="create-textarea" placeholder="Information About this Lobby...."></textarea>
           </div>
 
           <div class="create-form-group inline-group">
             <label class="create-label">Participant Limit:</label>
-            <div class="tag-row">
-              <span class="mini-chip mini-chip-dark">▽ Unlimited</span>
-              <span class="mini-chip">20</span>
-              <span class="mini-chip">50</span>
-              <span class="mini-chip">100</span>
-            </div>
+            <select id="participant-limit-input" class="create-select">
+              <option value="Unlimited">Unlimited</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
           </div>
 
           <div class="create-form-group inline-group">
             <label class="create-label">Set Visibility:</label>
-            <div class="tag-row">
-              <span class="mini-chip mini-chip-dark">▽ Public</span>
-              <span class="mini-chip">Private</span>
-              <span class="mini-chip">Visible to Lobby Members</span>
-            </div>
+            <select id="visibility-input" class="create-select">
+              <option value="Public">Public</option>
+              <option value="Private">Private</option>
+              <option value="Visible to Lobby Members">Visible to Lobby Members</option>
+            </select>
           </div>
 
           <div class="create-actions">
-            <button class="footer-action footer-save" type="button">Save</button>
-            <button class="footer-action footer-publish" type="button">Publish</button>
-            <button class="footer-action footer-delete" type="button">Delete</button>
+            <button id="save-lobby" class="footer-action footer-save" type="button">Save</button>
+            <button id="publish-lobby" class="footer-action footer-publish" type="button">Publish</button>
+            <button id="delete-lobby" class="footer-action footer-delete" type="button">Delete</button>
           </div>
         </section>
       </main>
@@ -179,25 +183,95 @@
       openButton.addEventListener('click', showCreatePage);
       backButton.addEventListener('click', showLobbyPage);
 
-      // Lobby pagination
+      // Lobby search and filters
+      const searchInput = document.querySelector('.search-input');
       const lobbyGrid = document.querySelector('.lobby-grid');
-      const lobbyCards = Array.from(document.querySelectorAll('.lobby-card'));
+      const gameFilters = document.querySelectorAll('.game-filter');
+      const levelFilters = document.querySelectorAll('.level-filter');
+      let selectedGame = 'all';
+      let selectedLevel = 'all';
+
+      function updateFilterSelection(buttons, selectedButton) {
+        buttons.forEach((button) => button.classList.remove('filter-chip-selected'));
+        selectedButton.classList.add('filter-chip-selected');
+      }
+
+      function getFilteredLobbies() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+
+        return Array.from(document.querySelectorAll('.lobby-card')).filter((card) => {
+          const matchesGame = selectedGame === 'all' || card.dataset.game === selectedGame;
+          const matchesLevel = selectedLevel === 'all' || card.dataset.level === selectedLevel;
+          const matchesSearch = card.dataset.lobbyName.toLowerCase().includes(searchTerm);
+
+          return matchesGame && matchesLevel && matchesSearch;
+        });
+      }
+
+      function refreshLobbyDisplay() {
+        const allCards = Array.from(document.querySelectorAll('.lobby-card'));
+        const filteredCards = getFilteredLobbies();
+
+        allCards.forEach((card) => {
+          card.style.display = filteredCards.includes(card) ? 'flex' : 'none';
+        });
+
+        displayPage(1);
+      }
+
+      gameFilters.forEach((button) => {
+        button.addEventListener('click', () => {
+          selectedGame = button.dataset.game;
+          updateFilterSelection(gameFilters, button);
+          refreshLobbyDisplay();
+        });
+      });
+
+      levelFilters.forEach((button) => {
+        button.addEventListener('click', () => {
+          selectedLevel = button.dataset.level;
+          updateFilterSelection(levelFilters, button);
+          refreshLobbyDisplay();
+        });
+      });
+
+      searchInput.addEventListener('input', refreshLobbyDisplay);
+
+      // Join Lobby
+      document.querySelectorAll('.join-button').forEach((button) => {
+        button.addEventListener('click', () => {
+          const card = button.closest('.lobby-card');
+          const lobbyName = card.dataset.lobbyName;
+
+          if (button.dataset.joined === 'true') {
+            return;
+          }
+
+          button.dataset.joined = 'true';
+          button.textContent = 'Joined';
+          button.disabled = true;
+          alert(`You joined "${lobbyName}".`);
+        });
+      });
+
+      // Pagination
       const previousPageButton = document.getElementById('previous-page');
       const nextPageButton = document.getElementById('next-page');
       const pageNumbers = document.getElementById('page-numbers');
-
       const lobbiesPerPage = 4;
-      const totalPages = Math.ceil(lobbyCards.length / lobbiesPerPage);
       let currentPage = 1;
 
       function displayPage(page) {
-        currentPage = page;
+        const filteredCards = getFilteredLobbies();
+        const totalPages = Math.max(1, Math.ceil(filteredCards.length / lobbiesPerPage));
+
+        currentPage = Math.min(Math.max(page, 1), totalPages);
 
         const start = (currentPage - 1) * lobbiesPerPage;
-        const end = start + lobbiesPerPage;
+        const visibleCards = filteredCards.slice(start, start + lobbiesPerPage);
 
-        lobbyCards.forEach((card, index) => {
-          card.style.display = index >= start && index < end ? 'flex' : 'none';
+        document.querySelectorAll('.lobby-card').forEach((card) => {
+          card.style.display = visibleCards.includes(card) ? 'flex' : 'none';
         });
 
         pageNumbers.innerHTML = '';
@@ -221,16 +295,108 @@
         nextPageButton.disabled = currentPage === totalPages;
       }
 
-      previousPageButton.addEventListener('click', () => {
-        if (currentPage > 1) {
-          displayPage(currentPage - 1);
+      previousPageButton.addEventListener('click', () => displayPage(currentPage - 1));
+      nextPageButton.addEventListener('click', () => displayPage(currentPage + 1));
+
+      // Lobby creation
+      const lobbyNameInput = document.getElementById('lobby-name-input');
+      const lobbyGameInput = document.getElementById('lobby-game-input');
+      const lobbyDescriptionInput = document.getElementById('lobby-description-input');
+      const participantLimitInput = document.getElementById('participant-limit-input');
+      const visibilityInput = document.getElementById('visibility-input');
+      const saveLobbyButton = document.getElementById('save-lobby');
+      const publishLobbyButton = document.getElementById('publish-lobby');
+      const deleteLobbyButton = document.getElementById('delete-lobby');
+
+      let savedLobby = null;
+
+      function clearLobbyForm() {
+        lobbyNameInput.value = '';
+        lobbyGameInput.value = '';
+        lobbyDescriptionInput.value = '';
+        participantLimitInput.value = 'Unlimited';
+        visibilityInput.value = 'Public';
+        savedLobby = null;
+      }
+
+      function validateLobbyForm() {
+        if (!lobbyNameInput.value.trim()) {
+          alert('Please enter a lobby name.');
+          lobbyNameInput.focus();
+          return false;
         }
+
+        if (!lobbyGameInput.value) {
+          alert('Please select a game.');
+          lobbyGameInput.focus();
+          return false;
+        }
+
+        if (!lobbyDescriptionInput.value.trim()) {
+          alert('Please enter information about the lobby.');
+          lobbyDescriptionInput.focus();
+          return false;
+        }
+
+        return true;
+      }
+
+      function getLobbyFormData() {
+        return {
+          name: lobbyNameInput.value.trim(),
+          game: lobbyGameInput.value,
+          description: lobbyDescriptionInput.value.trim(),
+          participantLimit: participantLimitInput.value,
+          visibility: visibilityInput.value
+        };
+      }
+
+      saveLobbyButton.addEventListener('click', () => {
+        if (!validateLobbyForm()) return;
+
+        savedLobby = getLobbyFormData();
+        alert('Lobby information saved.');
       });
 
-      nextPageButton.addEventListener('click', () => {
-        if (currentPage < totalPages) {
-          displayPage(currentPage + 1);
-        }
+      publishLobbyButton.addEventListener('click', () => {
+        if (!validateLobbyForm()) return;
+
+        const lobby = getLobbyFormData();
+        const card = document.createElement('article');
+
+        card.className = 'lobby-card';
+        card.dataset.game = lobby.game;
+        card.dataset.level = 'Beginner';
+        card.dataset.lobbyName = lobby.name;
+
+        card.innerHTML = `
+          <div class="lobby-card-content">
+            <div class="lobby-line lobby-name">${lobby.name}</div>
+            <div class="lobby-line">User Name: You</div>
+            <div class="lobby-line">Details: ${lobby.description}</div>
+          </div>
+          <button class="join-button" type="button">Join Lobby</button>
+        `;
+
+        lobbyGrid.appendChild(card);
+
+        const joinButton = card.querySelector('.join-button');
+        joinButton.addEventListener('click', () => {
+          joinButton.dataset.joined = 'true';
+          joinButton.textContent = 'Joined';
+          joinButton.disabled = true;
+          alert(`You joined "${card.dataset.lobbyName}".`);
+        });
+
+        alert(`"${lobby.name}" was published.`);
+        clearLobbyForm();
+        showLobbyPage();
+        refreshLobbyDisplay();
+      });
+
+      deleteLobbyButton.addEventListener('click', () => {
+        clearLobbyForm();
+        alert('Lobby form cleared.');
       });
 
       displayPage(1);

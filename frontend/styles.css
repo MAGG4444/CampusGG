@@ -450,6 +450,59 @@ body {
   }
 }
 
+/* Interactive frontend controls */
+.filter-chip,
+.mini-chip {
+  cursor: pointer;
+}
+
+.filter-chip {
+  font-family: inherit;
+}
+
+.filter-chip:hover {
+  opacity: 0.9;
+}
+
+.create-title-input {
+  width: 100%;
+  max-width: 650px;
+  border: 0;
+  border-bottom: 1px solid #8b96a7;
+  background: transparent;
+  color: #ffffff;
+  font-size: 28px;
+  font-weight: 700;
+  outline: 0;
+  padding: 2px 0 6px;
+}
+
+.create-title-input::placeholder {
+  color: #ffffff;
+  opacity: 1;
+}
+
+.create-select,
+.create-textarea {
+  border: 1px solid #cdd2da;
+  background: #e5e7eb;
+  color: #111827;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 6px 8px;
+}
+
+.create-select {
+  min-width: 150px;
+}
+
+.create-textarea {
+  width: 100%;
+  max-width: 880px;
+  min-height: 80px;
+  resize: vertical;
+}
+
 .pagination-pages {
   display: flex;
   align-items: center;
@@ -477,4 +530,9 @@ body {
 .pagination-current {
   font-weight: 700;
   text-decoration: underline;
+}
+
+.join-button:disabled {
+  opacity: 0.65;
+  cursor: default;
 }
