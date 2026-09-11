@@ -44,6 +44,7 @@ jobs:
 
   frontend-build-and-test:
     name: Build and Test Frontend CampusGG
+    if: github.ref == 'refs/heads/dev' || github.base_ref == 'dev'
     runs-on: ubuntu-latest
 
     defaults:
