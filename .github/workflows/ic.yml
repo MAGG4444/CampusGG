@@ -12,7 +12,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build and Test CampusGG
+    name: Build and Test Backend CampusGG
     runs-on: ubuntu-latest
 
     defaults:
