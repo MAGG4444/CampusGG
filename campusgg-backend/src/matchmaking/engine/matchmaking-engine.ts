@@ -228,8 +228,8 @@ export class MatchmakingEngine {
    * Returns a snapshot of the current queue sizes per game.
    * Useful for logging, dashboards, and health checks.
    */
-  getQueueSnapshot(): Record<string, number> {
-    const snapshot: Record<string, number> = {};
+  getQueueSnapshot(): Partial<Record<SupportedGame, number>> {
+    const snapshot: Partial<Record<SupportedGame, number>> = {};
     for (const [game, players] of this.queue.entries()) {
       snapshot[game] = players.length;
     }

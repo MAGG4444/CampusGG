@@ -15,7 +15,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type { PlayerMatchmakingInput } from '../schemas/player-matchmaking.schema.js';
+import type { PlayerMatchmakingInput, SupportedGame } from '../schemas/player-matchmaking.schema.js';
 import type { MatchGroup } from '../schemas/match-group.schema.js';
 import { DummyStrategy } from './match-strategy.interface.js';
 import { MatchmakingEngine } from './matchmaking-engine.js';
@@ -27,7 +27,7 @@ import { getGroupSize, getTier } from './game-tiers.config.js';
 
 const MOCK_DATA_PATH = path.resolve(__dirname, '../../../../mock-data/mock_players.json');
 const rawJson = fs.readFileSync(MOCK_DATA_PATH, 'utf-8');
-const mockPlayers: PlayerMatchmakingInput[] = JSON.parse(rawJson);
+const mockPlayers = JSON.parse(rawJson) as unknown as PlayerMatchmakingInput[];
 
 console.log('');
 console.log('╔══════════════════════════════════════════════════════════════╗');
@@ -80,8 +80,8 @@ for (const player of mockPlayers) {
 console.log('── Queue state before processing ──────────────────────────────');
 console.log(`  Total players queued: ${engine.getTotalQueueSize()}`);
 const preSnapshot = engine.getQueueSnapshot();
-for (const [game, count] of Object.entries(preSnapshot)) {
-  console.log(`    ${game}: ${count} players (tier: ${getTier(game as any)}, group size: ${getGroupSize(game as any)})`);
+for (const [game, count] of Object.entries(preSnapshot) as Array<[SupportedGame, number]>) {
+  console.log(`    ${game}: ${count} players (tier: ${getTier(game)}, group size: ${getGroupSize(game)})`);
 }
 console.log('');
 

@@ -70,6 +70,7 @@ export class DummyStrategy implements MatchStrategy {
    * @param _group - Unused; present to satisfy the interface contract.
    */
   scoreGroup(_group: ReadonlyArray<PlayerMatchmakingInput>): number {
+    void _group;
     return DUMMY_SCORE;
   }
 }
