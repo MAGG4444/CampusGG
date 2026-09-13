@@ -55,42 +55,8 @@
             </div>
           </section>
 
-          <section class="lobby-grid">
-            <article class="lobby-card" data-game="Valorant" data-level="Beginner" data-lobby-name="Beginner Valorant Squad">
-              <div class="lobby-card-content">
-                <div class="lobby-line lobby-name">Beginner Valorant Squad</div>
-                <div class="lobby-line">User Name: Alex</div>
-                <div class="lobby-line">Details: Looking for new players</div>
-              </div>
-              <button class="join-button" type="button">Join Lobby</button>
-            </article>
-
-            <article class="lobby-card" data-game="CS2" data-level="Intermediate" data-lobby-name="CS2 Competitive">
-              <div class="lobby-card-content">
-                <div class="lobby-line lobby-name">CS2 Competitive</div>
-                <div class="lobby-line">User Name: Jordan</div>
-                <div class="lobby-line">Details: Competitive matchmaking</div>
-              </div>
-              <button class="join-button" type="button">Join Lobby</button>
-            </article>
-
-            <article class="lobby-card" data-game="Overwatch 2" data-level="Advanced" data-lobby-name="Overwatch Ranked">
-              <div class="lobby-card-content">
-                <div class="lobby-line lobby-name">Overwatch Ranked</div>
-                <div class="lobby-line">User Name: Taylor</div>
-                <div class="lobby-line">Details: Advanced players only</div>
-              </div>
-              <button class="join-button" type="button">Join Lobby</button>
-            </article>
-
-            <article class="lobby-card" data-game="Apex" data-level="Intermediate" data-lobby-name="Apex LFG">
-              <div class="lobby-card-content">
-                <div class="lobby-line lobby-name">Apex LFG</div>
-                <div class="lobby-line">User Name: Morgan</div>
-                <div class="lobby-line">Details: Looking for a regular squad</div>
-              </div>
-              <button class="join-button" type="button">Join Lobby</button>
-            </article>
+          <section class="lobby-grid" id="lobby-grid">
+            <p id="lobby-load-status" class="lobby-line" style="color:#ffffff;">Loading lobbies…</p>
           </section>
 
           <nav class="pagination" aria-label="Pagination">
@@ -163,6 +129,8 @@
     </div>
 
     <script>
+      const API_BASE_URL = 'http://localhost:3000';
+
       const lobbyPage = document.getElementById('lobby-page');
       const createPage = document.getElementById('create-page');
       const openButton = document.getElementById('open-create-lobby');
@@ -238,7 +206,7 @@
       searchInput.addEventListener('input', refreshLobbyDisplay);
 
       // Join Lobby
-      document.querySelectorAll('.join-button').forEach((button) => {
+      function attachJoinHandler(button) {
         button.addEventListener('click', () => {
           const card = button.closest('.lobby-card');
           const lobbyName = card.dataset.lobbyName;
@@ -252,7 +220,52 @@
           button.disabled = true;
           alert(`You joined "${lobbyName}".`);
         });
-      });
+      }
+
+      function createLobbyCard(lobby) {
+        const card = document.createElement('article');
+
+        card.className = 'lobby-card';
+        card.dataset.game = lobby.game;
+        card.dataset.level = lobby.level;
+        card.dataset.lobbyName = lobby.name;
+
+        card.innerHTML = `
+          <div class="lobby-card-content">
+            <div class="lobby-line lobby-name">${lobby.name}</div>
+            <div class="lobby-line">User Name: ${lobby.host}</div>
+            <div class="lobby-line">Details: ${lobby.details}</div>
+          </div>
+          <button class="join-button" type="button">Join Lobby</button>
+        `;
+
+        attachJoinHandler(card.querySelector('.join-button'));
+        return card;
+      }
+
+      // Load lobbies from the backend
+      async function loadLobbies() {
+        const statusEl = document.getElementById('lobby-load-status');
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/lobbies`);
+
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          const lobbies = await response.json();
+
+          statusEl.remove();
+          lobbies.forEach((lobby) => {
+            lobbyGrid.appendChild(createLobbyCard(lobby));
+          });
+
+          displayPage(1);
+        } catch (error) {
+          statusEl.textContent = `Couldn't load lobbies from the server (${error.message}). Make sure the backend is running at ${API_BASE_URL}.`;
+        }
+      }
 
       // Pagination
       const previousPageButton = document.getElementById('previous-page');
@@ -399,7 +412,7 @@
         alert('Lobby form cleared.');
       });
 
-      displayPage(1);
+      loadLobbies();
     </script>
   </body>
 </html>
