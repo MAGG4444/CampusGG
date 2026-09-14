@@ -29,11 +29,16 @@ const visibilityOptions = [
   { label: 'Visible to Friends', value: 'friends' },
 ]
 
+const maxLobbyNameLength = 60
+const maxDetailsLength = 500
+
 function CreateLobby() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState(initialFormData)
   const [, setSavedDraft] = useState(null)
   const [, setPublishedLobby] = useState(null)
+  const [errors, setErrors] = useState({})
+  const [adminFeedback, setAdminFeedback] = useState('')
   const [statusMessage, setStatusMessage] = useState('')
 
   function updateField(field, value) {
@@ -41,6 +46,12 @@ function CreateLobby() {
       ...currentData,
       [field]: value,
     }))
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors }
+      delete nextErrors[field]
+      return nextErrors
+    })
+    setStatusMessage('')
   }
 
   function toggleTag(tag) {
@@ -53,12 +64,28 @@ function CreateLobby() {
         tags: nextTags,
       }
     })
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors }
+      delete nextErrors.tags
+      return nextErrors
+    })
+    setStatusMessage('')
   }
 
   function addAdministrator() {
     const nextAdministrator = formData.administratorInput.trim()
 
     if (!nextAdministrator) {
+      setAdminFeedback('Enter an administrator name.')
+      return
+    }
+
+    const alreadyAdded = formData.administrators.some(
+      (administrator) => administrator.toLowerCase() === nextAdministrator.toLowerCase(),
+    )
+
+    if (alreadyAdded) {
+      setAdminFeedback('Administrator already added.')
       return
     }
 
@@ -67,24 +94,67 @@ function CreateLobby() {
       administratorInput: '',
       administrators: [...currentData.administrators, nextAdministrator],
     }))
+    setAdminFeedback('Administrator added.')
   }
 
   function handleSave() {
     setSavedDraft(formData)
-    setStatusMessage('Draft saved')
+    setErrors({})
+    setStatusMessage('Draft saved.')
+  }
+
+  function validateForm() {
+    const nextErrors = {}
+
+    if (!formData.lobbyName.trim()) {
+      nextErrors.lobbyName = 'Lobby name is required.'
+    } else if (formData.lobbyName.trim().length > maxLobbyNameLength) {
+      nextErrors.lobbyName = `Lobby name must be ${maxLobbyNameLength} characters or fewer.`
+    }
+
+    if (!formData.details.trim()) {
+      nextErrors.details = 'Please enter lobby details.'
+    } else if (formData.details.trim().length > maxDetailsLength) {
+      nextErrors.details = `Lobby details must be ${maxDetailsLength} characters or fewer.`
+    }
+
+    if (formData.tags.length === 0) {
+      nextErrors.tags = 'Please select at least one tag.'
+    }
+
+    if (!formData.participantLimit) {
+      nextErrors.participantLimit = 'Please choose a participant limit.'
+    }
+
+    if (!formData.visibility) {
+      nextErrors.visibility = 'Please choose a visibility option.'
+    }
+
+    return nextErrors
   }
 
   function handlePublish(event) {
     event.preventDefault()
+    const validationErrors = validateForm()
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setStatusMessage('Please fix the highlighted fields.')
+      return
+    }
+
+    setErrors({})
     setPublishedLobby(formData)
-    setStatusMessage('Lobby ready to publish')
+    setStatusMessage('Lobby published successfully.')
   }
 
   function handleDelete() {
     setFormData(initialFormData)
     setSavedDraft(null)
     setPublishedLobby(null)
-    setStatusMessage('Lobby cleared')
+    setErrors({})
+    setAdminFeedback('')
+    setStatusMessage('Lobby cleared.')
   }
 
   return (
@@ -105,8 +175,15 @@ function CreateLobby() {
               type="text"
               placeholder="Type Lobby Name"
               value={formData.lobbyName}
+              aria-describedby={errors.lobbyName ? 'lobby-name-error' : undefined}
+              aria-invalid={errors.lobbyName ? 'true' : 'false'}
               onChange={(event) => updateField('lobbyName', event.target.value)}
             />
+            {errors.lobbyName ? (
+              <div className="field-error" id="lobby-name-error">
+                {errors.lobbyName}
+              </div>
+            ) : null}
 
             <label className="sr-only" htmlFor="lobby-subtitle">
               Subtitle
@@ -132,7 +209,11 @@ function CreateLobby() {
                 type="text"
                 placeholder="User Name"
                 value={formData.administratorInput}
-                onChange={(event) => updateField('administratorInput', event.target.value)}
+                aria-describedby={adminFeedback ? 'administrator-feedback' : undefined}
+                onChange={(event) => {
+                  updateField('administratorInput', event.target.value)
+                  setAdminFeedback('')
+                }}
               />
               <button className="small-add-button" type="button" onClick={addAdministrator}>
                 + ADD
@@ -141,12 +222,21 @@ function CreateLobby() {
             <div className="invite-helper">
               {formData.administrators.length > 0 ? formData.administrators.join(', ') : 'User Names'}
             </div>
+            {adminFeedback ? (
+              <div className="field-feedback" id="administrator-feedback">
+                {adminFeedback}
+              </div>
+            ) : null}
           </div>
         </div>
 
         <div className="create-form-group">
           <span className="create-label">Choose Tags:</span>
-          <div className="tag-row" aria-label="Choose Tags">
+          <div
+            className="tag-row"
+            aria-describedby={errors.tags ? 'tags-error' : undefined}
+            aria-label="Choose Tags"
+          >
             {tagOptions.map((tag) => (
               <button
                 className={`mini-chip ${formData.tags.includes(tag) ? 'mini-chip-dark' : ''}`}
@@ -159,6 +249,11 @@ function CreateLobby() {
               </button>
             ))}
           </div>
+          {errors.tags ? (
+            <div className="field-error" id="tags-error">
+              {errors.tags}
+            </div>
+          ) : null}
         </div>
 
         <div className="create-form-group">
@@ -170,13 +265,24 @@ function CreateLobby() {
             id="lobby-details"
             placeholder="Information About this Lobby...."
             value={formData.details}
+            aria-describedby={errors.details ? 'lobby-details-error' : undefined}
+            aria-invalid={errors.details ? 'true' : 'false'}
             onChange={(event) => updateField('details', event.target.value)}
           />
+          {errors.details ? (
+            <div className="field-error" id="lobby-details-error">
+              {errors.details}
+            </div>
+          ) : null}
         </div>
 
         <div className="create-form-group inline-group">
           <span className="create-label">Participant Limit:</span>
-          <div className="tag-row" aria-label="Participant Limit">
+          <div
+            className="tag-row"
+            aria-describedby={errors.participantLimit ? 'participant-limit-error' : undefined}
+            aria-label="Participant Limit"
+          >
             {participantLimitOptions.map((option) => (
               <button
                 className={`mini-chip ${formData.participantLimit === option.value ? 'mini-chip-dark' : ''}`}
@@ -189,11 +295,20 @@ function CreateLobby() {
               </button>
             ))}
           </div>
+          {errors.participantLimit ? (
+            <div className="field-error" id="participant-limit-error">
+              {errors.participantLimit}
+            </div>
+          ) : null}
         </div>
 
         <div className="create-form-group inline-group">
           <span className="create-label">Set Visibility:</span>
-          <div className="tag-row" aria-label="Set Visibility">
+          <div
+            className="tag-row"
+            aria-describedby={errors.visibility ? 'visibility-error' : undefined}
+            aria-label="Set Visibility"
+          >
             {visibilityOptions.map((option) => (
               <button
                 className={`mini-chip ${formData.visibility === option.value ? 'mini-chip-dark' : ''}`}
@@ -206,6 +321,11 @@ function CreateLobby() {
               </button>
             ))}
           </div>
+          {errors.visibility ? (
+            <div className="field-error" id="visibility-error">
+              {errors.visibility}
+            </div>
+          ) : null}
         </div>
 
         <div className="create-actions">
