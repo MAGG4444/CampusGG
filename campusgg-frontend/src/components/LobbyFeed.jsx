@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../assets/LOGO.png'
 import { lobbies } from '../data/lobbies.js'
@@ -45,23 +45,34 @@ function LobbyFeed() {
   const firstLobbyIndex = (currentPage - 1) * LOBBIES_PER_PAGE
   const visibleLobbies = filteredLobbies.slice(firstLobbyIndex, firstLobbyIndex + LOBBIES_PER_PAGE)
 
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [searchValue, selectedGame, selectedSkill])
-
   function handleJoin(lobby) {
     setJoinFeedback(`Selected ${lobby.lobbyName}`)
+  }
+
+  function handleSelectGame(game) {
+    setSelectedGame(game)
+    setCurrentPage(1)
+  }
+
+  function handleSelectSkill(skill) {
+    setSelectedSkill(skill)
+    setCurrentPage(1)
+  }
+
+  function handleSearchChange(value) {
+    setSearchValue(value)
+    setCurrentPage(1)
   }
 
   return (
     <section className="lobby-page">
       <section className="filter-row" aria-label="Lobby filters">
-        <GameFilter selectedGame={selectedGame} onSelectGame={setSelectedGame} />
-        <SkillFilter selectedSkill={selectedSkill} onSelectSkill={setSelectedSkill} />
+        <GameFilter selectedGame={selectedGame} onSelectGame={handleSelectGame} />
+        <SkillFilter selectedSkill={selectedSkill} onSelectSkill={handleSelectSkill} />
       </section>
 
       <section className="search-row">
-        <SearchBar value={searchValue} onChange={setSearchValue} />
+        <SearchBar value={searchValue} onChange={handleSearchChange} />
         <div className="action-stack">
           <HomepageToggle isOn={isHomepage} onToggle={() => setIsHomepage((current) => !current)} />
           <button className="create-lobby-button" type="button" onClick={() => navigate('/create-lobby')}>
