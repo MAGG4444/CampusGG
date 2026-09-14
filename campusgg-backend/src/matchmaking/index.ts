@@ -35,5 +35,22 @@ export { DummyStrategy } from './engine/match-strategy.interface.js';
 export type { OnMatchFoundCallback, MatchmakingEngineOptions } from './engine/matchmaking-engine.js';
 export { MatchmakingEngine } from './engine/matchmaking-engine.js';
 
+// ── 23.3: Scoring — config, strategies, factory ────────────────────────────
+export {
+  SKILL_WEIGHT,
+  INTENT_WEIGHT,
+  PROFILE_WEIGHT,
+  PERFECT_RATING_DELTA,
+  MAX_RATING_PENALTY_DELTA,
+  SKILL_FLOOR,
+  PERFECT_INTENSITY_DELTA,
+  MAX_INTENSITY_PENALTY_DELTA,
+  SAME_MAJOR_PAIR_BONUS,
+  MAX_ROLE_SYNERGY_MULTIPLIER,
+} from './engine/scoring.config.js';
+
+export { CasualScoringStrategy, CompetitiveScoringStrategy } from './engine/scoring-strategies.js';
+export { getScoringStrategy } from './engine/strategy-registry.js';
+
 // ── Mock generator — dev/test utility, NOT imported in production bundles ───
 export { generateMockPlayers } from './mock/mock-player.generator.js';
