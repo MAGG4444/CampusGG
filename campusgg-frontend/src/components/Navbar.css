@@ -52,18 +52,6 @@
   color: #f8f3e3;
 }
 
-.connection-panel {
-  position: fixed;
-  left: 24px;
-  bottom: 24px;
-  padding: 14px 22px;
-  border-radius: 12px;
-  background: #a6b4c8;
-  color: #ffffff;
-  font-size: 12px;
-  text-decoration: none;
-}
-
 @media (max-width: 900px) {
   .topbar-inner {
     align-items: flex-start;

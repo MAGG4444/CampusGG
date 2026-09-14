@@ -1,5 +1,12 @@
+import LobbyFeed from '../components/LobbyFeed.jsx'
+import './Lobby.css'
+
 function Lobby() {
-  return <h1>Lobby</h1>
+  return (
+    <div className="lobby-main-wrapper">
+      <LobbyFeed />
+    </div>
+  )
 }
 
 export default Lobby
