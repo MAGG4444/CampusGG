@@ -198,6 +198,15 @@
   cursor: pointer;
 }
 
+.feed-state-message {
+  min-height: 426px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 13px;
+}
+
 .join-feedback {
   min-height: 18px;
   padding-top: 8px;
@@ -250,6 +259,11 @@
   font-family: inherit;
   font-size: inherit;
   padding: 2px 4px;
+}
+
+.pagination-item:disabled {
+  color: #8b96a7;
+  cursor: default;
 }
 
 .pagination-item-active {

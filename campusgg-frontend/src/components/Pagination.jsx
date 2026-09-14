@@ -1,54 +1,38 @@
-function Pagination({ selectedPage, onSelectPage }) {
+function Pagination({ currentPage, totalPages, onSelectPage }) {
   function goToPrevious() {
-    onSelectPage(Math.max(1, selectedPage - 1))
+    onSelectPage(Math.max(1, currentPage - 1))
   }
 
   function goToNext() {
-    onSelectPage(Math.min(68, selectedPage + 1))
+    onSelectPage(Math.min(totalPages, currentPage + 1))
+  }
+
+  if (totalPages <= 1) {
+    return (
+      <nav className="pagination" aria-label="Pagination">
+        <button className="pagination-item pagination-item-active" type="button" onClick={() => onSelectPage(1)}>
+          1
+        </button>
+      </nav>
+    )
   }
 
   return (
     <nav className="pagination" aria-label="Pagination">
-      <button className="pagination-item" type="button" onClick={goToPrevious}>
+      <button className="pagination-item" type="button" onClick={goToPrevious} disabled={currentPage === 1}>
         &larr; Previous
       </button>
-      <button
-        className={`pagination-item ${selectedPage === 1 ? 'pagination-item-active' : ''}`}
-        type="button"
-        onClick={() => onSelectPage(1)}
-      >
-        1
-      </button>
-      <button
-        className={`pagination-item ${selectedPage === 2 ? 'pagination-item-active' : ''}`}
-        type="button"
-        onClick={() => onSelectPage(2)}
-      >
-        2
-      </button>
-      <button
-        className={`pagination-item ${selectedPage === 3 ? 'pagination-item-active' : ''}`}
-        type="button"
-        onClick={() => onSelectPage(3)}
-      >
-        3
-      </button>
-      <span className="pagination-item">...</span>
-      <button
-        className={`pagination-item ${selectedPage === 67 ? 'pagination-item-active' : ''}`}
-        type="button"
-        onClick={() => onSelectPage(67)}
-      >
-        67
-      </button>
-      <button
-        className={`pagination-item ${selectedPage === 68 ? 'pagination-item-active' : ''}`}
-        type="button"
-        onClick={() => onSelectPage(68)}
-      >
-        68
-      </button>
-      <button className="pagination-item" type="button" onClick={goToNext}>
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+        <button
+          className={`pagination-item ${currentPage === page ? 'pagination-item-active' : ''}`}
+          key={page}
+          type="button"
+          onClick={() => onSelectPage(page)}
+        >
+          {page}
+        </button>
+      ))}
+      <button className="pagination-item" type="button" onClick={goToNext} disabled={currentPage === totalPages}>
         Next &rarr;
       </button>
     </nav>
