@@ -1,5 +1,13 @@
+import ForumFeed from '../components/ForumFeed.jsx'
+import './Forum.css'
+import './Lobby.css'
+
 function Forum() {
-  return <h1>Forum</h1>
+  return (
+    <div className="forum-main-wrapper">
+      <ForumFeed />
+    </div>
+  )
 }
 
 export default Forum
