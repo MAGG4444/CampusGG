@@ -115,6 +115,20 @@
   font-size: 12px;
 }
 
+.field-error,
+.field-feedback {
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.field-error {
+  color: #ffb4b4;
+}
+
+.field-feedback {
+  color: #d6d8df;
+}
+
 .create-form-group {
   margin-top: 26px;
 }
@@ -168,6 +182,11 @@
   padding: 3px 8px;
   font-family: inherit;
   font-size: 10px;
+}
+
+.create-title-input[aria-invalid='true'],
+.fake-input[aria-invalid='true'] {
+  border-bottom: 1px solid #ffb4b4;
 }
 
 .fake-input-wide {
