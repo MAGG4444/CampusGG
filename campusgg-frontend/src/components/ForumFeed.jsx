@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Clock, Filter } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../assets/LOGO.png'
+import { forumPosts } from '../data/forumPosts.js'
 import ForumPost from './ForumPost.jsx'
 import SearchBar from './SearchBar.jsx'
+
+const POSTS_PER_PAGE = 3
 
 function ForumFeed() {
   const navigate = useNavigate()
@@ -12,6 +15,37 @@ function ForumFeed() {
   const [searchValue, setSearchValue] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [forumFeedback, setForumFeedback] = useState('')
+  const [isLoading] = useState(false)
+  const [error] = useState(null)
+
+  const filteredPosts = useMemo(() => {
+    const normalizedSearch = searchValue.trim().toLowerCase()
+
+    const matchingPosts = forumPosts.filter((post) => {
+      const matchesCategory = selectedCategory === 'All Categories' || post.category === selectedCategory
+      const searchableText = `${post.title} ${post.author} ${post.summary} ${post.category}`.toLowerCase()
+      const matchesSearch = normalizedSearch === '' || searchableText.includes(normalizedSearch)
+
+      return matchesCategory && matchesSearch
+    })
+
+    return [...matchingPosts].sort((firstPost, secondPost) => {
+      if (selectedSort === 'Most Replies') {
+        return secondPost.replies - firstPost.replies
+      }
+
+      if (selectedSort === 'Most Liked') {
+        return secondPost.likes - firstPost.likes
+      }
+
+      return new Date(secondPost.createdAt) - new Date(firstPost.createdAt)
+    })
+  }, [searchValue, selectedCategory, selectedSort])
+
+  const totalPages = Math.max(1, Math.ceil(filteredPosts.length / POSTS_PER_PAGE))
+  const safeCurrentPage = Math.min(currentPage, totalPages)
+  const firstPostIndex = (safeCurrentPage - 1) * POSTS_PER_PAGE
+  const visiblePosts = filteredPosts.slice(firstPostIndex, firstPostIndex + POSTS_PER_PAGE)
 
   function categoryClassName(category) {
     return `filter-chip ${selectedCategory === category ? 'filter-chip-selected' : ''}`
@@ -22,7 +56,7 @@ function ForumFeed() {
   }
 
   function selectPage(page) {
-    setCurrentPage(page)
+    setCurrentPage(Math.min(Math.max(1, page), totalPages))
   }
 
   function goToPreviousPage() {
@@ -30,15 +64,30 @@ function ForumFeed() {
   }
 
   function goToNextPage() {
-    setCurrentPage((page) => Math.min(68, page + 1))
+    setCurrentPage((page) => Math.min(totalPages, page + 1))
   }
 
-  function handleReadMore(title) {
-    setForumFeedback(`Read More selected for ${title}`)
+  function handleSelectCategory(category) {
+    setSelectedCategory(category)
+    setCurrentPage(1)
   }
 
-  function handleReport(title) {
-    setForumFeedback(`Report selected for ${title}`)
+  function handleSelectSort(sortOption) {
+    setSelectedSort(sortOption)
+    setCurrentPage(1)
+  }
+
+  function handleSearchChange(value) {
+    setSearchValue(value)
+    setCurrentPage(1)
+  }
+
+  function handleReadMore(post) {
+    setForumFeedback(`Read More selected for ${post.title} (#${post.id})`)
+  }
+
+  function handleReport(post) {
+    setForumFeedback(`Report selected for ${post.title} (#${post.id})`)
   }
 
   return (
@@ -49,7 +98,7 @@ function ForumFeed() {
           <button
             className={categoryClassName('All Categories')}
             type="button"
-            onClick={() => setSelectedCategory('All Categories')}
+            onClick={() => handleSelectCategory('All Categories')}
           >
             {selectedCategory === 'All Categories' ? '✓ ' : ''}
             All Categories
@@ -57,19 +106,19 @@ function ForumFeed() {
           <button
             className={categoryClassName('Strategy')}
             type="button"
-            onClick={() => setSelectedCategory('Strategy')}
+            onClick={() => handleSelectCategory('Strategy')}
           >
             {selectedCategory === 'Strategy' ? '✓ ' : ''}
             Strategy
           </button>
-          <button className={categoryClassName('LFG')} type="button" onClick={() => setSelectedCategory('LFG')}>
+          <button className={categoryClassName('LFG')} type="button" onClick={() => handleSelectCategory('LFG')}>
             {selectedCategory === 'LFG' ? '✓ ' : ''}
             LFG
           </button>
           <button
             className={categoryClassName('Meta Analysis')}
             type="button"
-            onClick={() => setSelectedCategory('Meta Analysis')}
+            onClick={() => handleSelectCategory('Meta Analysis')}
           >
             {selectedCategory === 'Meta Analysis' ? '✓ ' : ''}
             Meta Analysis
@@ -77,7 +126,7 @@ function ForumFeed() {
           <button
             className={categoryClassName('Tournaments')}
             type="button"
-            onClick={() => setSelectedCategory('Tournaments')}
+            onClick={() => handleSelectCategory('Tournaments')}
           >
             {selectedCategory === 'Tournaments' ? '✓ ' : ''}
             Tournaments
@@ -87,14 +136,14 @@ function ForumFeed() {
         <div className="forum-filter-actions">
           <div className="filter-group filter-group-right" aria-label="Sort options">
             <Clock className="filter-icon" size={13} strokeWidth={2.3} aria-hidden="true" />
-            <button className={sortClassName('Newest')} type="button" onClick={() => setSelectedSort('Newest')}>
+            <button className={sortClassName('Newest')} type="button" onClick={() => handleSelectSort('Newest')}>
               {selectedSort === 'Newest' ? '✓ ' : ''}
               Newest
             </button>
             <button
               className={sortClassName('Most Replies')}
               type="button"
-              onClick={() => setSelectedSort('Most Replies')}
+              onClick={() => handleSelectSort('Most Replies')}
             >
               {selectedSort === 'Most Replies' ? '✓ ' : ''}
               Most Replies
@@ -102,7 +151,7 @@ function ForumFeed() {
             <button
               className={sortClassName('Most Liked')}
               type="button"
-              onClick={() => setSelectedSort('Most Liked')}
+              onClick={() => handleSelectSort('Most Liked')}
             >
               {selectedSort === 'Most Liked' ? '✓ ' : ''}
               Most Liked
@@ -116,44 +165,27 @@ function ForumFeed() {
       </section>
 
       <section className="forum-search-row" aria-label="Forum search">
-        <SearchBar value={searchValue} onChange={setSearchValue} />
+        <SearchBar value={searchValue} onChange={handleSearchChange} />
       </section>
 
-      <section className="forum-feed" aria-label="Forum posts">
-        <ForumPost
-          title="Post Title"
-          author="username"
-          time="2 hours ago"
-          category="Strategy"
-          summary="Summary text for a strategy thread about rotations, team timing, and choosing fights around campus events."
-          likes={3}
-          replies={12}
-          onReadMore={() => handleReadMore('Post Title')}
-          onReport={() => handleReport('Post Title')}
-        />
-        <ForumPost
-          title="Looking for a ranked trio tonight"
-          author="AcePlayer"
-          time="4 hours ago"
-          category="LFG"
-          summary="Need two teammates for evening queues. Chill comms, smart callouts, and a focus on steady improvement."
-          likes={7}
-          replies={9}
-          onReadMore={() => handleReadMore('Looking for a ranked trio tonight')}
-          onReport={() => handleReport('Looking for a ranked trio tonight')}
-        />
-        <ForumPost
-          title="Tournament bracket prep notes"
-          author="BracketBoss"
-          time="1 day ago"
-          category="Tournaments"
-          summary="A quick checklist for scrim scheduling, map veto planning, and warming up before the next weekend bracket."
-          likes={11}
-          replies={18}
-          onReadMore={() => handleReadMore('Tournament bracket prep notes')}
-          onReport={() => handleReport('Tournament bracket prep notes')}
-        />
-      </section>
+      {isLoading ? (
+        <div className="feed-state-message">Loading posts...</div>
+      ) : error ? (
+        <div className="feed-state-message">Unable to load posts.</div>
+      ) : visiblePosts.length === 0 ? (
+        <div className="feed-state-message">No posts found.</div>
+      ) : (
+        <section className="forum-feed" aria-label="Forum posts">
+          {visiblePosts.map((post) => (
+            <ForumPost
+              key={post.id}
+              {...post}
+              onReadMore={() => handleReadMore(post)}
+              onReport={() => handleReport(post)}
+            />
+          ))}
+        </section>
+      )}
 
       <div className="join-feedback" aria-live="polite">
         {forumFeedback}
@@ -164,46 +196,25 @@ function ForumFeed() {
           Connection
         </Link>
         <nav className="pagination" aria-label="Forum pagination">
-          <button className="pagination-item" type="button" onClick={goToPreviousPage} disabled={currentPage === 1}>
+          <button className="pagination-item" type="button" onClick={goToPreviousPage} disabled={safeCurrentPage === 1}>
             &larr; Previous
           </button>
+          {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
+            <button
+              className={`pagination-item ${safeCurrentPage === page ? 'pagination-item-active' : ''}`}
+              key={page}
+              type="button"
+              onClick={() => selectPage(page)}
+            >
+              {page}
+            </button>
+          ))}
           <button
-            className={`pagination-item ${currentPage === 1 ? 'pagination-item-active' : ''}`}
+            className="pagination-item"
             type="button"
-            onClick={() => selectPage(1)}
+            onClick={goToNextPage}
+            disabled={safeCurrentPage === totalPages}
           >
-            1
-          </button>
-          <button
-            className={`pagination-item ${currentPage === 2 ? 'pagination-item-active' : ''}`}
-            type="button"
-            onClick={() => selectPage(2)}
-          >
-            2
-          </button>
-          <button
-            className={`pagination-item ${currentPage === 3 ? 'pagination-item-active' : ''}`}
-            type="button"
-            onClick={() => selectPage(3)}
-          >
-            3
-          </button>
-          <span className="pagination-ellipsis">...</span>
-          <button
-            className={`pagination-item ${currentPage === 67 ? 'pagination-item-active' : ''}`}
-            type="button"
-            onClick={() => selectPage(67)}
-          >
-            67
-          </button>
-          <button
-            className={`pagination-item ${currentPage === 68 ? 'pagination-item-active' : ''}`}
-            type="button"
-            onClick={() => selectPage(68)}
-          >
-            68
-          </button>
-          <button className="pagination-item" type="button" onClick={goToNextPage} disabled={currentPage === 68}>
             Next &rarr;
           </button>
         </nav>
