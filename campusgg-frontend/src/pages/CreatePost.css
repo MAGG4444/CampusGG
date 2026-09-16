@@ -1,0 +1,46 @@
+.create-post-page {
+  min-height: 640px;
+}
+
+.create-post-back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.create-post-title-fields {
+  width: min(100%, 760px);
+}
+
+.create-post-content-input {
+  display: block;
+  width: min(100%, 940px);
+  min-height: 220px;
+  border: 1px solid #17212d;
+  border-radius: 10px;
+  outline: 0;
+  resize: vertical;
+  background: #c9a84c;
+  color: #111827;
+  box-shadow: 0 7px 14px rgba(0, 0, 0, 0.22);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 16px 18px;
+}
+
+.create-post-content-input::placeholder {
+  color: #5b6470;
+  opacity: 1;
+}
+
+.create-post-actions {
+  padding-top: 54px;
+}
+
+@media (max-width: 900px) {
+  .create-post-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
