@@ -31,7 +31,7 @@ function ForumFeed() {
 
     return [...matchingPosts].sort((firstPost, secondPost) => {
       if (selectedSort === 'Most Replies') {
-        return secondPost.replies - firstPost.replies
+        return secondPost.replyCount - firstPost.replyCount
       }
 
       if (selectedSort === 'Most Liked') {
@@ -83,7 +83,7 @@ function ForumFeed() {
   }
 
   function handleReadMore(post) {
-    setForumFeedback(`Read More selected for ${post.title} (#${post.id})`)
+    navigate(`/forum/${post.id}`)
   }
 
   function handleReport(post) {
@@ -180,6 +180,7 @@ function ForumFeed() {
             <ForumPost
               key={post.id}
               {...post}
+              replies={post.replyCount}
               onReadMore={() => handleReadMore(post)}
               onReport={() => handleReport(post)}
             />
