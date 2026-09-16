@@ -15,6 +15,8 @@ export const forumPosts = [
     replies: [
       {
         id: '1-1',
+        postId: 1,
+        parentReplyId: null,
         author: 'MapMinder',
         time: '1 hour ago',
         content: 'The biggest improvement for us was assigning one caller to watch the timer instead of having everyone half-track it.',
@@ -23,10 +25,32 @@ export const forumPosts = [
       },
       {
         id: '1-2',
+        postId: 1,
+        parentReplyId: null,
         author: 'UtilityUser',
         time: '45 minutes ago',
         content: 'Saving one piece of utility for the exit path helped us stop losing two players after every objective.',
         likes: 1,
+        dislikes: 0,
+      },
+      {
+        id: '1-3',
+        postId: 1,
+        parentReplyId: '1-1',
+        author: 'TimerCheck',
+        time: '30 minutes ago',
+        content: 'We did the same thing and had the caller give a 20-second rotate warning before the objective spawned.',
+        likes: 1,
+        dislikes: 0,
+      },
+      {
+        id: '1-4',
+        postId: 1,
+        parentReplyId: '1-3',
+        author: 'MapMinder',
+        time: '18 minutes ago',
+        content: 'That warning timing sounds useful. I am going to try it with our group tonight.',
+        likes: 0,
         dislikes: 0,
       },
     ],
@@ -48,6 +72,8 @@ export const forumPosts = [
     replies: [
       {
         id: '2-1',
+        postId: 2,
+        parentReplyId: null,
         author: 'QueueReady',
         time: '3 hours ago',
         content: 'I can join after lab. I usually play support but can flex if someone else wants it.',
@@ -73,6 +99,8 @@ export const forumPosts = [
     replies: [
       {
         id: '3-1',
+        postId: 3,
+        parentReplyId: null,
         author: 'CaptainCalm',
         time: '22 hours ago',
         content: 'The warmup note is huge. We played a full set before round one last time and came in flat.',
@@ -81,6 +109,8 @@ export const forumPosts = [
       },
       {
         id: '3-2',
+        postId: 3,
+        parentReplyId: null,
         author: 'BracketHelp',
         time: '20 hours ago',
         content: 'Teams should also screenshot check-in confirmation. It saves a lot of confusion if there is a dispute.',
@@ -106,6 +136,8 @@ export const forumPosts = [
     replies: [
       {
         id: '4-1',
+        postId: 4,
+        parentReplyId: null,
         author: 'EcoCoach',
         time: '19 hours ago',
         content: 'Calling the goal before the round starts keeps people from overcommitting after one lucky pick.',
@@ -131,6 +163,8 @@ export const forumPosts = [
     replies: [
       {
         id: '5-1',
+        postId: 5,
+        parentReplyId: null,
         author: 'PatchLab',
         time: '1 day ago',
         content: 'Agree on the flexible player. Hard anchors feel weaker unless they have a very specific setup.',
@@ -139,6 +173,8 @@ export const forumPosts = [
       },
       {
         id: '5-2',
+        postId: 5,
+        parentReplyId: null,
         author: 'MetaMath',
         time: '1 day ago',
         content: 'We tested this in customs and the timing windows are definitely tighter than before.',
@@ -164,6 +200,8 @@ export const forumPosts = [
     replies: [
       {
         id: '6-1',
+        postId: 6,
+        parentReplyId: null,
         author: 'EarlyBird',
         time: '2 days ago',
         content: 'I am around most mornings. Send an invite if you queue after 8.',
@@ -189,6 +227,8 @@ export const forumPosts = [
     replies: [
       {
         id: '7-1',
+        postId: 7,
+        parentReplyId: null,
         author: 'AdminDesk',
         time: '3 days ago',
         content: 'The posted rules say subs need to be listed before the first match, but captains should confirm at check-in.',
@@ -197,6 +237,8 @@ export const forumPosts = [
       },
       {
         id: '7-2',
+        postId: 7,
+        parentReplyId: null,
         author: 'RulesReader',
         time: '3 days ago',
         content: 'There was a five-minute grace period last semester, but I would not assume it carries over.',
