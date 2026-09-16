@@ -2,7 +2,6 @@ import { useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   Bookmark,
-  CornerDownRight,
   Flag,
   MessageCircle,
   Send,
@@ -11,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router-dom'
 import logo from '../assets/LOGO.png'
+import ReplyItem from '../components/ReplyItem.jsx'
 import { forumPosts } from '../data/forumPosts.js'
 import './Lobby.css'
 import './PostDetail.css'
@@ -47,7 +47,7 @@ function VoteControls({ baseLikes, baseDislikes, onComment, label }) {
         <ThumbsDown size={16} strokeWidth={2.1} aria-hidden="true" />
         <span>{visibleDislikes}</span>
       </button>
-      <button className="post-icon-button" type="button" onClick={onComment}>
+      <button className="post-icon-button" type="button" onClick={onComment} aria-label={`Reply to ${label}`}>
         <MessageCircle size={16} strokeWidth={2.1} aria-hidden="true" />
       </button>
     </div>
@@ -63,6 +63,8 @@ function PostDetail() {
   const [feedback, setFeedback] = useState('')
   const [replyText, setReplyText] = useState('')
   const [localReplies, setLocalReplies] = useState([])
+  const [replyTarget, setReplyTarget] = useState(null)
+  const [autoExpandReplyId, setAutoExpandReplyId] = useState(null)
   const [recommendationPage, setRecommendationPage] = useState(1)
 
   const recommendations = useMemo(() => {
@@ -91,6 +93,7 @@ function PostDetail() {
   }
 
   const replies = [...post.replies, ...localReplies]
+  const topLevelReplies = replies.filter((reply) => reply.parentReplyId === null)
   const totalRecommendationPages = Math.max(1, Math.ceil(recommendations.length / RECOMMENDATIONS_PER_PAGE))
   const safeRecommendationPage = Math.min(recommendationPage, totalRecommendationPages)
   const firstRecommendationIndex = (safeRecommendationPage - 1) * RECOMMENDATIONS_PER_PAGE
@@ -101,6 +104,18 @@ function PostDetail() {
 
   function focusReplyBox() {
     replyInputRef.current?.focus()
+  }
+
+  function handlePostComment() {
+    setReplyTarget(null)
+    setFeedback('')
+    focusReplyBox()
+  }
+
+  function handleReplyToReply(reply) {
+    setReplyTarget(reply)
+    setFeedback('')
+    focusReplyBox()
   }
 
   function handleSave() {
@@ -128,6 +143,8 @@ function PostDetail() {
       ...currentReplies,
       {
         id: `local-${Date.now()}`,
+        postId: post.id,
+        parentReplyId: replyTarget?.id ?? null,
         author: 'You',
         time: 'Just now',
         content: nextReply,
@@ -135,6 +152,7 @@ function PostDetail() {
         dislikes: 0,
       },
     ])
+    setAutoExpandReplyId(replyTarget ? { replyId: replyTarget.id, requestId: Date.now() } : null)
     setReplyText('')
     setFeedback('Reply posted.')
   }
@@ -184,31 +202,30 @@ function PostDetail() {
         <article className="post-detail-box">
           <p>{post.content}</p>
         </article>
-        <VoteControls baseLikes={post.likes} baseDislikes={post.dislikes} label="Post" onComment={focusReplyBox} />
+        <VoteControls baseLikes={post.likes} baseDislikes={post.dislikes} label="Post" onComment={handlePostComment} />
       </section>
 
       <section className="post-replies" aria-label="Replies">
-        {replies.map((reply) => (
-          <article className="reply-row" key={reply.id}>
-            <CornerDownRight className="reply-arrow" size={24} strokeWidth={2.1} aria-hidden="true" />
-            <div className="reply-box">
-              <div className="reply-meta">
-                <span>{reply.author}</span>
-                <span>{reply.time}</span>
-              </div>
-              <p>{reply.content}</p>
-            </div>
-            <VoteControls
-              baseLikes={reply.likes}
-              baseDislikes={reply.dislikes}
-              label={`${reply.author} reply`}
-              onComment={focusReplyBox}
-            />
-          </article>
+        {topLevelReplies.map((reply) => (
+          <ReplyItem
+            key={reply.id}
+            reply={reply}
+            replies={replies}
+            autoExpandReplyId={autoExpandReplyId}
+            onReply={handleReplyToReply}
+          />
         ))}
       </section>
 
       <form className="reply-form" onSubmit={addReply}>
+        <div className="reply-target-row">
+          <span>{replyTarget ? `Replying to ${replyTarget.author}` : 'Reply to post'}</span>
+          {replyTarget ? (
+            <button className="reply-target-cancel" type="button" onClick={() => setReplyTarget(null)}>
+              Cancel
+            </button>
+          ) : null}
+        </div>
         <label className="sr-only" htmlFor="post-reply">
           Add a reply
         </label>
