@@ -34,6 +34,10 @@
   opacity: 1;
 }
 
+.create-post-content-input[aria-invalid='true'] {
+  border-color: #ffb4b4;
+}
+
 .create-post-actions {
   padding-top: 54px;
 }
