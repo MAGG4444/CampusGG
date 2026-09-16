@@ -14,13 +14,18 @@ const initialFormData = {
 }
 
 const tagOptions = ['All Categories', 'Strategy', 'LFG', 'Meta Analysis', 'Tournaments']
+const validPostTags = tagOptions.filter((tag) => tag !== 'All Categories')
 const visibilityOptions = ['Public', 'Private', 'Visible to Lobby Members']
+const maxTitleLength = 100
+const maxSubtitleLength = 150
+const maxContentLength = 5000
 
 function CreatePost() {
   const navigate = useNavigate()
   const [formData, setFormData] = useState(initialFormData)
   const [, setSavedDraft] = useState(null)
   const [, setPublishedPost] = useState(null)
+  const [errors, setErrors] = useState({})
   const [statusMessage, setStatusMessage] = useState('')
 
   function updateField(field, value) {
@@ -28,24 +33,67 @@ function CreatePost() {
       ...currentData,
       [field]: value,
     }))
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors }
+
+      if ((field === 'title' || field === 'content') && value.trim()) {
+        delete nextErrors[field]
+      }
+
+      if (field === 'tag' && validPostTags.includes(value)) {
+        delete nextErrors.tag
+      }
+
+      return nextErrors
+    })
     setStatusMessage('')
   }
 
   function handleSave() {
     setSavedDraft(formData)
+    setErrors({})
     setStatusMessage('Draft saved.')
+  }
+
+  function validateForm() {
+    const nextErrors = {}
+
+    if (!formData.title.trim()) {
+      nextErrors.title = 'Post title is required.'
+    }
+
+    if (!validPostTags.includes(formData.tag)) {
+      nextErrors.tag = 'Please select a tag.'
+    }
+
+    if (!formData.content.trim()) {
+      nextErrors.content = 'Post content is required.'
+    }
+
+    return nextErrors
   }
 
   function handlePublish(event) {
     event.preventDefault()
+
+    const validationErrors = validateForm()
+
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
+      setStatusMessage('')
+      return
+    }
+
+    setErrors({})
     setPublishedPost(formData)
-    setStatusMessage('Post ready to publish.')
+    setStatusMessage('Post published successfully.')
   }
 
   function handleDelete() {
     setFormData(initialFormData)
     setSavedDraft(null)
     setPublishedPost(null)
+    setErrors({})
     setStatusMessage('Post cleared.')
   }
 
@@ -66,8 +114,16 @@ function CreatePost() {
             type="text"
             placeholder="Type Title"
             value={formData.title}
+            maxLength={maxTitleLength}
+            aria-describedby={errors.title ? 'post-title-error' : undefined}
+            aria-invalid={errors.title ? 'true' : 'false'}
             onChange={(event) => updateField('title', event.target.value)}
           />
+          {errors.title ? (
+            <div className="field-error" id="post-title-error">
+              {errors.title}
+            </div>
+          ) : null}
 
           <label className="sr-only" htmlFor="post-subtitle">
             Subtitle
@@ -78,13 +134,20 @@ function CreatePost() {
             type="text"
             placeholder="Subtitle"
             value={formData.subtitle}
+            maxLength={maxSubtitleLength}
             onChange={(event) => updateField('subtitle', event.target.value)}
           />
         </div>
 
         <div className="create-form-group">
           <span className="create-label">Choose Tag:</span>
-          <div className="tag-row" aria-label="Choose Tag">
+          <div
+            className="tag-row"
+            role="group"
+            aria-describedby={errors.tag ? 'post-tag-error' : undefined}
+            aria-invalid={errors.tag ? 'true' : 'false'}
+            aria-label="Choose Tag"
+          >
             {tagOptions.map((tag) => (
               <button
                 className={`mini-chip ${formData.tag === tag ? 'mini-chip-dark' : ''}`}
@@ -97,6 +160,11 @@ function CreatePost() {
               </button>
             ))}
           </div>
+          {errors.tag ? (
+            <div className="field-error" id="post-tag-error">
+              {errors.tag}
+            </div>
+          ) : null}
         </div>
 
         <div className="create-form-group">
@@ -108,8 +176,16 @@ function CreatePost() {
             id="post-content"
             placeholder="Text"
             value={formData.content}
+            maxLength={maxContentLength}
+            aria-describedby={errors.content ? 'post-content-error' : undefined}
+            aria-invalid={errors.content ? 'true' : 'false'}
             onChange={(event) => updateField('content', event.target.value)}
           />
+          {errors.content ? (
+            <div className="field-error" id="post-content-error">
+              {errors.content}
+            </div>
+          ) : null}
         </div>
 
         <div className="create-form-group inline-group">
