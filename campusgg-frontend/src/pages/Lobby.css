@@ -164,6 +164,7 @@
 }
 
 .lobby-card {
+  position: relative;
   min-height: 132px;
   display: flex;
   flex-direction: column;
@@ -175,10 +176,23 @@
   box-shadow: 0 7px 14px rgba(0, 0, 0, 0.22);
 }
 
+.joined-indicator {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #17212d;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .lobby-card-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-right: 72px;
 }
 
 .lobby-line {

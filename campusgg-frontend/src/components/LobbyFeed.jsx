@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import logo from '../assets/LOGO.png'
+import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
 import { lobbies } from '../data/lobbies.js'
 import GameFilter from './GameFilter.jsx'
 import HomepageToggle from './HomepageToggle.jsx'
@@ -13,12 +14,12 @@ const LOBBIES_PER_PAGE = 6
 
 function LobbyFeed() {
   const navigate = useNavigate()
+  const { isLobbyJoined, joinLobby } = useJoinedLobbies()
   const [selectedGame, setSelectedGame] = useState('All Games')
   const [selectedSkill, setSelectedSkill] = useState('Most Popular')
   const [searchValue, setSearchValue] = useState('')
   const [isHomepage, setIsHomepage] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
-  const [joinFeedback, setJoinFeedback] = useState('')
   const [isLoading] = useState(false)
   const [error] = useState(null)
 
@@ -46,7 +47,13 @@ function LobbyFeed() {
   const visibleLobbies = filteredLobbies.slice(firstLobbyIndex, firstLobbyIndex + LOBBIES_PER_PAGE)
 
   function handleJoin(lobby) {
-    setJoinFeedback(`Selected ${lobby.lobbyName}`)
+    if (isLobbyJoined(lobby.id)) {
+      navigate(`/lobby/${lobby.id}`)
+      return
+    }
+
+    joinLobby(lobby.id)
+    navigate(`/lobby/${lobby.id}`)
   }
 
   function handleSelectGame(game) {
@@ -92,6 +99,7 @@ function LobbyFeed() {
           {visibleLobbies.map((lobby) => (
             <LobbyCard
               details={lobby.details}
+              isJoined={isLobbyJoined(lobby.id)}
               key={lobby.id}
               lobbyName={lobby.lobbyName}
               onJoin={() => handleJoin(lobby)}
@@ -100,10 +108,6 @@ function LobbyFeed() {
           ))}
         </section>
       )}
-
-      <div className="join-feedback" aria-live="polite">
-        {joinFeedback}
-      </div>
 
       <section className="lobby-bottom-controls" aria-label="Lobby bottom controls">
         <Link className="connection-panel" to="/chat">
