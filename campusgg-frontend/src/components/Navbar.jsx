@@ -1,13 +1,18 @@
 import { Link, NavLink } from 'react-router-dom'
+import { useAuth } from '../context/useAuth.js'
 import './Navbar.css'
 
 const navItems = [
   { to: '/lobby', label: 'Lobby' },
   { to: '/forum', label: 'Forum' },
-  { to: '/profile', label: 'Profile', variant: 'login' },
 ]
 
 function Navbar() {
+  const { isAuthenticated } = useAuth()
+  const authItem = isAuthenticated
+    ? { to: '/profile', label: 'Profile', variant: 'login' }
+    : { to: '/signin', label: 'Sign In', variant: 'login' }
+
   return (
     <header className="topbar">
       <div className="topbar-inner">
@@ -15,7 +20,7 @@ function Navbar() {
           CampusGG
         </Link>
         <nav className="nav" aria-label="Primary navigation">
-          {navItems.map((item) => (
+          {[...navItems, authItem].map((item) => (
             <NavLink
               key={item.to}
               className={({ isActive }) =>
