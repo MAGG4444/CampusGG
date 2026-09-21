@@ -4,5 +4,6 @@
 
 | RCA ID | Defect ID | Requirement | Test Case | Status | Link to Issue |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| RCA-001 | DEF-001 | FR-014 | LOB-001 | Completed | [URL to GitHub Issue] |
+| RCA-001 | DEF-001 | FR-002 | UI-001 | Completed | https://github.com/MAGG4444/CampusGG/actions/runs/34629516447 |
 | [ID] | [ID] | [Req] | [Test] | [Status] | [Link] |
+
