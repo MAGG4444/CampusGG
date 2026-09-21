@@ -27,6 +27,7 @@ import type { PlayerMatchmakingInput, SupportedGame } from '../schemas/player-ma
 import type { MatchGroup } from '../schemas/match-group.schema.js';
 import type { MatchStrategy } from './match-strategy.interface.js';
 import { getGroupSize, getTier } from './game-tiers.config.js';
+import { resolveGroupThreshold } from './time-decay-model.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Configuration
@@ -181,19 +182,25 @@ export class MatchmakingEngine {
       // Keep forming groups while we have enough players
       while (players.length >= groupSize) {
         // Take the first `groupSize` players (FIFO — respects queue order)
-        const candidates = players.slice(0, groupSize);
+        const candidateGroup = players.slice(0, groupSize);
+
+        // Extract wait times
+        const waitTimes = candidateGroup.map((p) => p.queueTime);
+
+        // The longest-waiting player dictates the group's passing score to ensure queue liquidity
+        const groupDynamicThreshold = resolveGroupThreshold(waitTimes);
 
         // Delegate scoring to the injected strategy
-        const score = this.strategy.scoreGroup(candidates);
+        const actualMatchScore = this.strategy.scoreGroup(candidateGroup);
 
-        if (score >= this.scoreThreshold) {
+        if (actualMatchScore >= groupDynamicThreshold) {
           // ── Match accepted ────────────────────────────────────────────
           const matchGroup: MatchGroup = {
             groupId   : `grp_${crypto.randomUUID()}`,
             game,
             tier,
-            userIds   : candidates.map((p) => p.userId),
-            score,
+            userIds   : candidateGroup.map((p) => p.userId),
+            score     : actualMatchScore,
             matchedAt : new Date().toISOString(),
           };
 
@@ -207,12 +214,10 @@ export class MatchmakingEngine {
           formedGroups.push(matchGroup);
         } else {
           // ── Match rejected ────────────────────────────────────────────
-          // With the DummyStrategy (0.85 > 0.70), this branch is never
-          // hit — but the plumbing is in place for the real scorer.
-          // Break to avoid an infinite loop on the same failing group.
           console.log(
-            `[Engine] Group for ${game} scored ${score.toFixed(2)} — ` +
-            `below threshold ${this.scoreThreshold.toFixed(2)}. Skipping.`,
+            `[Engine] Group for ${game} scored ${actualMatchScore.toFixed(4)} — ` +
+            `below dynamic threshold ${groupDynamicThreshold.toFixed(4)} ` +
+            `(max wait: ${Math.max(...waitTimes)}s). Skipping.`,
           );
           break;
         }
