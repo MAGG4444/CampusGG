@@ -64,7 +64,7 @@ export function getScoringStrategy(game: SupportedGame): MatchStrategy {
       // Exhaustiveness guard — TypeScript will error if a new tier is added
       // to GameTier but not handled here.
       const _exhaustive: never = tier;
-      throw new Error(`[CampusGG] Unhandled tier: "${_exhaustive}". Update strategy-registry.ts.`);
+      throw new Error(`[CampusGG] Unhandled tier: "${String(_exhaustive)}". Update strategy-registry.ts.`);
     }
   }
 }
