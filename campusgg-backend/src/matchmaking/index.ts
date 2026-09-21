@@ -52,5 +52,15 @@ export {
 export { CasualScoringStrategy, CompetitiveScoringStrategy } from './engine/scoring-strategies.js';
 export { getScoringStrategy } from './engine/strategy-registry.js';
 
+// ── 24.1: Time Decay — dynamic threshold model ────────────────────────────
+export {
+  INITIAL_THRESHOLD,
+  MINIMUM_THRESHOLD_FLOOR,
+  MAX_WAIT_REFERENCE,
+  DECAY_RATE_K,
+} from './engine/time-decay.config.js';
+
+export { getAcceptableThreshold, resolveGroupThreshold } from './engine/time-decay-model.js';
+
 // ── Mock generator — dev/test utility, NOT imported in production bundles ───
 export { generateMockPlayers } from './mock/mock-player.generator.js';
