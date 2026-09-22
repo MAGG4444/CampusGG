@@ -16,7 +16,7 @@ function Navbar() {
   return (
     <header className="topbar">
       <div className="topbar-inner">
-        <Link className="brand" to="/">
+        <Link className="brand" to="/" aria-label="CampusGG home">
           CampusGG
         </Link>
         <nav className="nav" aria-label="Primary navigation">
