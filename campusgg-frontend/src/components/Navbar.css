@@ -27,8 +27,14 @@
 
 .brand {
   color: #111827;
+  cursor: pointer;
   font-size: 12px;
   text-decoration: none;
+}
+
+.brand:focus-visible {
+  outline: 2px solid #111827;
+  outline-offset: 4px;
 }
 
 .nav {
