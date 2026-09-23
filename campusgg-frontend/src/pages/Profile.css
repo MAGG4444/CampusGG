@@ -1,0 +1,188 @@
+.profile-page {
+  min-height: calc(100vh - 68px);
+  padding: 48px 24px;
+  color: #f5f7fa;
+}
+
+.profile-card {
+  width: min(100%, 900px);
+  margin: 0 auto;
+  padding: 36px;
+  border: 1px solid #c9a84c;
+  border-radius: 18px;
+  background: #101d30;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #344154;
+}
+
+.profile-avatar {
+  width: 76px;
+  height: 76px;
+  flex: 0 0 76px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #c9a84c;
+  border-radius: 50%;
+  background: #17263b;
+  color: #f0ca69;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.profile-eyebrow {
+  margin: 0 0 6px;
+  color: #c9a84c;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.profile-header h1 {
+  margin: 0;
+  color: #f5f7fa;
+}
+
+.profile-username {
+  margin: 6px 0 0;
+  color: #aeb8c6;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  padding: 28px 0;
+}
+
+.profile-section {
+  padding: 24px;
+  border: 1px solid #344154;
+  border-radius: 14px;
+  background: #17263b;
+}
+
+.profile-section h2 {
+  margin: 0 0 20px;
+  color: #f0ca69;
+  font-size: 1.1rem;
+}
+
+.profile-details {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+
+.profile-details div {
+  display: grid;
+  gap: 5px;
+}
+
+.profile-details dt,
+.profile-field h3 {
+  color: #aeb8c6;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-details dd,
+.profile-field p,
+.profile-about p {
+  margin: 0;
+  color: #f5f7fa;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.profile-field + .profile-field {
+  margin-top: 20px;
+}
+
+.profile-field h3 {
+  margin: 0 0 9px;
+}
+
+.profile-game-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-game-list li {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #c9a84c;
+  color: #101d30;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.profile-about {
+  grid-column: 1 / -1;
+}
+
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-signout {
+  padding: 11px 22px;
+  border: 1px solid #c9a84c;
+  border-radius: 10px;
+  background: transparent;
+  color: #f0ca69;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.profile-signout:hover {
+  background: #c9a84c;
+  color: #101d30;
+}
+
+.profile-signout:focus-visible {
+  outline: 3px solid #f0ca69;
+  outline-offset: 3px;
+}
+
+@media (max-width: 650px) {
+  .profile-page {
+    padding: 28px 16px;
+  }
+
+  .profile-card {
+    padding: 24px;
+  }
+
+  .profile-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-about {
+    grid-column: auto;
+  }
+
+  .profile-signout {
+    width: 100%;
+  }
+}
