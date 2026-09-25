@@ -1,19 +1,42 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LobbiesController } from './lobbies/lobbies.controller';
-import { RedisModule } from './redis/redis.module';
-import { EventsGateway } from './events/events.gateway';
+
+import { UsersModule } from './users/users.module';
+import { DatabaseController } from './database/database.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    RedisModule,
+
+    TypeOrmModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        url: configService.getOrThrow<string>('DATABASE_URL'),
+
+        autoLoadEntities: true,
+
+        synchronize:
+          configService.get<string>('NODE_ENV') !== 'production',
+      }),
+    }),
+
+    UsersModule,
   ],
-  controllers: [AppController, LobbiesController],
-  providers: [AppService, EventsGateway],
+
+  controllers: [
+    AppController,
+    LobbiesController,
+    DatabaseController,
+  ],
+
+  providers: [AppService],
 })
 export class AppModule {}

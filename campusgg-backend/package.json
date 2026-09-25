@@ -25,12 +25,15 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/platform-socket.io": "^11.2.6",
+    "@nestjs/typeorm": "^12.0.1",
     "@nestjs/websockets": "^11.2.6",
+    "pg": "^8.23.0",
     "redis": "^6.2.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "typeorm": "^1.1.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
