@@ -49,12 +49,12 @@ const PLAYER_COUNT = 100;
 
 /** CS2 Premier rating distribution parameters. */
 const RATING_MEAN = 17_500;
-const RATING_STD  = 3_000;
-const RATING_MIN  = 10_000;
-const RATING_MAX  = 25_000;
+const RATING_STD = 3_000;
+const RATING_MIN = 10_000;
+const RATING_MAX = 25_000;
 
 /** Probability that a player has a mic (platform target: 80%). */
-const MIC_ENABLED_PROBABILITY = 0.80;
+const MIC_ENABLED_PROBABILITY = 0.8;
 
 /**
  * Queue time is modelled as an exponential distribution.
@@ -62,7 +62,7 @@ const MIC_ENABLED_PROBABILITY = 0.80;
  * Hard-capped at 600 s to prevent unrealistic outliers.
  */
 const QUEUE_TIME_MEAN_SECONDS = 90;
-const QUEUE_TIME_MAX_SECONDS  = 600;
+const QUEUE_TIME_MAX_SECONDS = 600;
 
 /** Path where the JSON output will be written (relative to project root). */
 const OUTPUT_PATH = path.resolve(
@@ -89,16 +89,16 @@ interface WeightedOption<T> {
  * Weights are proportional to estimated student gaming population.
  */
 const UNIVERSITY_POOL: ReadonlyArray<WeightedOption<UniversityDomain>> = [
-  { value: 'purdue.edu',       weight: 30 },
-  { value: 'illinois.edu',     weight: 12 },
-  { value: 'osu.edu',          weight: 11 },
-  { value: 'umich.edu',        weight: 10 },
-  { value: 'msu.edu',          weight: 9  },
-  { value: 'indiana.edu',      weight: 8  },
-  { value: 'wisc.edu',         weight: 7  },
-  { value: 'psu.edu',          weight: 6  },
-  { value: 'umn.edu',          weight: 5  },
-  { value: 'northwestern.edu', weight: 2  },
+  { value: 'purdue.edu', weight: 30 },
+  { value: 'illinois.edu', weight: 12 },
+  { value: 'osu.edu', weight: 11 },
+  { value: 'umich.edu', weight: 10 },
+  { value: 'msu.edu', weight: 9 },
+  { value: 'indiana.edu', weight: 8 },
+  { value: 'wisc.edu', weight: 7 },
+  { value: 'psu.edu', weight: 6 },
+  { value: 'umn.edu', weight: 5 },
+  { value: 'northwestern.edu', weight: 2 },
 ];
 
 /**
@@ -106,24 +106,24 @@ const UNIVERSITY_POOL: ReadonlyArray<WeightedOption<UniversityDomain>> = [
  * Entry and Support are the most common; IGL is scarce.
  */
 const ROLE_POOL: ReadonlyArray<WeightedOption<CS2Role>> = [
-  { value: 'Entry',   weight: 30 },
+  { value: 'Entry', weight: 30 },
   { value: 'Support', weight: 25 },
-  { value: 'AWPer',   weight: 20 },
-  { value: 'Lurker',  weight: 15 },
-  { value: 'IGL',     weight: 10 },
+  { value: 'AWPer', weight: 20 },
+  { value: 'Lurker', weight: 15 },
+  { value: 'IGL', weight: 10 },
 ];
 
 /**
  * Schedule pool — evening and Friday Night slots dominate the collegiate crowd.
  */
 const SCHEDULE_POOL: ReadonlyArray<WeightedOption<ActiveSchedule>> = [
-  { value: 'Weekday Evening',   weight: 30 },
-  { value: 'Friday Night',      weight: 25 },
+  { value: 'Weekday Evening', weight: 30 },
+  { value: 'Friday Night', weight: 25 },
   { value: 'Weekend Afternoon', weight: 18 },
-  { value: 'Late Night',        weight: 12 },
-  { value: 'Weekday Afternoon', weight: 8  },
-  { value: 'Weekend Morning',   weight: 5  },
-  { value: 'Weekday Morning',   weight: 2  },
+  { value: 'Late Night', weight: 12 },
+  { value: 'Weekday Afternoon', weight: 8 },
+  { value: 'Weekend Morning', weight: 5 },
+  { value: 'Weekday Morning', weight: 2 },
 ];
 
 /** Academic majors representative of a collegiate gaming platform. */
@@ -169,7 +169,12 @@ function sampleStandardNormal(): number {
  * Samples from a normal distribution with the given mean and standard deviation,
  * then clamps the result to [min, max].
  */
-function sampleNormal(mean: number, std: number, min: number, max: number): number {
+function sampleNormal(
+  mean: number,
+  std: number,
+  min: number,
+  max: number,
+): number {
   const raw = mean + std * sampleStandardNormal();
   return Math.max(min, Math.min(max, raw));
 }
@@ -251,9 +256,9 @@ function generateUserId(): string {
  */
 function generateProfile(): PlayerProfile {
   return {
-    universityDomain : sampleWeighted(UNIVERSITY_POOL),
-    major            : sampleUniform(MAJOR_POOL),
-    activeSchedule   : sampleWeighted(SCHEDULE_POOL),
+    universityDomain: sampleWeighted(UNIVERSITY_POOL),
+    major: sampleUniform(MAJOR_POOL),
+    activeSchedule: sampleWeighted(SCHEDULE_POOL),
   };
 }
 
@@ -264,8 +269,10 @@ function generateProfile(): PlayerProfile {
  */
 function generateCS2Stats(): CS2Stats {
   return {
-    game   : 'CS2',
-    rating : Math.round(sampleNormal(RATING_MEAN, RATING_STD, RATING_MIN, RATING_MAX)),
+    game: 'CS2',
+    rating: Math.round(
+      sampleNormal(RATING_MEAN, RATING_STD, RATING_MIN, RATING_MAX),
+    ),
   };
 }
 
@@ -282,9 +289,9 @@ function generatePreferences(): PlayerPreferences {
   } while (secondary === primary);
 
   return {
-    primaryRole   : primary,
-    secondaryRole : secondary,
-    micEnabled    : bernoulli(MIC_ENABLED_PROBABILITY),
+    primaryRole: primary,
+    secondaryRole: secondary,
+    micEnabled: bernoulli(MIC_ENABLED_PROBABILITY),
   };
 }
 
@@ -298,13 +305,16 @@ function generatePreferences(): PlayerPreferences {
  */
 function generateMockPlayer(): PlayerMatchmakingInput {
   return {
-    userId      : generateUserId(),
-    game        : 'CS2',
-    profile     : generateProfile(),
-    stats       : generateCS2Stats(),
-    preferences : generatePreferences(),
-    intensity   : sampleIntensity(),
-    queueTime   : sampleExponential(QUEUE_TIME_MEAN_SECONDS, QUEUE_TIME_MAX_SECONDS),
+    userId: generateUserId(),
+    game: 'CS2',
+    profile: generateProfile(),
+    stats: generateCS2Stats(),
+    preferences: generatePreferences(),
+    intensity: sampleIntensity(),
+    queueTime: sampleExponential(
+      QUEUE_TIME_MEAN_SECONDS,
+      QUEUE_TIME_MAX_SECONDS,
+    ),
   };
 }
 
@@ -322,7 +332,9 @@ function generateMockPlayer(): PlayerMatchmakingInput {
  * import { generateMockPlayers } from './mock/mock-player.generator';
  * const pool = generateMockPlayers(50); // generate 50 players
  */
-export function generateMockPlayers(count: number = PLAYER_COUNT): ReadonlyArray<PlayerMatchmakingInput> {
+export function generateMockPlayers(
+  count: number = PLAYER_COUNT,
+): ReadonlyArray<PlayerMatchmakingInput> {
   return Array.from({ length: count }, generateMockPlayer);
 }
 
@@ -347,22 +359,31 @@ function writeMockDataToFile(): void {
   fs.writeFileSync(OUTPUT_PATH, json, 'utf-8');
 
   // ── Summary statistics (useful for visual sanity check) ───────────────────
-  const ratings    = players.map((p) => (p.stats as CS2Stats).rating);
-  const avgRating  = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-  const micCount   = players.filter((p) => p.preferences.micEnabled).length;
-  const purdueCount = players.filter((p) => p.profile.universityDomain === 'purdue.edu').length;
-  const avgIntensity = players.reduce((a, b) => a + b.intensity, 0) / players.length;
+  const ratings = players.map((p) => p.stats.rating);
+  const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+  const micCount = players.filter((p) => p.preferences.micEnabled).length;
+  const purdueCount = players.filter(
+    (p) => p.profile.universityDomain === 'purdue.edu',
+  ).length;
+  const avgIntensity =
+    players.reduce((a, b) => a + b.intensity, 0) / players.length;
 
   console.log('');
   console.log('╔══════════════════════════════════════════════════╗');
   console.log('║  CampusGG — Mock Player Pool Generated           ║');
   console.log('╠══════════════════════════════════════════════════╣');
   console.log(`║  Players generated : ${String(players.length).padEnd(27)}║`);
-  console.log(`║  Avg CS2 Rating    : ${String(Math.round(avgRating)).padEnd(27)}║`);
+  console.log(
+    `║  Avg CS2 Rating    : ${String(Math.round(avgRating)).padEnd(27)}║`,
+  );
   console.log(`║  Mic Enabled       : ${String(micCount).padEnd(27)}║`);
   console.log(`║  Purdue players    : ${String(purdueCount).padEnd(27)}║`);
-  console.log(`║  Avg Intensity     : ${String(avgIntensity.toFixed(2)).padEnd(27)}║`);
-  console.log(`║  Output            : ${String('mock-data/mock_players.json').padEnd(27)}║`);
+  console.log(
+    `║  Avg Intensity     : ${String(avgIntensity.toFixed(2)).padEnd(27)}║`,
+  );
+  console.log(
+    `║  Output            : ${String('mock-data/mock_players.json').padEnd(27)}║`,
+  );
   console.log('╚══════════════════════════════════════════════════╝');
   console.log('');
 }

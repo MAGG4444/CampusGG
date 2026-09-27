@@ -44,11 +44,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async set(
-    key: string,
-    value: string,
-    expirationSeconds?: number,
-  ) {
+  async set(key: string, value: string, expirationSeconds?: number) {
     if (expirationSeconds) {
       return this.client.set(key, value, {
         EX: expirationSeconds,

@@ -34,7 +34,7 @@ export const INITIAL_THRESHOLD = 0.85;
  * 0.30 means: even after 5+ minutes of waiting, we still require at least
  * 30% compatibility — some baseline skill/intensity alignment.
  */
-export const MINIMUM_THRESHOLD_FLOOR = 0.30;
+export const MINIMUM_THRESHOLD_FLOOR = 0.3;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Timing constants

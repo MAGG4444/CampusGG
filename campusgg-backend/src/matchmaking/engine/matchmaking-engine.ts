@@ -23,7 +23,10 @@
 
 import * as crypto from 'crypto';
 
-import type { PlayerMatchmakingInput, SupportedGame } from '../schemas/player-matchmaking.schema.js';
+import type {
+  PlayerMatchmakingInput,
+  SupportedGame,
+} from '../schemas/player-matchmaking.schema.js';
 import type { MatchGroup } from '../schemas/match-group.schema.js';
 import type { MatchStrategy } from './match-strategy.interface.js';
 import { getGroupSize, getTier } from './game-tiers.config.js';
@@ -37,7 +40,7 @@ import { resolveGroupThreshold } from './time-decay-model.js';
  * Default minimum score a candidate group must achieve to be accepted.
  * Can be overridden per-engine instance via the constructor.
  */
-const DEFAULT_SCORE_THRESHOLD = 0.70;
+const DEFAULT_SCORE_THRESHOLD = 0.7;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Callback type
@@ -86,17 +89,6 @@ export interface MatchmakingEngineOptions {
 
 /**
  * The core matchmaking engine.
- *
- * Usage:
- * ```ts
- * const engine = new MatchmakingEngine({
- *   strategy: new DummyStrategy(),
- *   onMatchFound: (group) => console.log('Match!', group),
- * });
- *
- * players.forEach((p) => engine.enqueue(p));
- * const results = engine.processQueue();
- * ```
  */
 export class MatchmakingEngine {
   // ── Internal state ──────────────────────────────────────────────────────
@@ -106,7 +98,8 @@ export class MatchmakingEngine {
    * Each game gets its own isolated sub-queue (hard partitioning).
    * Using a Map preserves insertion order within each partition.
    */
-  private readonly queue: Map<SupportedGame, PlayerMatchmakingInput[]> = new Map();
+  private readonly queue: Map<SupportedGame, PlayerMatchmakingInput[]> =
+    new Map();
 
   /** Injected scoring strategy (DummyStrategy for 23.2, real scorer for 23.3). */
   private readonly strategy: MatchStrategy;
@@ -120,8 +113,8 @@ export class MatchmakingEngine {
   // ── Constructor ─────────────────────────────────────────────────────────
 
   constructor(options: MatchmakingEngineOptions) {
-    this.strategy       = options.strategy;
-    this.onMatchFound   = options.onMatchFound ?? (() => {});
+    this.strategy = options.strategy;
+    this.onMatchFound = options.onMatchFound ?? (() => {});
     this.scoreThreshold = options.scoreThreshold ?? DEFAULT_SCORE_THRESHOLD;
   }
 
@@ -148,7 +141,9 @@ export class MatchmakingEngine {
 
     // Guard: prevent duplicate enqueue
     if (gameQueue.some((p) => p.userId === userId)) {
-      console.warn(`[Engine] Duplicate enqueue rejected: ${userId} already in ${game} queue.`);
+      console.warn(
+        `[Engine] Duplicate enqueue rejected: ${userId} already in ${game} queue.`,
+      );
       return;
     }
 
@@ -158,17 +153,6 @@ export class MatchmakingEngine {
   /**
    * Process the entire queue once.
    *
-   * For each game partition:
-   *   1. Look up the required group size from the game's tier
-   *   2. While enough players remain, slice a candidate group
-   *   3. Score the group via the injected strategy
-   *   4. If the score meets the threshold, emit a MatchGroup and
-   *      remove those players from the queue
-   *   5. If the score is too low, skip this group (players stay queued
-   *      for the next processing cycle)
-   *
-   * Returns all successfully formed MatchGroups for observability.
-   *
    * @returns Array of MatchGroup payloads that were handed off.
    */
   processQueue(): MatchGroup[] {
@@ -177,12 +161,11 @@ export class MatchmakingEngine {
     // Iterate over every game partition independently (hard partitioning)
     for (const [game, players] of this.queue.entries()) {
       const groupSize = getGroupSize(game);
-      const tier      = getTier(game);
+      const tier = getTier(game);
 
       // Keep forming groups while we have enough players
       while (players.length >= groupSize) {
         // Take the first `groupSize` players (FIFO — respects queue order)
-        const candidates = players.slice(0, groupSize);
         const candidateGroup = players.slice(0, groupSize);
 
         // Extract wait times
@@ -192,18 +175,17 @@ export class MatchmakingEngine {
         const groupDynamicThreshold = resolveGroupThreshold(waitTimes);
 
         // Delegate scoring to the injected strategy
-        const score = this.strategy.scoreGroup(candidates);
         const actualMatchScore = this.strategy.scoreGroup(candidateGroup);
 
         if (actualMatchScore >= groupDynamicThreshold) {
           // ── Match accepted ────────────────────────────────────────────
           const matchGroup: MatchGroup = {
-            groupId   : `grp_${crypto.randomUUID()}`,
+            groupId: `grp_${crypto.randomUUID()}`,
             game,
             tier,
-            userIds   : candidateGroup.map((p) => p.userId),
-            score     : actualMatchScore,
-            matchedAt : new Date().toISOString(),
+            userIds: candidateGroup.map((p) => p.userId),
+            score: actualMatchScore,
+            matchedAt: new Date().toISOString(),
           };
 
           // Remove matched players from the front of the queue
@@ -216,15 +198,10 @@ export class MatchmakingEngine {
           formedGroups.push(matchGroup);
         } else {
           // ── Match rejected ────────────────────────────────────────────
-          // With the DummyStrategy (0.85 > 0.70), this branch is never
-          // hit — but the plumbing is in place for the real scorer.
-          // Break to avoid an infinite loop on the same failing group.
           console.log(
-            `[Engine] Group for ${game} scored ${score.toFixed(2)} — ` +
-            `below threshold ${this.scoreThreshold.toFixed(2)}. Skipping.`,
             `[Engine] Group for ${game} scored ${actualMatchScore.toFixed(4)} — ` +
-            `below dynamic threshold ${groupDynamicThreshold.toFixed(4)} ` +
-            `(max wait: ${Math.max(...waitTimes)}s). Skipping.`,
+              `below dynamic threshold ${groupDynamicThreshold.toFixed(4)} ` +
+              `(max wait: ${Math.max(...waitTimes)}s). Skipping.`,
           );
           break;
         }
