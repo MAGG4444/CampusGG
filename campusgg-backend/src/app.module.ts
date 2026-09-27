@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { LobbiesController } from './lobbies/lobbies.controller';
 
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 import { DatabaseController } from './database/database.controller';
 
 @Module({
@@ -23,19 +24,15 @@ import { DatabaseController } from './database/database.controller';
 
         autoLoadEntities: true,
 
-        synchronize:
-          configService.get<string>('NODE_ENV') !== 'production',
+        synchronize: configService.get<string>('NODE_ENV') !== 'production',
       }),
     }),
 
     UsersModule,
+    AuthModule,
   ],
 
-  controllers: [
-    AppController,
-    LobbiesController,
-    DatabaseController,
-  ],
+  controllers: [AppController, LobbiesController, DatabaseController],
 
   providers: [AppService],
 })
