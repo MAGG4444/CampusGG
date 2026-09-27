@@ -45,13 +45,13 @@ export type CS2Role = 'IGL' | 'Entry' | 'AWPer' | 'Lurker' | 'Support';
  * handled by the calendar integration layer (future work).
  */
 export type ActiveSchedule =
-  | 'Weekday Morning'    // Mon–Fri, ~7 AM – 12 PM
-  | 'Weekday Afternoon'  // Mon–Fri, ~12 PM – 6 PM
-  | 'Weekday Evening'    // Mon–Fri, ~6 PM – 11 PM
-  | 'Weekend Morning'    // Sat–Sun, ~7 AM – 12 PM
-  | 'Weekend Afternoon'  // Sat–Sun, ~12 PM – 6 PM
-  | 'Friday Night'       // Fri, ~9 PM – 2 AM (prime collegiate slot)
-  | 'Late Night';        // Any day, ~11 PM – 3 AM
+  | 'Weekday Morning' // Mon–Fri, ~7 AM – 12 PM
+  | 'Weekday Afternoon' // Mon–Fri, ~12 PM – 6 PM
+  | 'Weekday Evening' // Mon–Fri, ~6 PM – 11 PM
+  | 'Weekend Morning' // Sat–Sun, ~7 AM – 12 PM
+  | 'Weekend Afternoon' // Sat–Sun, ~12 PM – 6 PM
+  | 'Friday Night' // Fri, ~9 PM – 2 AM (prime collegiate slot)
+  | 'Late Night'; // Any day, ~11 PM – 3 AM
 
 /**
  * Verified university email domains supported by CampusGG.

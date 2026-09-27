@@ -44,13 +44,13 @@ export const TIER_GROUP_SIZE: Readonly<Record<GameTier, number>> = {
  * If a game is not in this map, the engine will reject it at enqueue time.
  */
 export const GAME_TIER_MAP: Readonly<Record<SupportedGame, GameTier>> = {
-  'CS2':               'Competitive',
-  'Valorant':          'Competitive',
+  CS2: 'Competitive',
+  Valorant: 'Competitive',
   'League of Legends': 'Competitive',
-  'Dota':              'Competitive',
-  'OW2':               'Competitive',
-  'Rocket League':     'Competitive',
-  'It Takes Two':      'Casual',
+  Dota: 'Competitive',
+  OW2: 'Competitive',
+  'Rocket League': 'Competitive',
+  'It Takes Two': 'Casual',
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -64,7 +64,9 @@ export const GAME_TIER_MAP: Readonly<Record<SupportedGame, GameTier>> = {
 export function getTier(game: SupportedGame): GameTier {
   const tier = GAME_TIER_MAP[game];
   if (!tier) {
-    throw new Error(`[CampusGG] Unknown game: "${game}". Add it to GAME_TIER_MAP.`);
+    throw new Error(
+      `[CampusGG] Unknown game: "${game}". Add it to GAME_TIER_MAP.`,
+    );
   }
   return tier;
 }

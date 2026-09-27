@@ -19,7 +19,10 @@
 import type { SupportedGame } from '../schemas/player-matchmaking.schema.js';
 import type { MatchStrategy } from './match-strategy.interface.js';
 import { getTier } from './game-tiers.config.js';
-import { CasualScoringStrategy, CompetitiveScoringStrategy } from './scoring-strategies.js';
+import {
+  CasualScoringStrategy,
+  CompetitiveScoringStrategy,
+} from './scoring-strategies.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Singleton instances (stateless — safe to reuse)
@@ -31,7 +34,7 @@ import { CasualScoringStrategy, CompetitiveScoringStrategy } from './scoring-str
  * per tier is sufficient — no need for per-call instantiation.
  */
 const COMPETITIVE_STRATEGY = new CompetitiveScoringStrategy();
-const CASUAL_STRATEGY      = new CasualScoringStrategy();
+const CASUAL_STRATEGY = new CasualScoringStrategy();
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public API
@@ -64,7 +67,9 @@ export function getScoringStrategy(game: SupportedGame): MatchStrategy {
       // Exhaustiveness guard — TypeScript will error if a new tier is added
       // to GameTier but not handled here.
       const _exhaustive: never = tier;
-      throw new Error(`[CampusGG] Unhandled tier: "${String(_exhaustive)}". Update strategy-registry.ts.`);
+      throw new Error(
+        `[CampusGG] Unhandled tier: "${String(_exhaustive)}". Update strategy-registry.ts.`,
+      );
     }
   }
 }
