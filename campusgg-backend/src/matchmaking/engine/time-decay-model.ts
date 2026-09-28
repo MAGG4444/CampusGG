@@ -153,9 +153,13 @@ export function getAcceptableThreshold(queueTime: number): number {
  * resolveGroupThreshold([10, 25, 45, 120, 200]); // ~0.581
  * resolveGroupThreshold([300, 300, 300, 300, 300]); // 0.30 (all at floor)
  */
-export function resolveGroupThreshold(queueTimes: ReadonlyArray<number>): number {
+export function resolveGroupThreshold(
+  queueTimes: ReadonlyArray<number>,
+): number {
   if (queueTimes.length === 0) {
-    throw new Error('[CampusGG] resolveGroupThreshold called with empty array.');
+    throw new Error(
+      '[CampusGG] resolveGroupThreshold called with empty array.',
+    );
   }
 
   // The longest-waiting player sets the urgency

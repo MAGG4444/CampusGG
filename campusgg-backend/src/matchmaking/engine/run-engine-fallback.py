@@ -42,6 +42,7 @@ MAX_INTENSITY_PENALTY_DELTA = 1.0
 SAME_MAJOR_PAIR_BONUS      = 0.1
 MAX_ROLE_SYNERGY_MULTIPLIER = 1.1
 
+SCORE_THRESHOLD            = 0.30
 # ── Time Decay Configuration (mirrors time-decay.config.ts) ──────────────────
 
 INITIAL_THRESHOLD       = 0.85
@@ -192,9 +193,12 @@ def main() -> None:
         scorer = get_scorer(game)
 
         while len(game_queue) >= group_size:
+            candidates = game_queue[:group_size]
+            score = scorer(candidates)
             candidate_group = game_queue[:group_size]
             wait_times = [p["queueTime"] for p in candidate_group]
 
+            if score >= SCORE_THRESHOLD:
             # The longest-waiting player dictates the group's passing score to ensure queue liquidity.
             group_dynamic_threshold = resolve_group_threshold(wait_times)
 
@@ -203,9 +207,11 @@ def main() -> None:
             if actual_match_score >= group_dynamic_threshold:
                 counter += 1
                 gid = f"grp_{uuid.uuid4()}"
+                uids = [c["userId"] for c in candidates]
                 uids = [c["userId"] for c in candidate_group]
                 mg = {
                     "groupId": gid, "game": game, "tier": tier,
+                    "userIds": uids, "score": score,
                     "userIds": uids, "score": actual_match_score,
                     "matchedAt": datetime.now(timezone.utc).isoformat(),
                 }
@@ -214,12 +220,14 @@ def main() -> None:
                 trunc = [u[:16] + "..." for u in uids]
                 print(
                     f"  [MATCH #{counter:02d}] {game} ({tier}, {len(uids)}p) | "
+                    f"score: {score:.4f} | group: {gid[:16]}..."
                     f"score: {actual_match_score:.4f} | group: {gid[:16]}..."
                 )
                 print(f"           players: [{', '.join(trunc)}]")
 
                 formed_groups.append(mg)
             else:
+                print(f"  [Engine] Group for {game} scored {score:.4f} \u2014 below threshold {SCORE_THRESHOLD:.2f}. Skipping.")
                 print(f"  [Engine] Group for {game} scored {actual_match_score:.4f} \u2014 below dynamic threshold {group_dynamic_threshold:.4f} (max wait: {max(wait_times)}s). Skipping.")
                 break
 

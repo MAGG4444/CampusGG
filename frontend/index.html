@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CampusGG Lobby</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="page-container">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="brand">CampusGG</div>
+          <nav class="nav">
+            <a class="nav-link nav-link-active" href="#">Lobby</a>
+            <a class="nav-link" href="#">Forum</a>
+            <a class="nav-link login-button" href="#">Login</a>
+          </nav>
+        </div>
+      </header>
+
+      <main class="main-wrapper">
+        <section id="lobby-page" class="page-view active-view">
+          <section class="filter-row">
+            <div class="filter-group">
+              <span class="filter-icon" aria-hidden="true">▽</span>
+              <button class="filter-chip filter-chip-selected game-filter" type="button" data-game="all">All Games</button>
+              <button class="filter-chip game-filter" type="button" data-game="Valorant">Valorant</button>
+              <button class="filter-chip game-filter" type="button" data-game="CS2">CS2</button>
+              <button class="filter-chip game-filter" type="button" data-game="Overwatch 2">Overwatch 2</button>
+              <button class="filter-chip game-filter" type="button" data-game="Apex">Apex</button>
+            </div>
+            <div class="filter-group filter-group-right">
+              <span class="filter-icon" aria-hidden="true">▽</span>
+              <button class="filter-chip filter-chip-selected level-filter" type="button" data-level="all">Most Popular</button>
+              <button class="filter-chip level-filter" type="button" data-level="Beginner">Beginner</button>
+              <button class="filter-chip level-filter" type="button" data-level="Intermediate">Intermediate</button>
+              <button class="filter-chip level-filter" type="button" data-level="Advanced">Advanced</button>
+            </div>
+          </section>
+
+          <section class="search-row">
+            <div class="search-bar">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input class="search-input" type="text" placeholder="Search" />
+            </div>
+            <div class="action-stack">
+              <label class="toggle-row">
+                <span class="toggle toggle-on" aria-hidden="true">
+                  <span class="toggle-knob"></span>
+                </span>
+                <span class="toggle-label">Set Lobby as Homepage</span>
+              </label>
+              <button id="open-create-lobby" class="create-lobby-button" type="button">+ Create Lobby</button>
+            </div>
+          </section>
+
+          <section class="lobby-grid" id="lobby-grid">
+            <p id="lobby-load-status" class="lobby-line" style="color:#ffffff;">Loading lobbies…</p>
+          </section>
+
+          <nav class="pagination" aria-label="Pagination">
+            <button class="pagination-item pagination-button" id="previous-page" type="button">&lt; Previous</button>
+            <div id="page-numbers" class="pagination-pages" aria-label="Page numbers"></div>
+            <button class="pagination-item pagination-button" id="next-page" type="button">Next &gt;</button>
+          </nav>
+        </section>
+
+        <section id="create-page" class="page-view create-lobby-page" aria-hidden="true">
+          <button id="back-to-lobby" class="back-button" type="button" aria-label="Back to Lobby">←</button>
+
+          <div class="create-page-header-row">
+            <div>
+              <input id="lobby-name-input" class="create-title-input" type="text" placeholder="Type Lobby Name" />
+              <p class="create-subtitle">Create a lobby for other CampusGG users to join.</p>
+            </div>
+            <div class="invite-admin-wrap">
+              <span class="invite-label">Invite Administrator:</span>
+              <button class="small-add-button" type="button">+ ADD</button>
+              <div class="invite-helper">User Names</div>
+            </div>
+          </div>
+
+          <div class="create-form-group">
+            <label class="create-label">Choose Game:</label>
+            <select id="lobby-game-input" class="create-select">
+              <option value="">Select a game</option>
+              <option value="Valorant">Valorant</option>
+              <option value="CS2">CS2</option>
+              <option value="Overwatch 2">Overwatch 2</option>
+              <option value="Apex">Apex</option>
+            </select>
+          </div>
+
+          <div class="create-form-group">
+            <label class="create-label" for="lobby-description-input">Information About this Lobby:</label>
+            <textarea id="lobby-description-input" class="create-textarea" placeholder="Information About this Lobby...."></textarea>
+          </div>
+
+          <div class="create-form-group inline-group">
+            <label class="create-label">Participant Limit:</label>
+            <select id="participant-limit-input" class="create-select">
+              <option value="Unlimited">Unlimited</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+          </div>
+
+          <div class="create-form-group inline-group">
+            <label class="create-label">Set Visibility:</label>
+            <select id="visibility-input" class="create-select">
+              <option value="Public">Public</option>
+              <option value="Private">Private</option>
+              <option value="Visible to Lobby Members">Visible to Lobby Members</option>
+            </select>
+          </div>
+
+          <div class="create-actions">
+            <button id="save-lobby" class="footer-action footer-save" type="button">Save</button>
+            <button id="publish-lobby" class="footer-action footer-publish" type="button">Publish</button>
+            <button id="delete-lobby" class="footer-action footer-delete" type="button">Delete</button>
+          </div>
+        </section>
+      </main>
+
+      <div class="connection-panel">Connection</div>
+      <img class="corner-logo" src="assets/LOGO.png" alt="CampusGG logo" />
+    </div>
+
+    <script>
+      const API_BASE_URL = 'http://localhost:3000';
+
+      const lobbyPage = document.getElementById('lobby-page');
+      const createPage = document.getElementById('create-page');
+      const openButton = document.getElementById('open-create-lobby');
+      const backButton = document.getElementById('back-to-lobby');
+
+      function showCreatePage() {
+        lobbyPage.classList.remove('active-view');
+        createPage.classList.add('active-view');
+        createPage.setAttribute('aria-hidden', 'false');
+      }
+
+      function showLobbyPage() {
+        createPage.classList.remove('active-view');
+        createPage.setAttribute('aria-hidden', 'true');
+        lobbyPage.classList.add('active-view');
+      }
+
+      openButton.addEventListener('click', showCreatePage);
+      backButton.addEventListener('click', showLobbyPage);
+
+      // Lobby search and filters
+      const searchInput = document.querySelector('.search-input');
+      const lobbyGrid = document.querySelector('.lobby-grid');
+      const gameFilters = document.querySelectorAll('.game-filter');
+      const levelFilters = document.querySelectorAll('.level-filter');
+      let selectedGame = 'all';
+      let selectedLevel = 'all';
+
+      function updateFilterSelection(buttons, selectedButton) {
+        buttons.forEach((button) => button.classList.remove('filter-chip-selected'));
+        selectedButton.classList.add('filter-chip-selected');
+      }
+
+      function getFilteredLobbies() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+
+        return Array.from(document.querySelectorAll('.lobby-card')).filter((card) => {
+          const matchesGame = selectedGame === 'all' || card.dataset.game === selectedGame;
+          const matchesLevel = selectedLevel === 'all' || card.dataset.level === selectedLevel;
+          const matchesSearch = card.dataset.lobbyName.toLowerCase().includes(searchTerm);
+
+          return matchesGame && matchesLevel && matchesSearch;
+        });
+      }
+
+      function refreshLobbyDisplay() {
+        const allCards = Array.from(document.querySelectorAll('.lobby-card'));
+        const filteredCards = getFilteredLobbies();
+
+        allCards.forEach((card) => {
+          card.style.display = filteredCards.includes(card) ? 'flex' : 'none';
+        });
+
+        displayPage(1);
+      }
+
+      gameFilters.forEach((button) => {
+        button.addEventListener('click', () => {
+          selectedGame = button.dataset.game;
+          updateFilterSelection(gameFilters, button);
+          refreshLobbyDisplay();
+        });
+      });
+
+      levelFilters.forEach((button) => {
+        button.addEventListener('click', () => {
+          selectedLevel = button.dataset.level;
+          updateFilterSelection(levelFilters, button);
+          refreshLobbyDisplay();
+        });
+      });
+
+      searchInput.addEventListener('input', refreshLobbyDisplay);
+
+      // Join Lobby
+      function attachJoinHandler(button) {
+        button.addEventListener('click', () => {
+          const card = button.closest('.lobby-card');
+          const lobbyName = card.dataset.lobbyName;
+
+          if (button.dataset.joined === 'true') {
+            return;
+          }
+
+          button.dataset.joined = 'true';
+          button.textContent = 'Joined';
+          button.disabled = true;
+          alert(`You joined "${lobbyName}".`);
+        });
+      }
+
+      function createLobbyCard(lobby) {
+        const card = document.createElement('article');
+
+        card.className = 'lobby-card';
+        card.dataset.game = lobby.game;
+        card.dataset.level = lobby.level;
+        card.dataset.lobbyName = lobby.name;
+
+        card.innerHTML = `
+          <div class="lobby-card-content">
+            <div class="lobby-line lobby-name">${lobby.name}</div>
+            <div class="lobby-line">User Name: ${lobby.host}</div>
+            <div class="lobby-line">Details: ${lobby.details}</div>
+          </div>
+          <button class="join-button" type="button">Join Lobby</button>
+        `;
+
+        attachJoinHandler(card.querySelector('.join-button'));
+        return card;
+      }
+
+      // Load lobbies from the backend
+      async function loadLobbies() {
+        const statusEl = document.getElementById('lobby-load-status');
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/lobbies`);
+
+          if (!response.ok) {
+            throw new Error(`Request failed with status ${response.status}`);
+          }
+
+          const lobbies = await response.json();
+
+          statusEl.remove();
+          lobbies.forEach((lobby) => {
+            lobbyGrid.appendChild(createLobbyCard(lobby));
+          });
+
+          displayPage(1);
+        } catch (error) {
+          statusEl.textContent = `Couldn't load lobbies from the server (${error.message}). Make sure the backend is running at ${API_BASE_URL}.`;
+        }
+      }
+
+      // Pagination
+      const previousPageButton = document.getElementById('previous-page');
+      const nextPageButton = document.getElementById('next-page');
+      const pageNumbers = document.getElementById('page-numbers');
+      const lobbiesPerPage = 4;
+      let currentPage = 1;
+
+      function displayPage(page) {
+        const filteredCards = getFilteredLobbies();
+        const totalPages = Math.max(1, Math.ceil(filteredCards.length / lobbiesPerPage));
+
+        currentPage = Math.min(Math.max(page, 1), totalPages);
+
+        const start = (currentPage - 1) * lobbiesPerPage;
+        const visibleCards = filteredCards.slice(start, start + lobbiesPerPage);
+
+        document.querySelectorAll('.lobby-card').forEach((card) => {
+          card.style.display = visibleCards.includes(card) ? 'flex' : 'none';
+        });
+
+        pageNumbers.innerHTML = '';
+
+        for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'pagination-item pagination-button';
+          button.textContent = pageNumber;
+
+          if (pageNumber === currentPage) {
+            button.classList.add('pagination-current');
+            button.setAttribute('aria-current', 'page');
+          }
+
+          button.addEventListener('click', () => displayPage(pageNumber));
+          pageNumbers.appendChild(button);
+        }
+
+        previousPageButton.disabled = currentPage === 1;
+        nextPageButton.disabled = currentPage === totalPages;
+      }
+
+      previousPageButton.addEventListener('click', () => displayPage(currentPage - 1));
+      nextPageButton.addEventListener('click', () => displayPage(currentPage + 1));
+
+      // Lobby creation
+      const lobbyNameInput = document.getElementById('lobby-name-input');
+      const lobbyGameInput = document.getElementById('lobby-game-input');
+      const lobbyDescriptionInput = document.getElementById('lobby-description-input');
+      const participantLimitInput = document.getElementById('participant-limit-input');
+      const visibilityInput = document.getElementById('visibility-input');
+      const saveLobbyButton = document.getElementById('save-lobby');
+      const publishLobbyButton = document.getElementById('publish-lobby');
+      const deleteLobbyButton = document.getElementById('delete-lobby');
+
+      let savedLobby = null;
+
+      function clearLobbyForm() {
+        lobbyNameInput.value = '';
+        lobbyGameInput.value = '';
+        lobbyDescriptionInput.value = '';
+        participantLimitInput.value = 'Unlimited';
+        visibilityInput.value = 'Public';
+        savedLobby = null;
+      }
+
+      function validateLobbyForm() {
+        if (!lobbyNameInput.value.trim()) {
+          alert('Please enter a lobby name.');
+          lobbyNameInput.focus();
+          return false;
+        }
+
+        if (!lobbyGameInput.value) {
+          alert('Please select a game.');
+          lobbyGameInput.focus();
+          return false;
+        }
+
+        if (!lobbyDescriptionInput.value.trim()) {
+          alert('Please enter information about the lobby.');
+          lobbyDescriptionInput.focus();
+          return false;
+        }
+
+        return true;
+      }
+
+      function getLobbyFormData() {
+        return {
+          name: lobbyNameInput.value.trim(),
+          game: lobbyGameInput.value,
+          description: lobbyDescriptionInput.value.trim(),
+          participantLimit: participantLimitInput.value,
+          visibility: visibilityInput.value
+        };
+      }
+
+      saveLobbyButton.addEventListener('click', () => {
+        if (!validateLobbyForm()) return;
+
+        savedLobby = getLobbyFormData();
+        alert('Lobby information saved.');
+      });
+
+      publishLobbyButton.addEventListener('click', () => {
+        if (!validateLobbyForm()) return;
+
+        const lobby = getLobbyFormData();
+        const card = document.createElement('article');
+
+        card.className = 'lobby-card';
+        card.dataset.game = lobby.game;
+        card.dataset.level = 'Beginner';
+        card.dataset.lobbyName = lobby.name;
+
+        card.innerHTML = `
+          <div class="lobby-card-content">
+            <div class="lobby-line lobby-name">${lobby.name}</div>
+            <div class="lobby-line">User Name: You</div>
+            <div class="lobby-line">Details: ${lobby.description}</div>
+          </div>
+          <button class="join-button" type="button">Join Lobby</button>
+        `;
+
+        lobbyGrid.appendChild(card);
+
+        const joinButton = card.querySelector('.join-button');
+        joinButton.addEventListener('click', () => {
+          joinButton.dataset.joined = 'true';
+          joinButton.textContent = 'Joined';
+          joinButton.disabled = true;
+          alert(`You joined "${card.dataset.lobbyName}".`);
+        });
+
+        alert(`"${lobby.name}" was published.`);
+        clearLobbyForm();
+        showLobbyPage();
+        refreshLobbyDisplay();
+      });
+
+      deleteLobbyButton.addEventListener('click', () => {
+        clearLobbyForm();
+        alert('Lobby form cleared.');
+      });
+
+      loadLobbies();
+    </script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+    <script>
+      const socket = io('http://localhost:3000');
+
+      socket.on('connect', () => {
+        console.log('Connected to CampusGG WebSocket:', socket.id);
+
+        socket.emit('message', 'Hello from CampusGG frontend!');
+      });
+
+      socket.on('message', (message) => {
+        console.log('Message from server:', message);
+      });
+
+      socket.on('disconnect', () => {
+        console.log('Disconnected from CampusGG WebSocket');
+      });
+    </script>
+  </body>
+</html>

@@ -14,7 +14,10 @@
  *   through ~0.600 (at 180s) to 0.300 (at 300s+).
  */
 
-import { getAcceptableThreshold, resolveGroupThreshold } from './time-decay-model.js';
+import {
+  getAcceptableThreshold,
+  resolveGroupThreshold,
+} from './time-decay-model.js';
 import {
   INITIAL_THRESHOLD,
   MINIMUM_THRESHOLD_FLOOR,
@@ -27,16 +30,22 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 
 console.log('');
-console.log('=================================================================');
+console.log(
+  '=================================================================',
+);
 console.log('  CampusGG -- Time Decay Curve Verification (Sub-issue 24.1)');
-console.log('=================================================================');
+console.log(
+  '=================================================================',
+);
 console.log('');
 console.log('  Configuration:');
 console.log(`    Initial Threshold     : ${INITIAL_THRESHOLD}`);
 console.log(`    Minimum Floor         : ${MINIMUM_THRESHOLD_FLOOR}`);
 console.log(`    Max Wait Reference    : ${MAX_WAIT_REFERENCE}s`);
 console.log(`    Decay Rate (k)        : ${DECAY_RATE_K}`);
-console.log(`    Decayable Range       : ${(INITIAL_THRESHOLD - MINIMUM_THRESHOLD_FLOOR).toFixed(2)}`);
+console.log(
+  `    Decayable Range       : ${(INITIAL_THRESHOLD - MINIMUM_THRESHOLD_FLOOR).toFixed(2)}`,
+);
 console.log(`    Formula               : floor + range * e^(-k * t)`);
 console.log('');
 
@@ -53,9 +62,15 @@ function renderBar(value: number, maxValue: number, barWidth: number): string {
   return '#'.repeat(filled) + '-'.repeat(barWidth - filled);
 }
 
-console.log('  +--------+-----------+-------------------------------------------+');
-console.log('  | Time   | Threshold | Curve                                     |');
-console.log('  +--------+-----------+-------------------------------------------+');
+console.log(
+  '  +--------+-----------+-------------------------------------------+',
+);
+console.log(
+  '  | Time   | Threshold | Curve                                     |',
+);
+console.log(
+  '  +--------+-----------+-------------------------------------------+',
+);
 
 for (let t = 0; t <= MAX_T; t += STEP) {
   const threshold = getAcceptableThreshold(t);
@@ -72,7 +87,9 @@ for (let t = 0; t <= MAX_T; t += STEP) {
   console.log(`  | ${timeStr} |  ${threshStr}  | ${bar} |${marker}`);
 }
 
-console.log('  +--------+-----------+-------------------------------------------+');
+console.log(
+  '  +--------+-----------+-------------------------------------------+',
+);
 console.log('');
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -83,10 +100,13 @@ console.log('  resolveGroupThreshold demo (longest-waiting player wins):');
 console.log('  ---------------------------------------------------------');
 
 const testGroups: Array<{ label: string; times: number[] }> = [
-  { label: 'Fresh group (all just queued)',       times: [0, 5, 10, 3, 8] },
-  { label: 'Mixed group (one waited 2 min)',      times: [10, 25, 45, 120, 30] },
-  { label: 'Urgent group (one waited 4 min)',     times: [15, 20, 30, 240, 10] },
-  { label: 'Desperate group (all waited 5 min)',   times: [300, 310, 295, 305, 300] },
+  { label: 'Fresh group (all just queued)', times: [0, 5, 10, 3, 8] },
+  { label: 'Mixed group (one waited 2 min)', times: [10, 25, 45, 120, 30] },
+  { label: 'Urgent group (one waited 4 min)', times: [15, 20, 30, 240, 10] },
+  {
+    label: 'Desperate group (all waited 5 min)',
+    times: [300, 310, 295, 305, 300],
+  },
 ];
 
 for (const { label, times } of testGroups) {

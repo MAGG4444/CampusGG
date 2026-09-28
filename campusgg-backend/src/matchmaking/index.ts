@@ -27,12 +27,20 @@ export type { MatchGroup } from './schemas/match-group.schema.js';
 
 // ── 23.2: Engine — core loop, strategy, tiers ──────────────────────────────
 export type { GameTier } from './engine/game-tiers.config.js';
-export { GAME_TIER_MAP, TIER_GROUP_SIZE, getTier, getGroupSize } from './engine/game-tiers.config.js';
+export {
+  GAME_TIER_MAP,
+  TIER_GROUP_SIZE,
+  getTier,
+  getGroupSize,
+} from './engine/game-tiers.config.js';
 
 export type { MatchStrategy } from './engine/match-strategy.interface.js';
 export { DummyStrategy } from './engine/match-strategy.interface.js';
 
-export type { OnMatchFoundCallback, MatchmakingEngineOptions } from './engine/matchmaking-engine.js';
+export type {
+  OnMatchFoundCallback,
+  MatchmakingEngineOptions,
+} from './engine/matchmaking-engine.js';
 export { MatchmakingEngine } from './engine/matchmaking-engine.js';
 
 // ── 23.3: Scoring — config, strategies, factory ────────────────────────────
@@ -49,7 +57,10 @@ export {
   MAX_ROLE_SYNERGY_MULTIPLIER,
 } from './engine/scoring.config.js';
 
-export { CasualScoringStrategy, CompetitiveScoringStrategy } from './engine/scoring-strategies.js';
+export {
+  CasualScoringStrategy,
+  CompetitiveScoringStrategy,
+} from './engine/scoring-strategies.js';
 export { getScoringStrategy } from './engine/strategy-registry.js';
 
 // ── 24.1: Time Decay — dynamic threshold model ────────────────────────────
@@ -60,7 +71,10 @@ export {
   DECAY_RATE_K,
 } from './engine/time-decay.config.js';
 
-export { getAcceptableThreshold, resolveGroupThreshold } from './engine/time-decay-model.js';
+export {
+  getAcceptableThreshold,
+  resolveGroupThreshold,
+} from './engine/time-decay-model.js';
 
 // ── Mock generator — dev/test utility, NOT imported in production bundles ───
 export { generateMockPlayers } from './mock/mock-player.generator.js';

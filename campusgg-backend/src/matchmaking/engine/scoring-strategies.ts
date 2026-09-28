@@ -126,10 +126,18 @@ function countMatchingPairs(values: ReadonlyArray<string>): number {
  * @param group - Candidate group of players.
  * @returns Skill cohesion sub-score in [SKILL_FLOOR, 1.0].
  */
-function scoreSkillCohesion(group: ReadonlyArray<PlayerMatchmakingInput>): number {
+function scoreSkillCohesion(
+  group: ReadonlyArray<PlayerMatchmakingInput>,
+): number {
   const ratings = group.map(extractRating);
   const delta = Math.max(...ratings) - Math.min(...ratings);
-  return linearDecay(delta, PERFECT_RATING_DELTA, MAX_RATING_PENALTY_DELTA, 1.0, SKILL_FLOOR);
+  return linearDecay(
+    delta,
+    PERFECT_RATING_DELTA,
+    MAX_RATING_PENALTY_DELTA,
+    1.0,
+    SKILL_FLOOR,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -151,10 +159,18 @@ function scoreSkillCohesion(group: ReadonlyArray<PlayerMatchmakingInput>): numbe
  * @param group - Candidate group of players.
  * @returns Intensity alignment sub-score in [0.0, 1.0].
  */
-function scoreIntensityAlignment(group: ReadonlyArray<PlayerMatchmakingInput>): number {
+function scoreIntensityAlignment(
+  group: ReadonlyArray<PlayerMatchmakingInput>,
+): number {
   const intensities = group.map((p) => p.intensity);
   const delta = Math.max(...intensities) - Math.min(...intensities);
-  return linearDecay(delta, PERFECT_INTENSITY_DELTA, MAX_INTENSITY_PENALTY_DELTA, 1.0, 0.0);
+  return linearDecay(
+    delta,
+    PERFECT_INTENSITY_DELTA,
+    MAX_INTENSITY_PENALTY_DELTA,
+    1.0,
+    0.0,
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -178,7 +194,9 @@ function scoreIntensityAlignment(group: ReadonlyArray<PlayerMatchmakingInput>): 
  * @param group - Candidate group of players.
  * @returns Profile affinity sub-score in [0.0, 1.0].
  */
-function scoreProfileAffinity(group: ReadonlyArray<PlayerMatchmakingInput>): number {
+function scoreProfileAffinity(
+  group: ReadonlyArray<PlayerMatchmakingInput>,
+): number {
   const groupSize = group.length;
 
   // ── University overlap ──────────────────────────────────────────────────
@@ -218,11 +236,13 @@ function scoreProfileAffinity(group: ReadonlyArray<PlayerMatchmakingInput>): num
  * @param group - Candidate group of players.
  * @returns A multiplier in [1.0, MAX_ROLE_SYNERGY_MULTIPLIER].
  */
-function computeRoleSynergyMultiplier(group: ReadonlyArray<PlayerMatchmakingInput>): number {
+function computeRoleSynergyMultiplier(
+  group: ReadonlyArray<PlayerMatchmakingInput>,
+): number {
   const uniqueRoles = new Set(group.map((p) => p.preferences.primaryRole));
   const uniqueCount = uniqueRoles.size;
 
-  if (uniqueCount >= 5) return MAX_ROLE_SYNERGY_MULTIPLIER;  // 1.10
+  if (uniqueCount >= 5) return MAX_ROLE_SYNERGY_MULTIPLIER; // 1.10
   if (uniqueCount === 4) return 1.0 + (MAX_ROLE_SYNERGY_MULTIPLIER - 1.0) / 2; // 1.05
   return 1.0; // 3 or fewer — no bonus
 }
@@ -277,14 +297,14 @@ export class CompetitiveScoringStrategy implements MatchStrategy {
    */
   scoreGroup(group: ReadonlyArray<PlayerMatchmakingInput>): number {
     // ── Compute the three weighted sub-scores ───────────────────────────
-    const skillScore     = scoreSkillCohesion(group);
+    const skillScore = scoreSkillCohesion(group);
     const intensityScore = scoreIntensityAlignment(group);
-    const profileScore   = scoreProfileAffinity(group);
+    const profileScore = scoreProfileAffinity(group);
 
     // ── Weighted sum ────────────────────────────────────────────────────
     const weightedSum =
-      SKILL_WEIGHT   * skillScore +
-      INTENT_WEIGHT  * intensityScore +
+      SKILL_WEIGHT * skillScore +
+      INTENT_WEIGHT * intensityScore +
       PROFILE_WEIGHT * profileScore;
 
     // ── Apply role synergy multiplier ───────────────────────────────────
