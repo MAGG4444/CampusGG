@@ -10,7 +10,7 @@ function Pagination({ currentPage, totalPages, onSelectPage }) {
   if (totalPages <= 1) {
     return (
       <nav className="pagination" aria-label="Pagination">
-        <button className="pagination-item pagination-item-active" type="button" onClick={() => onSelectPage(1)}>
+        <button className="pagination-item pagination-item-active" type="button" aria-current="page" onClick={() => onSelectPage(1)}>
           1
         </button>
       </nav>
@@ -27,6 +27,7 @@ function Pagination({ currentPage, totalPages, onSelectPage }) {
           className={`pagination-item ${currentPage === page ? 'pagination-item-active' : ''}`}
           key={page}
           type="button"
+          aria-current={currentPage === page ? 'page' : undefined}
           onClick={() => onSelectPage(page)}
         >
           {page}

@@ -72,7 +72,17 @@ function LobbyFeed() {
   }
 
   return (
-    <section className="lobby-page">
+    <section className="lobby-page page-enter">
+      <header className="page-heading">
+        <div>
+          <p className="page-kicker">Squad finder</p>
+          <h1>Discover your next lobby</h1>
+          <p>Filter by game and skill level, then jump into a session that fits how you want to play.</p>
+        </div>
+        <button className="create-lobby-button" type="button" onClick={() => navigate('/create-lobby')}>
+          + Create Lobby
+        </button>
+      </header>
       <section className="filter-row" aria-label="Lobby filters">
         <GameFilter selectedGame={selectedGame} onSelectGame={handleSelectGame} />
         <SkillFilter selectedSkill={selectedSkill} onSelectSkill={handleSelectSkill} />
@@ -82,9 +92,6 @@ function LobbyFeed() {
         <SearchBar value={searchValue} onChange={handleSearchChange} />
         <div className="action-stack">
           <HomepageToggle isOn={isHomepage} onToggle={() => setIsHomepage((current) => !current)} />
-          <button className="create-lobby-button" type="button" onClick={() => navigate('/create-lobby')}>
-            + Create Lobby
-          </button>
         </div>
       </section>
 

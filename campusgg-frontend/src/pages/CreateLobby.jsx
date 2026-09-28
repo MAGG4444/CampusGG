@@ -158,22 +158,26 @@ function CreateLobby() {
   }
 
   return (
-    <div className="create-lobby-wrapper">
+    <div className="create-lobby-wrapper page-enter">
       <form className="create-lobby-page" onSubmit={handlePublish}>
         <button className="back-button" type="button" aria-label="Back to Lobby" onClick={() => navigate('/lobby')}>
           &larr;
         </button>
 
+        <header className="create-flow-heading">
+          <p className="page-kicker">New squad space</p>
+          <h1>Build your lobby</h1>
+          <p>Set the tone, choose who can join, and give players everything they need before queueing up.</p>
+        </header>
+
         <div className="create-page-header-row">
           <div className="create-title-fields">
-            <label className="sr-only" htmlFor="lobby-name">
-              Lobby Name
-            </label>
+            <label className="create-field-label" htmlFor="lobby-name">Lobby name</label>
             <input
               className="create-title-input"
               id="lobby-name"
               type="text"
-              placeholder="Type Lobby Name"
+              placeholder="Give your lobby a clear name"
               value={formData.lobbyName}
               aria-describedby={errors.lobbyName ? 'lobby-name-error' : undefined}
               aria-invalid={errors.lobbyName ? 'true' : 'false'}
@@ -185,14 +189,12 @@ function CreateLobby() {
               </div>
             ) : null}
 
-            <label className="sr-only" htmlFor="lobby-subtitle">
-              Subtitle
-            </label>
+            <label className="create-field-label" htmlFor="lobby-subtitle">Short description</label>
             <input
               className="create-subtitle-input"
               id="lobby-subtitle"
               type="text"
-              placeholder="Subtitle"
+              placeholder="What kind of session are you planning?"
               value={formData.subtitle}
               onChange={(event) => updateField('subtitle', event.target.value)}
             />
@@ -242,6 +244,7 @@ function CreateLobby() {
                 className={`mini-chip ${formData.tags.includes(tag) ? 'mini-chip-dark' : ''}`}
                 key={tag}
                 type="button"
+                aria-pressed={formData.tags.includes(tag)}
                 onClick={() => toggleTag(tag)}
               >
                 {formData.tags.includes(tag) ? '▽ ' : ''}
@@ -257,13 +260,11 @@ function CreateLobby() {
         </div>
 
         <div className="create-form-group">
-          <label className="sr-only" htmlFor="lobby-details">
-            Information About this Lobby
-          </label>
+          <label className="create-field-label" htmlFor="lobby-details">Lobby details</label>
           <textarea
             className="fake-input fake-input-wide details-input"
             id="lobby-details"
-            placeholder="Information About this Lobby...."
+            placeholder="Share the goal, schedule, communication style, and anything players should know."
             value={formData.details}
             aria-describedby={errors.details ? 'lobby-details-error' : undefined}
             aria-invalid={errors.details ? 'true' : 'false'}
@@ -288,6 +289,7 @@ function CreateLobby() {
                 className={`mini-chip ${formData.participantLimit === option.value ? 'mini-chip-dark' : ''}`}
                 key={option.value}
                 type="button"
+                aria-pressed={formData.participantLimit === option.value}
                 onClick={() => updateField('participantLimit', option.value)}
               >
                 {formData.participantLimit === option.value ? '▽ ' : ''}
@@ -314,6 +316,7 @@ function CreateLobby() {
                 className={`mini-chip ${formData.visibility === option.value ? 'mini-chip-dark' : ''}`}
                 key={option.value}
                 type="button"
+                aria-pressed={formData.visibility === option.value}
                 onClick={() => updateField('visibility', option.value)}
               >
                 {formData.visibility === option.value ? '▽ ' : ''}

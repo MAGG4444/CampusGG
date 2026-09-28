@@ -1,15 +1,85 @@
 .app-shell {
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
-  background: #091425;
+  min-height: 100dvh;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 12% 4%, rgba(213, 178, 82, 0.12), transparent 30rem),
+    radial-gradient(circle at 88% 18%, rgba(50, 100, 160, 0.16), transparent 34rem),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
   display: flex;
   flex-direction: column;
 }
 
-.app-main {
-  flex: 1;
+.app-shell::before {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: linear-gradient(to bottom, black, transparent 75%);
 }
 
-.app-main h1 {
+.app-main { position: relative; flex: 1; }
+
+.page-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+  color: var(--gold-bright);
+  font-family: var(--font-display);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.page-kicker::before {
+  width: 24px;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--gradient-gold);
+  box-shadow: 0 0 14px rgba(213, 178, 82, 0.55);
+  content: "";
+}
+
+.page-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.page-heading h1 {
   margin: 0;
-  font-size: 2rem;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+}
+
+.page-heading p:not(.page-kicker) {
+  max-width: 650px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+.page-enter { animation: page-enter 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 700px) {
+  .page-heading { align-items: flex-start; flex-direction: column; margin-bottom: 22px; }
 }

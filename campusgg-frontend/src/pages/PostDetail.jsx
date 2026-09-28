@@ -162,13 +162,14 @@ function PostDetail() {
   }
 
   return (
-    <div className="post-detail-wrapper">
+    <div className="post-detail-wrapper page-enter">
       <button className="post-back-button" type="button" aria-label="Back to Forum" onClick={() => navigate('/forum')}>
         <ArrowLeft size={28} strokeWidth={2.2} aria-hidden="true" />
       </button>
 
       <section className="post-detail-header">
         <div className="post-title-block">
+          <p className="post-detail-eyebrow">{post.category}</p>
           <h1>{post.title}</h1>
           <p>{post.subtitle}</p>
         </div>
@@ -280,6 +281,7 @@ function PostDetail() {
             className={`pagination-item ${safeRecommendationPage === page ? 'pagination-item-active' : ''}`}
             key={page}
             type="button"
+            aria-current={safeRecommendationPage === page ? 'page' : undefined}
             onClick={() => selectRecommendationPage(page)}
           >
             {page}

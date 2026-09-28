@@ -10,9 +10,9 @@ function LobbyCard({ lobbyName, userName, details, isJoined, onJoin }) {
         </div>
       ) : null}
       <div className="lobby-card-content">
-        <div className="lobby-line">{lobbyName}</div>
-        <div className="lobby-line">{userName}</div>
-        <div className="lobby-line">{details}</div>
+        <h2 className="lobby-card-title">{lobbyName}</h2>
+        <p className="lobby-card-host">Hosted by <strong>{userName}</strong></p>
+        <p className="lobby-card-details">{details}</p>
       </div>
       <button className="join-button" type="button" onClick={onJoin}>
         {isJoined ? 'Open Lobby' : 'Join Lobby'}

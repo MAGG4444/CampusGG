@@ -31,10 +31,11 @@ function SignIn() {
   }
 
   return (
-    <div className="signin-page">
+    <div className="signin-page page-enter">
       <section className="signin-card" aria-labelledby="signin-title">
         <p className="signin-brand">Campus<span>GG</span></p>
         <h1 id="signin-title">Sign In</h1>
+        <p className="signin-intro">Welcome back. Your next squad is waiting.</p>
         <form noValidate onSubmit={handleSubmit}>
           <div className="signin-field">
             <label htmlFor="signin-email">Email</label>
@@ -44,6 +45,7 @@ function SignIn() {
               type="email"
               autoComplete="email"
               value={email}
+              aria-describedby={error ? 'signin-error' : undefined}
               aria-invalid={Boolean(error) && !email.trim() ? 'true' : undefined}
               onChange={(event) => {
                 setEmail(event.target.value)
@@ -59,6 +61,7 @@ function SignIn() {
               type="password"
               autoComplete="current-password"
               value={password}
+              aria-describedby={error ? 'signin-error' : undefined}
               aria-invalid={Boolean(error) && !password.trim() ? 'true' : undefined}
               onChange={(event) => {
                 setPassword(event.target.value)
@@ -66,7 +69,7 @@ function SignIn() {
               }}
             />
           </div>
-          {error ? <p className="signin-error" role="alert">{error}</p> : null}
+          {error ? <p className="signin-error" id="signin-error" role="alert">{error}</p> : null}
           <button className="signin-submit" type="submit">Sign In</button>
         </form>
       </section>
