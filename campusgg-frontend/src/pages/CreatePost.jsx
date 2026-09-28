@@ -98,21 +98,25 @@ function CreatePost() {
   }
 
   return (
-    <div className="create-lobby-wrapper">
+    <div className="create-lobby-wrapper page-enter">
       <form className="create-lobby-page create-post-page" onSubmit={handlePublish}>
         <button className="back-button create-post-back-button" type="button" aria-label="Back to Forum" onClick={() => navigate('/forum')}>
           <ArrowLeft size={28} strokeWidth={2.2} aria-hidden="true" />
         </button>
 
+        <header className="create-flow-heading">
+          <p className="page-kicker">Start a conversation</p>
+          <h1>Create a forum post</h1>
+          <p>Ask a question, share an insight, or bring the campus gaming community together around an idea.</p>
+        </header>
+
         <div className="create-title-fields create-post-title-fields">
-          <label className="sr-only" htmlFor="post-title">
-            Post Title
-          </label>
+          <label className="create-field-label" htmlFor="post-title">Post title</label>
           <input
             className="create-title-input"
             id="post-title"
             type="text"
-            placeholder="Type Title"
+            placeholder="Write a title that gets to the point"
             value={formData.title}
             maxLength={maxTitleLength}
             aria-describedby={errors.title ? 'post-title-error' : undefined}
@@ -125,14 +129,12 @@ function CreatePost() {
             </div>
           ) : null}
 
-          <label className="sr-only" htmlFor="post-subtitle">
-            Subtitle
-          </label>
+          <label className="create-field-label" htmlFor="post-subtitle">Short description</label>
           <input
             className="create-subtitle-input"
             id="post-subtitle"
             type="text"
-            placeholder="Subtitle"
+            placeholder="Add context for readers scanning the forum"
             value={formData.subtitle}
             maxLength={maxSubtitleLength}
             onChange={(event) => updateField('subtitle', event.target.value)}
@@ -153,6 +155,7 @@ function CreatePost() {
                 className={`mini-chip ${formData.tag === tag ? 'mini-chip-dark' : ''}`}
                 key={tag}
                 type="button"
+                aria-pressed={formData.tag === tag}
                 onClick={() => updateField('tag', tag)}
               >
                 {formData.tag === tag ? '✓ ' : ''}
@@ -168,13 +171,11 @@ function CreatePost() {
         </div>
 
         <div className="create-form-group">
-          <label className="sr-only" htmlFor="post-content">
-            Post Content
-          </label>
+          <label className="create-field-label" htmlFor="post-content">Post content</label>
           <textarea
             className="create-post-content-input"
             id="post-content"
-            placeholder="Text"
+            placeholder="Share the details with the community..."
             value={formData.content}
             maxLength={maxContentLength}
             aria-describedby={errors.content ? 'post-content-error' : undefined}
@@ -196,6 +197,7 @@ function CreatePost() {
                 className={`mini-chip ${formData.visibility === visibility ? 'mini-chip-dark' : ''}`}
                 key={visibility}
                 type="button"
+                aria-pressed={formData.visibility === visibility}
                 onClick={() => updateField('visibility', visibility)}
               >
                 {formData.visibility === visibility ? '✓ ' : ''}

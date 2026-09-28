@@ -93,13 +93,14 @@ function LobbyDetail() {
   }
 
   return (
-    <div className="lobby-detail-wrapper">
+    <div className="lobby-detail-wrapper page-enter">
       <button className="lobby-detail-back-button" type="button" aria-label="Back to Lobby Feed" onClick={handleBack}>
         <ArrowLeft size={28} strokeWidth={2.2} aria-hidden="true" />
       </button>
 
       <section className="lobby-detail-header">
         <div className="lobby-title-block">
+          <p className="lobby-detail-eyebrow">Lobby room</p>
           <div className="lobby-title-row">
             <div>
               <h1>{lobby.lobbyName}</h1>
@@ -141,11 +142,11 @@ function LobbyDetail() {
 
       <section className="lobby-status-row" aria-label="Player status filter">
         <Filter className="filter-icon" size={13} strokeWidth={2.3} aria-hidden="true" />
-        <button className={statusClassName('All Status')} type="button" onClick={() => selectStatusFilter('All Status')}>
+        <button className={statusClassName('All Status')} type="button" aria-pressed={statusFilter === 'All Status'} onClick={() => selectStatusFilter('All Status')}>
           {statusFilter === 'All Status' ? '✓ ' : ''}
           All Status
         </button>
-        <button className={statusClassName('Online')} type="button" onClick={() => selectStatusFilter('Online')}>
+        <button className={statusClassName('Online')} type="button" aria-pressed={statusFilter === 'Online'} onClick={() => selectStatusFilter('Online')}>
           {statusFilter === 'Online' ? '✓ ' : ''}
           Online
         </button>

@@ -91,13 +91,24 @@ function ForumFeed() {
   }
 
   return (
-    <section className="forum-page">
+    <section className="forum-page page-enter">
+      <header className="page-heading">
+        <div>
+          <p className="page-kicker">Campus conversations</p>
+          <h1>Forum</h1>
+          <p>Share strategies, find teammates, and keep up with the conversations shaping campus play.</p>
+        </div>
+        <button className="create-post-button" type="button" onClick={() => navigate('/create-post')}>
+          + Create Post
+        </button>
+      </header>
       <section className="forum-filter-row" aria-label="Forum filters">
-        <div className="filter-group" aria-label="Category filters">
+        <div className="filter-group" role="group" aria-label="Category filters">
           <Filter className="filter-icon" size={13} strokeWidth={2.3} aria-hidden="true" />
           <button
             className={categoryClassName('All Categories')}
             type="button"
+            aria-pressed={selectedCategory === 'All Categories'}
             onClick={() => handleSelectCategory('All Categories')}
           >
             {selectedCategory === 'All Categories' ? '✓ ' : ''}
@@ -106,18 +117,20 @@ function ForumFeed() {
           <button
             className={categoryClassName('Strategy')}
             type="button"
+            aria-pressed={selectedCategory === 'Strategy'}
             onClick={() => handleSelectCategory('Strategy')}
           >
             {selectedCategory === 'Strategy' ? '✓ ' : ''}
             Strategy
           </button>
-          <button className={categoryClassName('LFG')} type="button" onClick={() => handleSelectCategory('LFG')}>
+          <button className={categoryClassName('LFG')} type="button" aria-pressed={selectedCategory === 'LFG'} onClick={() => handleSelectCategory('LFG')}>
             {selectedCategory === 'LFG' ? '✓ ' : ''}
             LFG
           </button>
           <button
             className={categoryClassName('Meta Analysis')}
             type="button"
+            aria-pressed={selectedCategory === 'Meta Analysis'}
             onClick={() => handleSelectCategory('Meta Analysis')}
           >
             {selectedCategory === 'Meta Analysis' ? '✓ ' : ''}
@@ -126,6 +139,7 @@ function ForumFeed() {
           <button
             className={categoryClassName('Tournaments')}
             type="button"
+            aria-pressed={selectedCategory === 'Tournaments'}
             onClick={() => handleSelectCategory('Tournaments')}
           >
             {selectedCategory === 'Tournaments' ? '✓ ' : ''}
@@ -134,15 +148,16 @@ function ForumFeed() {
         </div>
 
         <div className="forum-filter-actions">
-          <div className="filter-group filter-group-right" aria-label="Sort options">
+          <div className="filter-group filter-group-right" role="group" aria-label="Sort options">
             <Clock className="filter-icon" size={13} strokeWidth={2.3} aria-hidden="true" />
-            <button className={sortClassName('Newest')} type="button" onClick={() => handleSelectSort('Newest')}>
+            <button className={sortClassName('Newest')} type="button" aria-pressed={selectedSort === 'Newest'} onClick={() => handleSelectSort('Newest')}>
               {selectedSort === 'Newest' ? '✓ ' : ''}
               Newest
             </button>
             <button
               className={sortClassName('Most Replies')}
               type="button"
+              aria-pressed={selectedSort === 'Most Replies'}
               onClick={() => handleSelectSort('Most Replies')}
             >
               {selectedSort === 'Most Replies' ? '✓ ' : ''}
@@ -151,6 +166,7 @@ function ForumFeed() {
             <button
               className={sortClassName('Most Liked')}
               type="button"
+              aria-pressed={selectedSort === 'Most Liked'}
               onClick={() => handleSelectSort('Most Liked')}
             >
               {selectedSort === 'Most Liked' ? '✓ ' : ''}
@@ -158,9 +174,6 @@ function ForumFeed() {
             </button>
           </div>
 
-          <button className="create-post-button" type="button" onClick={() => navigate('/create-post')}>
-            + Create Post
-          </button>
         </div>
       </section>
 
@@ -205,6 +218,7 @@ function ForumFeed() {
               className={`pagination-item ${safeCurrentPage === page ? 'pagination-item-active' : ''}`}
               key={page}
               type="button"
+              aria-current={safeCurrentPage === page ? 'page' : undefined}
               onClick={() => selectPage(page)}
             >
               {page}

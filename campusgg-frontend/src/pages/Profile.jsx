@@ -19,7 +19,7 @@ function Profile() {
   }
 
   return (
-    <div className="profile-page">
+    <div className="profile-page page-enter">
       <section className="profile-card" aria-labelledby="profile-title">
         <header className="profile-header">
           <div
