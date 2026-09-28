@@ -27,6 +27,7 @@
     "@nestjs/platform-socket.io": "^11.2.6",
     "@nestjs/typeorm": "^12.0.1",
     "@nestjs/websockets": "^11.2.6",
+    "nodemailer": "^10.0.11",
     "pg": "^8.23.0",
     "redis": "^6.2.1",
     "reflect-metadata": "^0.2.2",
@@ -44,6 +45,7 @@
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
@@ -70,6 +72,10 @@
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "moduleNameMapper": {
+      "^@nestjs/typeorm$": "<rootDir>/../test/__mocks__/@nestjs/typeorm.ts",
+      "^@nestjs/config$": "<rootDir>/../test/__mocks__/@nestjs/config.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

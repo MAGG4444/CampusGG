@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { AuthService } from './auth.service';
 import { User } from '../users/user.entity';
 import { RegisterDto } from './dto/register.dto';
+import { MailService } from './mail.service';
 
 /**
  * Creates a mock TypeORM Repository with jest.fn() stubs for the methods
@@ -24,9 +25,13 @@ function createMockRepository(): Partial<
 describe('AuthService', () => {
   let service: AuthService;
   let repo: ReturnType<typeof createMockRepository>;
+  let mailService: { sendVerificationEmail: jest.Mock };
 
   beforeEach(async () => {
     repo = createMockRepository();
+    mailService = {
+      sendVerificationEmail: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,6 +39,10 @@ describe('AuthService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: repo,
+        },
+        {
+          provide: MailService,
+          useValue: mailService,
         },
       ],
     }).compile();
@@ -91,7 +100,7 @@ describe('AuthService', () => {
   it('should normalize email to lowercase and trimmed', async () => {
     repo.findOne!.mockResolvedValue(null);
     repo.create!.mockImplementation((data) => data as User);
-    repo.save!.mockImplementation(async (user) => user as User);
+    repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
     await service.register(validDto);
 
@@ -107,7 +116,7 @@ describe('AuthService', () => {
   it('should generate a 64-char hex verification token', async () => {
     repo.findOne!.mockResolvedValue(null);
     repo.create!.mockImplementation((data) => data as User);
-    repo.save!.mockImplementation(async (user) => user as User);
+    repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
     const result = await service.register(validDto);
 
@@ -119,7 +128,7 @@ describe('AuthService', () => {
   it('should set tokenExpiresAt roughly 24 hours in the future', async () => {
     repo.findOne!.mockResolvedValue(null);
     repo.create!.mockImplementation((data) => data as User);
-    repo.save!.mockImplementation(async (user) => user as User);
+    repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
     const before = Date.now();
     const result = await service.register(validDto);
@@ -135,12 +144,35 @@ describe('AuthService', () => {
   it('should set eduVerified to false', async () => {
     repo.findOne!.mockResolvedValue(null);
     repo.create!.mockImplementation((data) => data as User);
-    repo.save!.mockImplementation(async (user) => user as User);
+    repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
     await service.register(validDto);
 
     expect(repo.create).toHaveBeenCalledWith(
       expect.objectContaining({ eduVerified: false }),
     );
+  });
+
+  it('should send verification email upon successful registration', async () => {
+    repo.findOne!.mockResolvedValue(null);
+    repo.create!.mockImplementation((data) => data as User);
+    repo.save!.mockImplementation((user) => Promise.resolve(user as User));
+
+    const result = await service.register(validDto);
+
+    expect(mailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
+    expect(mailService.sendVerificationEmail).toHaveBeenCalledWith(
+      'john@purdue.edu',
+      'johndoe',
+      result.verificationToken,
+    );
+  });
+
+  it('should not send email if registration fails validation', async () => {
+    const invalidDto = { ...validDto, email: 'invalid@gmail.com' };
+    await expect(service.register(invalidDto)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(mailService.sendVerificationEmail).not.toHaveBeenCalled();
   });
 });
