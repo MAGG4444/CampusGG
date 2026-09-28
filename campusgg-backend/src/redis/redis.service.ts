@@ -33,7 +33,7 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.client.connect();
       console.log('Connected to AWS ElastiCache');
-    } catch (error) {
+    } catch {
       console.error('Could not connect to AWS ElastiCache.');
     }
   }

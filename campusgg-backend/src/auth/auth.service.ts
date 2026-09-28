@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 
 import { User } from '../users/user.entity';
 import { RegisterDto } from './dto/register.dto';
+import { MailService } from './mail.service';
 
 /** Regex that matches a valid .edu email address. */
 const EDU_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu$/i;
@@ -26,6 +27,7 @@ export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    private readonly mailService: MailService,
   ) {}
 
   /**
@@ -36,7 +38,8 @@ export class AuthService {
    *   2. Check for duplicate email or username.
    *   3. Generate a cryptographically secure verification token.
    *   4. Save the user with `eduVerified: false`.
-   *   5. Return the persisted user (token is stripped before HTTP response
+   *   5. Send verification email via MailService.
+   *   6. Return the persisted user (token is stripped before HTTP response
    *      by the controller).
    */
   async register(registerDto: RegisterDto): Promise<User> {
@@ -82,6 +85,15 @@ export class AuthService {
       tokenExpiresAt,
     });
 
-    return this.usersRepository.save(user);
+    const savedUser = await this.usersRepository.save(user);
+
+    // ── 5. Send verification email ───────────────────────────────────────
+    await this.mailService.sendVerificationEmail(
+      savedUser.email,
+      savedUser.username,
+      verificationToken,
+    );
+
+    return savedUser;
   }
 }

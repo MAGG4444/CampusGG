@@ -43,8 +43,9 @@
 *.pdb
 
 # Kernel Module Compile Results
-*.mod*
-!campusgg-backend/src/app.module.ts
+*.mod
+*.mod.c
+!*.module.ts
 *.cmd
 .tmp_versions/
 modules.order
