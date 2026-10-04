@@ -1,7 +1,7 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, PanelRightOpen } from 'lucide-react'
 import ChatAvatar from './ChatAvatar.jsx'
 
-function ChatHeader({ conversation, onBack }) {
+function ChatHeader({ conversation, onBack, onOpenDetails, detailsOpen, detailsButtonRef }) {
   return (
     <header className="active-chat-header">
       <button className="chat-mobile-back" type="button" onClick={onBack} aria-label="Back to conversations">
@@ -20,6 +20,17 @@ function ChatHeader({ conversation, onBack }) {
           {conversation.online ? 'Online' : 'Offline'} <span aria-hidden="true">·</span> {conversation.handle}
         </p>
       </div>
+      <button
+        className="chat-details-toggle"
+        ref={detailsButtonRef}
+        type="button"
+        aria-label={`View details for ${conversation.username}`}
+        aria-controls="chat-details-panel"
+        aria-expanded={detailsOpen}
+        onClick={onOpenDetails}
+      >
+        <PanelRightOpen size={20} strokeWidth={2.1} aria-hidden="true" />
+      </button>
     </header>
   )
 }

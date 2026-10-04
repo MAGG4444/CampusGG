@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import ChatComposer from '../components/chat/ChatComposer.jsx'
+import ChatDetailsPanel from '../components/chat/ChatDetailsPanel.jsx'
 import ChatEmptyState from '../components/chat/ChatEmptyState.jsx'
 import ChatHeader from '../components/chat/ChatHeader.jsx'
 import ChatMessage from '../components/chat/ChatMessage.jsx'
@@ -13,8 +14,11 @@ function Chat() {
   const [selectedConversationId, setSelectedConversationId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [messageDraft, setMessageDraft] = useState('')
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const activePanelRef = useRef(null)
   const chatHistoryRef = useRef(null)
+  const detailsButtonRef = useRef(null)
+  const detailsPanelRef = useRef(null)
   const previousConversationIdRef = useRef(null)
   const searchInputRef = useRef(null)
 
@@ -47,15 +51,28 @@ function Chat() {
     previousConversationIdRef.current = selectedConversation.id
   }, [selectedConversation, selectedConversation?.messages.length])
 
+  useEffect(() => {
+    if (detailsOpen) {
+      detailsPanelRef.current?.focus({ preventScroll: true })
+    }
+  }, [detailsOpen])
+
   function handleSelectConversation(conversationId) {
+    setDetailsOpen(false)
     setMessageDraft('')
     setSelectedConversationId(conversationId)
   }
 
   function handleBackToConversations() {
+    setDetailsOpen(false)
     setMessageDraft('')
     setSelectedConversationId(null)
     requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
+  }
+
+  function handleCloseDetails() {
+    setDetailsOpen(false)
+    requestAnimationFrame(() => detailsButtonRef.current?.focus({ preventScroll: true }))
   }
 
   function handleSendMessage(messageText) {
@@ -100,7 +117,10 @@ function Chat() {
         <p>Keep plans, callouts, and campus connections in one place.</p>
       </div>
 
-      <section className="chat-workspace" aria-label="CampusGG chat">
+      <section
+        className={`chat-workspace ${detailsOpen ? 'chat-workspace-details-open' : ''}`}
+        aria-label="CampusGG chat"
+      >
         <aside className={`chat-sidebar ${selectedConversation ? 'chat-sidebar-mobile-hidden' : ''}`}>
           <div className="chat-sidebar-header">
             <div>
@@ -128,7 +148,13 @@ function Chat() {
         >
           {selectedConversation ? (
             <>
-              <ChatHeader conversation={selectedConversation} onBack={handleBackToConversations} />
+              <ChatHeader
+                conversation={selectedConversation}
+                onBack={handleBackToConversations}
+                onOpenDetails={() => setDetailsOpen(true)}
+                detailsOpen={detailsOpen}
+                detailsButtonRef={detailsButtonRef}
+              />
               <div
                 ref={chatHistoryRef}
                 className="chat-history"
@@ -158,6 +184,13 @@ function Chat() {
             <ChatEmptyState />
           )}
         </section>
+        {selectedConversation && detailsOpen ? (
+          <ChatDetailsPanel
+            conversation={selectedConversation}
+            onClose={handleCloseDetails}
+            panelRef={detailsPanelRef}
+          />
+        ) : null}
       </section>
     </div>
   )
