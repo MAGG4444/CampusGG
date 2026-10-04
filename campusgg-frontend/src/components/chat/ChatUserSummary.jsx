@@ -7,7 +7,7 @@ const connectionIcons = {
   'Not connected': UserRoundPlus,
 }
 
-function ChatUserSummary({ conversation }) {
+function ChatUserSummary({ conversation, onConnectionFeedback }) {
   const details = conversation.details
   const ConnectionIcon = connectionIcons[details?.connectionStatus] || UserRoundPlus
 
@@ -26,10 +26,16 @@ function ChatUserSummary({ conversation }) {
         {conversation.online ? 'Online now' : 'Currently offline'}
       </p>
       {details?.connectionStatus ? (
-        <span className="chat-connection-status" data-status={details.connectionStatus.toLowerCase().replace(' ', '-')}>
+        <button
+          className="chat-connection-status"
+          type="button"
+          data-status={details.connectionStatus.toLowerCase().replace(' ', '-')}
+          aria-label={`Connection status: ${details.connectionStatus}. Show connection feedback`}
+          onClick={() => onConnectionFeedback(conversation)}
+        >
           <ConnectionIcon size={15} strokeWidth={2.2} aria-hidden="true" />
           {details.connectionStatus}
-        </span>
+        </button>
       ) : null}
     </div>
   )
