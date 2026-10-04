@@ -1,3 +1,5 @@
+export const CURRENT_USER_ID = 'campus-user'
+
 export const conversations = [
   {
     id: 'maya-chen',
@@ -9,9 +11,9 @@ export const conversations = [
     unreadCount: 2,
     online: true,
     messages: [
-      { id: 'maya-1', sender: 'them', text: 'Are you still up for a Valorant warmup tonight?', timestamp: '6:42 PM' },
-      { id: 'maya-2', sender: 'me', text: 'Definitely. I should be free right after my last class.', timestamp: '6:44 PM' },
-      { id: 'maya-3', sender: 'them', text: 'Perfect. I can reserve the esports lab for us after class.', timestamp: '6:46 PM' },
+      { id: 'maya-1', senderId: 'maya-chen', text: 'Are you still up for a Valorant warmup tonight?', timestamp: '6:42 PM' },
+      { id: 'maya-2', senderId: CURRENT_USER_ID, text: 'Definitely. I should be free right after my last class.', timestamp: '6:44 PM' },
+      { id: 'maya-3', senderId: 'maya-chen', text: 'Perfect. I can reserve the esports lab for us after class.', timestamp: '6:46 PM' },
     ],
   },
   {
@@ -24,9 +26,9 @@ export const conversations = [
     unreadCount: 4,
     online: true,
     messages: [
-      { id: 'north-1', sender: 'them', text: 'Scrim room is open Friday at 7 if everyone can make it.', timestamp: '5:58 PM' },
-      { id: 'north-2', sender: 'me', text: 'I am in. I can bring an extra headset too.', timestamp: '6:03 PM' },
-      { id: 'north-3', sender: 'them', text: 'We still need one support player for Friday.', timestamp: '6:21 PM' },
+      { id: 'north-1', senderId: 'north-hall-stack', text: 'Scrim room is open Friday at 7 if everyone can make it.', timestamp: '5:58 PM' },
+      { id: 'north-2', senderId: CURRENT_USER_ID, text: 'I am in. I can bring an extra headset too.', timestamp: '6:03 PM' },
+      { id: 'north-3', senderId: 'north-hall-stack', text: 'We still need one support player for Friday.', timestamp: '6:21 PM' },
     ],
   },
   {
@@ -39,8 +41,8 @@ export const conversations = [
     unreadCount: 0,
     online: false,
     messages: [
-      { id: 'eli-1', sender: 'me', text: 'I dropped the rotation notes in the forum thread.', timestamp: '4:51 PM' },
-      { id: 'eli-2', sender: 'them', text: 'Found them. That rotation guide was exactly what we needed.', timestamp: '5:07 PM' },
+      { id: 'eli-1', senderId: CURRENT_USER_ID, text: 'I dropped the rotation notes in the forum thread.', timestamp: '4:51 PM' },
+      { id: 'eli-2', senderId: 'eli-brooks', text: 'Found them. That rotation guide was exactly what we needed.', timestamp: '5:07 PM' },
     ],
   },
   {
@@ -53,9 +55,9 @@ export const conversations = [
     unreadCount: 0,
     online: true,
     messages: [
-      { id: 'samira-1', sender: 'them', text: 'That last round was way too close.', timestamp: '2:14 PM' },
-      { id: 'samira-2', sender: 'me', text: 'Your clutch saved the whole match.', timestamp: '2:16 PM' },
-      { id: 'samira-3', sender: 'them', text: 'GG! Let’s run it back this weekend.', timestamp: '2:18 PM' },
+      { id: 'samira-1', senderId: 'samira-patel', text: 'That last round was way too close.', timestamp: '2:14 PM' },
+      { id: 'samira-2', senderId: CURRENT_USER_ID, text: 'Your clutch saved the whole match.', timestamp: '2:16 PM' },
+      { id: 'samira-3', senderId: 'samira-patel', text: 'GG! Let’s run it back this weekend.', timestamp: '2:18 PM' },
     ],
   },
   {
@@ -68,8 +70,8 @@ export const conversations = [
     unreadCount: 0,
     online: false,
     messages: [
-      { id: 'fgc-1', sender: 'them', text: 'Reminder: the student center tournament is this Saturday.', timestamp: 'Tuesday, 11:30 AM' },
-      { id: 'fgc-2', sender: 'them', text: 'Bracket check-in opens at noon tomorrow.', timestamp: 'Tuesday, 11:32 AM' },
+      { id: 'fgc-1', senderId: 'campus-fgc', text: 'Reminder: the student center tournament is this Saturday.', timestamp: 'Tuesday, 11:30 AM' },
+      { id: 'fgc-2', senderId: 'campus-fgc', text: 'Bracket check-in opens at noon tomorrow.', timestamp: 'Tuesday, 11:32 AM' },
     ],
   },
 ]
