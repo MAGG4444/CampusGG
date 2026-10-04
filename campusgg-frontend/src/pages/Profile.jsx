@@ -1,4 +1,5 @@
 import { Navigate, useNavigate } from 'react-router-dom'
+import VersionLabel from '../components/VersionLabel.jsx'
 import { useAuth } from '../context/useAuth.js'
 import './Profile.css'
 
@@ -82,6 +83,7 @@ function Profile() {
         </div>
 
         <div className="profile-actions">
+          <VersionLabel />
           <button className="profile-signout" type="button" onClick={handleSignOut}>
             Sign Out
           </button>

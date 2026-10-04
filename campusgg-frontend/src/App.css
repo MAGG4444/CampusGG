@@ -28,6 +28,14 @@
 
 .app-main { position: relative; flex: 1; }
 
+.app-footer {
+  width: min(100%, var(--page-width));
+  margin: 0 auto;
+  padding: 18px var(--page-gutter) 24px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
 .page-kicker {
   display: inline-flex;
   align-items: center;

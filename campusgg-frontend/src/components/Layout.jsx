@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom'
 import Navbar from './Navbar.jsx'
+import VersionLabel from './VersionLabel.jsx'
 
 function Layout() {
   return (
@@ -9,6 +10,9 @@ function Layout() {
       <main className="app-main" id="main-content">
         <Outlet />
       </main>
+      <footer className="app-footer">
+        <VersionLabel />
+      </footer>
     </div>
   )
 }
