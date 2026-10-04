@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Clock3, MessageCircle, Send, UserCheck, UserRoundPlus } from 'lucide-react'
 import ChatComposer from '../components/chat/ChatComposer.jsx'
 import ChatDetailsPanel from '../components/chat/ChatDetailsPanel.jsx'
 import ChatEmptyState from '../components/chat/ChatEmptyState.jsx'
@@ -6,10 +7,12 @@ import ChatHeader from '../components/chat/ChatHeader.jsx'
 import ChatMessage from '../components/chat/ChatMessage.jsx'
 import ConversationList from '../components/chat/ConversationList.jsx'
 import ConversationSearch from '../components/chat/ConversationSearch.jsx'
+import { useNotifications } from '../components/notifications/useNotifications.js'
 import { conversations as initialConversations, CURRENT_USER_ID } from '../data/chatData.js'
 import './Chat.css'
 
 function Chat() {
+  const { addNotification } = useNotifications()
   const [chatConversations, setChatConversations] = useState(initialConversations)
   const [selectedConversationId, setSelectedConversationId] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -21,6 +24,7 @@ function Chat() {
   const detailsPanelRef = useRef(null)
   const previousConversationIdRef = useRef(null)
   const searchInputRef = useRef(null)
+  const notifiedConversationIdsRef = useRef(new Set())
 
   const filteredConversations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -58,6 +62,22 @@ function Chat() {
   }, [detailsOpen])
 
   function handleSelectConversation(conversationId) {
+    const conversation = chatConversations.find((item) => item.id === conversationId)
+
+    if (
+      conversation?.unreadCount > 0
+      && !notifiedConversationIdsRef.current.has(conversationId)
+    ) {
+      notifiedConversationIdsRef.current.add(conversationId)
+      addNotification({
+        type: 'info',
+        title: `New messages from ${conversation.username}`,
+        message: conversation.lastMessage,
+        icon: MessageCircle,
+        duration: 5000,
+      })
+    }
+
     setDetailsOpen(false)
     setMessageDraft('')
     setSelectedConversationId(conversationId)
@@ -104,7 +124,44 @@ function Chat() {
       ),
     )
     setMessageDraft('')
+    addNotification({
+      type: 'success',
+      title: 'Message sent',
+      message: `Your message to ${selectedConversation.username} was added to this conversation.`,
+      icon: Send,
+      duration: 4000,
+    })
     return true
+  }
+
+  function handleConnectionFeedback(conversation) {
+    const status = conversation.details?.connectionStatus
+    const feedbackByStatus = {
+      Connected: {
+        type: 'info',
+        title: 'Already connected',
+        message: `You and ${conversation.username} are already connected on CampusGG.`,
+        icon: UserCheck,
+      },
+      Pending: {
+        type: 'warning',
+        title: 'Connection pending',
+        message: `The local profile marks your connection with ${conversation.username} as pending.`,
+        icon: Clock3,
+      },
+      'Not connected': {
+        type: 'error',
+        title: 'Connection unavailable',
+        message: 'Connection requests are not available in this frontend-only preview.',
+        icon: UserRoundPlus,
+      },
+    }
+
+    addNotification(feedbackByStatus[status] || {
+      type: 'info',
+      title: 'Connection status unavailable',
+      message: 'No connection information is available for this conversation.',
+    })
   }
 
   return (
@@ -188,6 +245,7 @@ function Chat() {
           <ChatDetailsPanel
             conversation={selectedConversation}
             onClose={handleCloseDetails}
+            onConnectionFeedback={handleConnectionFeedback}
             panelRef={detailsPanelRef}
           />
         ) : null}

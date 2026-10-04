@@ -2,7 +2,7 @@ import { FolderOpen, Gamepad2, GraduationCap, Info, MapPin, X } from 'lucide-rea
 import ChatInfoSection from './ChatInfoSection.jsx'
 import ChatUserSummary from './ChatUserSummary.jsx'
 
-function ChatDetailsPanel({ conversation, onClose, panelRef }) {
+function ChatDetailsPanel({ conversation, onClose, onConnectionFeedback, panelRef }) {
   const details = conversation.details
 
   function handleKeyDown(event) {
@@ -29,7 +29,10 @@ function ChatDetailsPanel({ conversation, onClose, panelRef }) {
       </header>
 
       <div className="chat-details-content">
-        <ChatUserSummary conversation={conversation} />
+        <ChatUserSummary
+          conversation={conversation}
+          onConnectionFeedback={onConnectionFeedback}
+        />
 
         {details ? (
           <>
