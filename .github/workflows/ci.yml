@@ -23,6 +23,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Read CampusGG version
+        id: version
+        working-directory: .
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -42,6 +47,12 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: campusgg-backend-v${{ steps.version.outputs.version }}
+          path: campusgg-backend/dist
+
   frontend-build-and-test:
     name: Build and Test Frontend CampusGG
     if: github.ref == 'refs/heads/dev' || github.base_ref == 'dev'
@@ -53,7 +64,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@4
+        uses: actions/checkout@v4
+
+      - name: Read CampusGG version
+        id: version
+        working-directory: .
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -70,3 +86,9 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: campusgg-frontend-v${{ steps.version.outputs.version }}
+          path: campusgg-frontend/dist
