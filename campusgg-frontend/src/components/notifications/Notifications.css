@@ -8,6 +8,7 @@
   display: grid;
   gap: 12px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: rgba(213, 178, 82, 0.35) transparent;
   pointer-events: none;
@@ -78,20 +79,21 @@
 }
 
 .notification-dismiss:hover { border-color: var(--border); background: rgba(255, 255, 255, 0.05); color: var(--text); transform: translateY(-1px); }
+.notification-dismiss:active { transform: scale(0.96); }
 .notification-toast-exiting { animation: notification-exit 180ms ease-in both; }
 
 @keyframes notification-enter {
-  from { opacity: 0; transform: translateX(18px); }
-  to { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes notification-exit {
-  from { opacity: 1; transform: translateX(0); }
-  to { opacity: 0; transform: translateX(12px); }
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-6px); }
 }
 
 @media (max-width: 700px) {
-  .notification-viewport { top: 80px; right: 16px; left: 16px; width: auto; }
+  .notification-viewport { top: 158px; right: 16px; left: 16px; width: auto; max-height: max(180px, calc(100dvh - 254px)); }
   .notification-toast { grid-template-columns: 38px minmax(0, 1fr) 44px; padding-left: 14px; gap: 9px; }
   .notification-icon { width: 38px; height: 38px; }
 }

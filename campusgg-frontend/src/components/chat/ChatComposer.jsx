@@ -1,9 +1,17 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Send } from 'lucide-react'
 
 function ChatComposer({ value, onChange, onSend, recipientName }) {
   const textareaRef = useRef(null)
   const canSend = value.trim().length > 0
+
+  useLayoutEffect(() => {
+    const textarea = textareaRef.current
+    if (!textarea) return
+
+    textarea.style.height = 'auto'
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 112)}px`
+  }, [value])
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -27,7 +35,7 @@ function ChatComposer({ value, onChange, onSend, recipientName }) {
       <textarea
         id="chat-message-draft"
         ref={textareaRef}
-        rows="1"
+        rows={1}
         placeholder={`Message ${recipientName}`}
         value={value}
         onChange={(event) => onChange(event.target.value)}

@@ -39,21 +39,22 @@ function Chat() {
   const selectedConversation = chatConversations.find(
     (conversation) => conversation.id === selectedConversationId,
   )
+  const selectedMessageCount = selectedConversation?.messages.length ?? 0
 
   useEffect(() => {
-    if (selectedConversation) {
+    if (selectedConversationId) {
       activePanelRef.current?.focus({ preventScroll: true })
     }
-  }, [selectedConversation])
+  }, [selectedConversationId])
 
   useEffect(() => {
-    if (!selectedConversation || !chatHistoryRef.current) return
+    if (!selectedConversationId || !chatHistoryRef.current) return
 
-    const behavior = previousConversationIdRef.current === selectedConversation.id ? 'smooth' : 'auto'
+    const behavior = previousConversationIdRef.current === selectedConversationId ? 'smooth' : 'auto'
     const history = chatHistoryRef.current
     history.scrollTo({ top: history.scrollHeight, behavior })
-    previousConversationIdRef.current = selectedConversation.id
-  }, [selectedConversation, selectedConversation?.messages.length])
+    previousConversationIdRef.current = selectedConversationId
+  }, [selectedConversationId, selectedMessageCount])
 
   useEffect(() => {
     if (detailsOpen) {
@@ -165,7 +166,7 @@ function Chat() {
   }
 
   return (
-    <div className="chat-page page-enter">
+    <div className={`chat-page page-enter ${selectedConversation ? 'chat-page-conversation-active' : ''}`}>
       <div className="chat-page-heading">
         <div>
           <p className="page-kicker">Squad communications</p>
@@ -221,14 +222,22 @@ function Chat() {
                 aria-relevant="additions"
               >
                 <div className="chat-date-divider"><span>Today</span></div>
-                {selectedConversation.messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    message={message}
-                    currentUserId={CURRENT_USER_ID}
-                    senderName={selectedConversation.username}
-                  />
-                ))}
+                {selectedConversation.messages.length > 0 ? (
+                  selectedConversation.messages.map((message) => (
+                    <ChatMessage
+                      key={message.id}
+                      message={message}
+                      currentUserId={CURRENT_USER_ID}
+                      senderName={selectedConversation.username}
+                    />
+                  ))
+                ) : (
+                  <div className="chat-history-empty" role="status">
+                    <MessageCircle size={28} strokeWidth={1.8} aria-hidden="true" />
+                    <strong>No messages yet</strong>
+                    <span>Send a message to start this conversation.</span>
+                  </div>
+                )}
               </div>
               <ChatComposer
                 value={messageDraft}
