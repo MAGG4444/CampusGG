@@ -14,6 +14,7 @@ import LobbyDetail from './pages/LobbyDetail.jsx'
 import PostDetail from './pages/PostDetail.jsx'
 import Profile from './pages/Profile.jsx'
 import SignIn from './pages/SignIn.jsx'
+import SignUp from './pages/SignUp.jsx'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/chat" element={<Chat />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/signin" element={<SignIn />} />
+                <Route path="/signup" element={<SignUp />} />
               </Route>
             </Routes>
           </BrowserRouter>

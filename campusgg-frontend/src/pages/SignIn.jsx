@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import './SignIn.css'
 
@@ -72,6 +72,9 @@ function SignIn() {
           {error ? <p className="signin-error" id="signin-error" role="alert">{error}</p> : null}
           <button className="signin-submit" type="submit">Sign In</button>
         </form>
+        <p className="auth-switch">
+          Don&apos;t have an account? <Link to="/signup">Sign Up</Link>
+        </p>
       </section>
     </div>
   )
