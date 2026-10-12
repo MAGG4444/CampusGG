@@ -13,7 +13,6 @@ describe('AuthController', () => {
   beforeEach(async () => {
     authService = {
       register: jest.fn(),
-      verify: jest.fn(),
       verifyEmail: jest.fn(),
       resendVerification: jest.fn(),
     };
@@ -42,7 +41,7 @@ describe('AuthController', () => {
       username: 'johndoe',
       displayName: 'John Doe',
       eduVerified: false,
-      verificationToken: 'secret-token-value',
+      verificationToken: '482910',
       password: 'hashed-password',
       tokenExpiresAt: new Date(),
       createdAt: new Date(),
@@ -66,40 +65,49 @@ describe('AuthController', () => {
     expect(result).toHaveProperty('eduVerified', false);
   });
 
-  // ── GET /api/auth/verify ───────────────────────────────────────────────
+  // ── POST /api/auth/verify ──────────────────────────────────────────────
 
   it('should return 200 JSON confirmation when verifyEmail succeeds', async () => {
     authService.verifyEmail!.mockResolvedValue({
-      message: 'Email verified successfully. You can now log in.',
+      statusCode: 200,
+      message: 'Email verified successfully.',
     });
 
-    const result = await controller.verify('valid-token');
+    const result = await controller.verify({
+      email: 'john@purdue.edu',
+      code: '482910',
+    });
 
-    expect(authService.verifyEmail).toHaveBeenCalledWith('valid-token');
+    expect(authService.verifyEmail).toHaveBeenCalledWith(
+      'john@purdue.edu',
+      '482910',
+    );
     expect(result).toEqual({
       statusCode: 200,
-      message: 'Email verified successfully. You can now log in.',
+      message: 'Email verified successfully.',
     });
   });
 
-  it('should propagate BadRequestException when token is invalid', async () => {
+  it('should propagate BadRequestException when code is invalid', async () => {
     authService.verifyEmail!.mockRejectedValue(
-      new BadRequestException('Invalid verification token'),
+      new BadRequestException('Invalid verification code'),
     );
 
-    await expect(controller.verify('invalid-token')).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      controller.verify({ email: 'john@purdue.edu', code: '000000' }),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  it('should propagate BadRequestException when token has expired', async () => {
+  it('should propagate BadRequestException when code has expired', async () => {
     authService.verifyEmail!.mockRejectedValue(
-      new BadRequestException('Verification token has expired'),
+      new BadRequestException(
+        'Verification code has expired. Please request a new one.',
+      ),
     );
 
-    await expect(controller.verify('expired-token')).rejects.toThrow(
-      BadRequestException,
-    );
+    await expect(
+      controller.verify({ email: 'john@purdue.edu', code: '482910' }),
+    ).rejects.toThrow(BadRequestException);
   });
 
   it('should call resendVerification on auth service', async () => {

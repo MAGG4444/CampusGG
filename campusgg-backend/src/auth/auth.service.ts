@@ -22,11 +22,8 @@ import { MailService } from './mail.service';
 const EDU_EMAIL_REGEX =
   /^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[eE][dD][uU]$/;
 
-/** How many random bytes to use for the verification token (32 = 64 hex chars). */
-const TOKEN_BYTE_LENGTH = 32;
-
-/** How long (in milliseconds) a verification token stays valid (24 hours). */
-const TOKEN_TTL_MS = 24 * 60 * 60 * 1000;
+/** How long (in milliseconds) a verification code stays valid (10 minutes). */
+const TOKEN_TTL_MS = 10 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -87,21 +84,17 @@ export class AuthService {
       hashedPassword = await bcrypt.hash(registerDto.password, 10);
     }
 
-    // ── 4. Generate verification token and hash for storage ──────────────
-    const rawToken = crypto.randomBytes(TOKEN_BYTE_LENGTH).toString('hex');
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
+    // ── 4. Generate 6-digit OTP verification code (expires in 10 minutes) ─
+    const code = crypto.randomInt(100000, 999999).toString();
     const tokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
-    // ── 5. Persist user with token hash ──────────────────────────────────
+    // ── 5. Persist user with 6-digit code ────────────────────────────────
     const user = this.usersRepository.create({
       email,
       username,
       displayName,
       eduVerified: false,
-      verificationToken: tokenHash,
+      verificationToken: code,
       tokenExpiresAt,
       password: hashedPassword,
     });
@@ -128,7 +121,7 @@ export class AuthService {
       await this.mailService.sendVerificationEmail(
         savedUser.email,
         savedUser.username,
-        rawToken,
+        code,
       );
     } catch (mailError) {
       this.logger.error(
@@ -141,24 +134,24 @@ export class AuthService {
   }
 
   /**
-   * Verify a student email account using the verification token (Issue #20).
+   * Verify a student email account using their email and 6-digit OTP code.
    */
-  async verifyEmail(token: string): Promise<{ message: string }> {
-    if (!token || typeof token !== 'string' || !token.trim()) {
-      throw new BadRequestException('Invalid verification token');
+  async verifyEmail(
+    emailInput: string,
+    codeInput: string,
+  ): Promise<{ statusCode: number; message: string }> {
+    if (!emailInput || typeof emailInput !== 'string' || !emailInput.trim()) {
+      throw new BadRequestException('A valid email address is required.');
+    }
+    if (!codeInput || typeof codeInput !== 'string' || !codeInput.trim()) {
+      throw new BadRequestException('Invalid verification code');
     }
 
-    const rawToken = token.trim();
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
+    const email = emailInput.trim().toLowerCase();
+    const code = codeInput.trim();
 
     const user = await this.usersRepository.findOne({
-      where: [
-        { verificationToken: tokenHash },
-        { verificationToken: rawToken },
-      ],
+      where: { email },
       select: {
         id: true,
         email: true,
@@ -173,11 +166,17 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new BadRequestException('Invalid verification token');
+      throw new BadRequestException('User not found.');
+    }
+
+    if (!user.verificationToken || user.verificationToken !== code) {
+      throw new BadRequestException('Invalid verification code');
     }
 
     if (!user.tokenExpiresAt || user.tokenExpiresAt < new Date()) {
-      throw new BadRequestException('Verification token has expired');
+      throw new BadRequestException(
+        'Verification code has expired. Please request a new one.',
+      );
     }
 
     // Mark as verified and securely nullify token and expiration to prevent reuse
@@ -188,54 +187,13 @@ export class AuthService {
     await this.usersRepository.save(user);
 
     return {
-      message: 'Email verified successfully. You can now log in.',
+      statusCode: 200,
+      message: 'Email verified successfully.',
     };
   }
 
   /**
-   * Verify a student email account using the raw verification token (returns User).
-   */
-  async verify(rawToken: string): Promise<User> {
-    if (!rawToken || typeof rawToken !== 'string' || !rawToken.trim()) {
-      throw new BadRequestException('Invalid verification token');
-    }
-
-    const token = rawToken.trim();
-    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
-
-    const user = await this.usersRepository.findOne({
-      where: [{ verificationToken: tokenHash }, { verificationToken: token }],
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        displayName: true,
-        eduVerified: true,
-        verificationToken: true,
-        tokenExpiresAt: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException('Invalid verification token');
-    }
-
-    if (!user.tokenExpiresAt || user.tokenExpiresAt < new Date()) {
-      throw new BadRequestException('Verification token has expired');
-    }
-
-    // Mark as verified and consume the token
-    user.eduVerified = true;
-    user.verificationToken = null;
-    user.tokenExpiresAt = null;
-
-    return this.usersRepository.save(user);
-  }
-
-  /**
-   * Resend verification email to an unverified user.
+   * Resend verification email with a fresh 6-digit code to an unverified user.
    */
   async resendVerification(emailInput: string): Promise<{ message: string }> {
     if (!emailInput || typeof emailInput !== 'string') {
@@ -263,7 +221,7 @@ export class AuthService {
     if (!user) {
       return {
         message:
-          'If an account with this email exists, a verification link has been sent.',
+          'If an account with this email exists, a verification code has been sent.',
       };
     }
 
@@ -271,14 +229,10 @@ export class AuthService {
       throw new BadRequestException('This account is already verified.');
     }
 
-    const rawToken = crypto.randomBytes(TOKEN_BYTE_LENGTH).toString('hex');
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
+    const code = crypto.randomInt(100000, 999999).toString();
     const tokenExpiresAt = new Date(Date.now() + TOKEN_TTL_MS);
 
-    user.verificationToken = tokenHash;
+    user.verificationToken = code;
     user.tokenExpiresAt = tokenExpiresAt;
     await this.usersRepository.save(user);
 
@@ -286,7 +240,7 @@ export class AuthService {
       await this.mailService.sendVerificationEmail(
         user.email,
         user.username,
-        rawToken,
+        code,
       );
     } catch (mailError) {
       this.logger.error(
@@ -296,7 +250,7 @@ export class AuthService {
     }
 
     return {
-      message: 'A fresh verification link has been sent to your email address.',
+      message: 'A fresh verification code has been sent to your email address.',
     };
   }
 }
