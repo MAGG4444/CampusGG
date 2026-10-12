@@ -127,7 +127,9 @@ describe('MailService', () => {
       expect(loggerSpy).toHaveBeenCalledWith(
         expect.stringContaining('[DEV MODE - No SMTP configured]'),
       );
-      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('654321'));
+      expect(loggerSpy).toHaveBeenCalledWith(
+        expect.stringContaining('654321'),
+      );
     });
   });
 });
