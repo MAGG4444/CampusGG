@@ -1,4 +1,3 @@
-import * as crypto from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -117,28 +116,32 @@ describe('AuthService', () => {
     );
   });
 
-  it('should hash token at rest in database and send raw token in email', async () => {
+  it('should generate a 6-digit numeric code, set 10-minute expiration, and send code via email', async () => {
     repo.findOne!.mockResolvedValue(null);
     repo.create!.mockImplementation((data) => data as User);
     repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
+    const before = Date.now();
     const result = await service.register(validDto);
+    const after = Date.now();
 
     expect(result.verificationToken).toBeDefined();
-    expect(result.verificationToken).toHaveLength(64);
+    expect(result.verificationToken).toMatch(/^\d{6}$/);
+
+    // Check expiration is ~10 minutes (10 * 60 * 1000 ms) from creation
+    const expectedMin = before + 10 * 60 * 1000;
+    const expectedMax = after + 10 * 60 * 1000;
+    expect(result.tokenExpiresAt).toBeInstanceOf(Date);
+    expect(result.tokenExpiresAt!.getTime()).toBeGreaterThanOrEqual(
+      expectedMin,
+    );
+    expect(result.tokenExpiresAt!.getTime()).toBeLessThanOrEqual(expectedMax);
 
     expect(mailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
-    const sentRawToken = (
+    const sentCode = (
       mailService.sendVerificationEmail.mock.calls as [unknown[]]
     )[0][2] as string;
-    expect(sentRawToken).toHaveLength(64);
-
-    // Stored token must equal SHA-256 hash of raw token
-    const expectedHash = crypto
-      .createHash('sha256')
-      .update(sentRawToken)
-      .digest('hex');
-    expect(result.verificationToken).toBe(expectedHash);
+    expect(sentCode).toBe(result.verificationToken);
   });
 
   it('should hash password when provided in RegisterDto', async () => {
@@ -182,23 +185,17 @@ describe('AuthService', () => {
     expect(result.id).toBeDefined();
   });
 
-  // ── Verification logic ────────────────────────────────────────────────
+  // ── Verification logic (6-Digit OTP) ─────────────────────────────────
 
-  it('should successfully verify user and consume token in verifyEmail', async () => {
-    const rawToken = 'raw-token-123';
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
-
+  it('should successfully verify user and consume code in verifyEmail', async () => {
     const mockUnverifiedUser: User = {
       id: 'user-1',
       email: 'john@purdue.edu',
       username: 'johndoe',
       displayName: 'John Doe',
       eduVerified: false,
-      verificationToken: tokenHash,
-      tokenExpiresAt: new Date(Date.now() + 60000), // 1 min in future
+      verificationToken: '482910',
+      tokenExpiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 mins in future
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -206,10 +203,11 @@ describe('AuthService', () => {
     repo.findOne!.mockResolvedValueOnce(mockUnverifiedUser);
     repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
-    const result = await service.verifyEmail(rawToken);
+    const result = await service.verifyEmail('john@purdue.edu', '482910');
 
     expect(result).toEqual({
-      message: 'Email verified successfully. You can now log in.',
+      statusCode: 200,
+      message: 'Email verified successfully.',
     });
     expect(mockUnverifiedUser.eduVerified).toBe(true);
     expect(mockUnverifiedUser.verificationToken).toBeNull();
@@ -217,89 +215,42 @@ describe('AuthService', () => {
     expect(repo.save).toHaveBeenCalledTimes(1);
   });
 
-  it('should reject expired verification token in verifyEmail', async () => {
-    const rawToken = 'raw-token-123';
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
-
-    const mockExpiredUser: User = {
-      id: 'user-1',
-      email: 'john@purdue.edu',
-      username: 'johndoe',
-      displayName: 'John Doe',
-      eduVerified: false,
-      verificationToken: tokenHash,
-      tokenExpiresAt: new Date(Date.now() - 1000), // in the past
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    repo.findOne!.mockResolvedValueOnce(mockExpiredUser);
-
-    await expect(service.verifyEmail(rawToken)).rejects.toThrow(
-      'Verification token has expired',
-    );
-  });
-
-  it('should reject non-existent or invalid verification token in verifyEmail', async () => {
+  it('should throw BadRequestException if user is not found by email', async () => {
     repo.findOne!.mockResolvedValueOnce(null);
-    await expect(service.verifyEmail('unknown-token')).rejects.toThrow(
-      'Invalid verification token',
-    );
+
+    await expect(
+      service.verifyEmail('nonexistent@purdue.edu', '123456'),
+    ).rejects.toThrow(BadRequestException);
   });
 
-  it('should reject empty or whitespace token in verifyEmail', async () => {
-    await expect(service.verifyEmail('   ')).rejects.toThrow(
-      'Invalid verification token',
-    );
-  });
-
-  it('should successfully verify user and consume token', async () => {
-    const rawToken = 'raw-token-123';
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
-
+  it('should throw BadRequestException if code does not match verificationToken', async () => {
     const mockUnverifiedUser: User = {
       id: 'user-1',
       email: 'john@purdue.edu',
       username: 'johndoe',
       displayName: 'John Doe',
       eduVerified: false,
-      verificationToken: tokenHash,
-      tokenExpiresAt: new Date(Date.now() + 60000), // 1 min in future
+      verificationToken: '482910',
+      tokenExpiresAt: new Date(Date.now() + 5 * 60 * 1000),
       createdAt: new Date(),
       updatedAt: new Date(),
     };
 
     repo.findOne!.mockResolvedValueOnce(mockUnverifiedUser);
-    repo.save!.mockImplementation((user) => Promise.resolve(user as User));
 
-    const verifiedUser = await service.verify(rawToken);
-
-    expect(verifiedUser.eduVerified).toBe(true);
-    expect(verifiedUser.verificationToken).toBeNull();
-    expect(verifiedUser.tokenExpiresAt).toBeNull();
-    expect(repo.save).toHaveBeenCalledTimes(1);
+    await expect(
+      service.verifyEmail('john@purdue.edu', '999999'),
+    ).rejects.toThrow('Invalid verification code');
   });
 
-  it('should reject expired verification token', async () => {
-    const rawToken = 'raw-token-123';
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(rawToken)
-      .digest('hex');
-
+  it('should throw BadRequestException if verification code has expired', async () => {
     const mockExpiredUser: User = {
       id: 'user-1',
       email: 'john@purdue.edu',
       username: 'johndoe',
       displayName: 'John Doe',
       eduVerified: false,
-      verificationToken: tokenHash,
+      verificationToken: '482910',
       tokenExpiresAt: new Date(Date.now() - 1000), // in the past
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -307,26 +258,29 @@ describe('AuthService', () => {
 
     repo.findOne!.mockResolvedValueOnce(mockExpiredUser);
 
-    await expect(service.verify(rawToken)).rejects.toThrow(BadRequestException);
+    await expect(
+      service.verifyEmail('john@purdue.edu', '482910'),
+    ).rejects.toThrow(
+      'Verification code has expired. Please request a new one.',
+    );
   });
 
-  it('should reject non-existent or invalid verification token', async () => {
-    repo.findOne!.mockResolvedValueOnce(null);
-    await expect(service.verify('unknown-token')).rejects.toThrow(
-      BadRequestException,
+  it('should reject empty or whitespace code in verifyEmail', async () => {
+    await expect(service.verifyEmail('john@purdue.edu', '   ')).rejects.toThrow(
+      'Invalid verification code',
     );
   });
 
   // ── Resend verification ───────────────────────────────────────────────
 
-  it('should resend fresh verification email for unverified user', async () => {
+  it('should resend fresh 6-digit verification code for unverified user', async () => {
     const mockUser: User = {
       id: 'user-1',
       email: 'john@purdue.edu',
       username: 'johndoe',
       displayName: 'John Doe',
       eduVerified: false,
-      verificationToken: 'old-token',
+      verificationToken: '111111',
       tokenExpiresAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -338,6 +292,7 @@ describe('AuthService', () => {
     const response = await service.resendVerification('john@purdue.edu');
 
     expect(response.message).toContain('sent');
+    expect(mockUser.verificationToken).toMatch(/^\d{6}$/);
     expect(mailService.sendVerificationEmail).toHaveBeenCalledTimes(1);
   });
 

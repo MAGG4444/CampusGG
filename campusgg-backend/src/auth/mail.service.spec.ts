@@ -49,13 +49,13 @@ describe('MailService', () => {
       });
     });
 
-    it('should send verification email with link and template', async () => {
+    it('should send verification email with 6-digit code and template', async () => {
       mockSendMail.mockResolvedValueOnce({ messageId: 'msg-123' });
 
       await mailService.sendVerificationEmail(
         'student@purdue.edu',
         'BoilerGamer',
-        'token-abc-123',
+        '482910',
       );
 
       expect(mockSendMail).toHaveBeenCalledTimes(1);
@@ -67,39 +67,10 @@ describe('MailService', () => {
       expect(mailArgs.to).toBe('student@purdue.edu');
       expect(mailArgs.from).toBe('CampusGG <noreply@campusgg.edu>');
       expect(mailArgs.subject).toContain('Verify');
-      expect(mailArgs.text).toContain(
-        'http://localhost:3000/api/auth/verify?token=token-abc-123',
-      );
-      expect(mailArgs.html).toContain(
-        'http://localhost:3000/api/auth/verify?token=token-abc-123',
-      );
-    });
-
-    it('should strip trailing slash from APP_BASE_URL in verification link', async () => {
-      configService = {
-        get: jest.fn((key: string) => {
-          if (key === 'SMTP_HOST') return 'smtp.campusgg.edu';
-          if (key === 'APP_BASE_URL') return 'https://campusgg.com///';
-          return undefined;
-        }),
-      } as unknown as ConfigService;
-
-      mailService = new MailService(configService);
-      mockSendMail.mockResolvedValueOnce({});
-
-      await mailService.sendVerificationEmail(
-        'student@purdue.edu',
-        'BoilerGamer',
-        'token-xyz',
-      );
-
-      const call = mockSendMail.mock.calls[0] as unknown as [
-        Record<string, string>,
-      ];
-      const mailArgs = call[0];
-      expect(mailArgs.text).toContain(
-        'https://campusgg.com/api/auth/verify?token=token-xyz',
-      );
+      expect(mailArgs.text).toContain('482910');
+      expect(mailArgs.html).toContain('482910');
+      expect(mailArgs.html).toContain('Hi BoilerGamer,');
+      expect(mailArgs.html).toContain('This code will expire in 10 minutes.');
     });
   });
 
@@ -130,10 +101,7 @@ describe('MailService', () => {
 
     beforeEach(() => {
       const configService = {
-        get: jest.fn((key: string) => {
-          if (key === 'APP_BASE_URL') return 'http://localhost:3000';
-          return undefined;
-        }),
+        get: jest.fn(() => undefined),
       } as unknown as ConfigService;
 
       loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
@@ -148,11 +116,11 @@ describe('MailService', () => {
       expect(nodemailer.createTransport).not.toHaveBeenCalled();
     });
 
-    it('should log verification URL instead of sending email', async () => {
+    it('should log verification code instead of sending email', async () => {
       await mailService.sendVerificationEmail(
         'dev@purdue.edu',
         'DevUser',
-        'dev-token-456',
+        '654321',
       );
 
       expect(mockSendMail).not.toHaveBeenCalled();
@@ -160,9 +128,7 @@ describe('MailService', () => {
         expect.stringContaining('[DEV MODE - No SMTP configured]'),
       );
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'http://localhost:3000/api/auth/verify?token=dev-token-456',
-        ),
+        expect.stringContaining('654321'),
       );
     });
   });
