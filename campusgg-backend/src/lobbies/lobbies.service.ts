@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -6,6 +12,7 @@ import { UsersService } from '../users/users.service';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
 import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 import { Lobby, LobbyVisibility } from './lobby.entity';
+import { LobbyMember, LobbyMemberRole } from './lobby-member.entity';
 
 @Injectable()
 export class LobbiesService {
@@ -15,7 +22,10 @@ export class LobbiesService {
     private readonly usersService: UsersService,
   ) {}
 
-  // Retrieve all lobbies from PostgreSQL
+  // ============================================================
+  // GET ALL LOBBIES
+  // Retrieve lobbies from PostgreSQL with optional filters
+  // ============================================================
 
   async findAll(filters: SearchLobbiesDto = {}): Promise<Lobby[]> {
     return this.lobbiesRepository.find({
@@ -29,7 +39,11 @@ export class LobbiesService {
     });
   }
 
-  // Retrieve a specific lobby by ID
+  // ============================================================
+  // GET LOBBY BY ID
+  // Retrieve a specific lobby using its UUID
+  // ============================================================
+
   async findOne(id: string): Promise<Lobby> {
     const lobby = await this.lobbiesRepository.findOne({
       where: { id },
@@ -42,28 +56,154 @@ export class LobbiesService {
     return lobby;
   }
 
-  // Create a new lobby in PostgreSQL
+  // ============================================================
+  // CREATE LOBBY
+  // Create a lobby and automatically register its host
+  // ============================================================
+
   async create(
     createLobbyDto: CreateLobbyDto,
     hostUserId: string,
   ): Promise<Lobby> {
-    // Find the user hosting the lobby
+    // Verify that the hosting user exists
     const host = await this.usersService.findOne(hostUserId);
 
-    // Create the lobby entity
-    const lobby = this.lobbiesRepository.create({
-      lobbyName: createLobbyDto.lobbyName,
-      subtitle: createLobbyDto.subtitle ?? null,
-      details: createLobbyDto.details,
-      tags: createLobbyDto.tags ?? [],
-      game: createLobbyDto.game ?? null,
-      skillLevel: createLobbyDto.skillLevel ?? null,
-      participantLimit: createLobbyDto.participantLimit ?? null,
-      visibility: createLobbyDto.visibility ?? LobbyVisibility.PUBLIC,
-      host,
-    });
+    // Create lobby and host membership in one transaction
+    return this.lobbiesRepository.manager.transaction(async (manager) => {
+      // Construct the lobby entity
+      const lobby = manager.create(Lobby, {
+        lobbyName: createLobbyDto.lobbyName,
+        subtitle: createLobbyDto.subtitle ?? null,
+        details: createLobbyDto.details,
+        tags: createLobbyDto.tags ?? [],
+        game: createLobbyDto.game ?? null,
+        skillLevel: createLobbyDto.skillLevel ?? null,
+        participantLimit: createLobbyDto.participantLimit ?? null,
+        visibility: createLobbyDto.visibility ?? LobbyVisibility.PUBLIC,
+        host,
+      });
 
-    // Save the lobby to PostgreSQL
-    return this.lobbiesRepository.save(lobby);
+      // Save the lobby to PostgreSQL
+      const savedLobby = await manager.save(Lobby, lobby);
+
+      // Automatically register the host as a participant
+      const hostMembership = manager.create(LobbyMember, {
+        lobby: savedLobby,
+        user: host,
+        role: LobbyMemberRole.HOST,
+      });
+
+      // Save the host membership
+      await manager.save(LobbyMember, hostMembership);
+
+      return savedLobby;
+    });
+  }
+
+  // ============================================================
+  // JOIN LOBBY
+  // Add a user to an existing public lobby
+  // ============================================================
+
+  async joinLobby(lobbyId: string, userId: string): Promise<void> {
+    // Verify that the user exists
+    const user = await this.usersService.findOne(userId);
+
+    // Use a transaction to prevent concurrent join issues
+    await this.lobbiesRepository.manager.transaction(async (manager) => {
+      // Lock the lobby row while checking membership and capacity
+      const lobby = await manager.findOne(Lobby, {
+        where: { id: lobbyId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      // Check if the lobby exists
+      if (!lobby) {
+        throw new NotFoundException('Lobby not found');
+      }
+
+      // Only allow joining public lobbies for now
+      if (lobby.visibility !== LobbyVisibility.PUBLIC) {
+        throw new ForbiddenException('This lobby requires an invitation');
+      }
+
+      // Check if the user is already a member
+      const existingMembership = await manager.findOne(LobbyMember, {
+        where: {
+          lobby: { id: lobbyId },
+          user: { id: userId },
+        },
+      });
+
+      if (existingMembership) {
+        throw new ConflictException('User is already a member of this lobby');
+      }
+
+      // Count all existing participants, including the host
+      const memberCount = await manager.count(LobbyMember, {
+        where: {
+          lobby: { id: lobbyId },
+        },
+      });
+
+      // Prevent joining if the lobby is full
+      if (
+        lobby.participantLimit != null &&
+        memberCount >= lobby.participantLimit
+      ) {
+        throw new ConflictException('Lobby is full');
+      }
+
+      // Create the new membership
+      const membership = manager.create(LobbyMember, {
+        lobby,
+        user,
+        role: LobbyMemberRole.MEMBER,
+      });
+
+      // Save membership to PostgreSQL
+      await manager.save(LobbyMember, membership);
+    });
+  }
+
+  // ============================================================
+  // LEAVE LOBBY
+  // Remove an existing member from a lobby
+  // ============================================================
+
+  async leaveLobby(lobbyId: string, userId: string): Promise<void> {
+    await this.lobbiesRepository.manager.transaction(async (manager) => {
+      // Lock the lobby to synchronize membership changes
+      const lobby = await manager.findOne(Lobby, {
+        where: { id: lobbyId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!lobby) {
+        throw new NotFoundException('Lobby not found');
+      }
+
+      // Find the user's existing membership
+      const membership = await manager.findOne(LobbyMember, {
+        where: {
+          lobby: { id: lobbyId },
+          user: { id: userId },
+        },
+      });
+
+      if (!membership) {
+        throw new NotFoundException('User is not a member of this lobby');
+      }
+
+      // Prevent the host from leaving their own lobby
+      if (membership.role === LobbyMemberRole.HOST) {
+        throw new ForbiddenException(
+          'Lobby host cannot leave without transferring ownership or closing the lobby',
+        );
+      }
+
+      // Remove the user's membership from PostgreSQL
+      await manager.remove(LobbyMember, membership);
+    });
   }
 }
