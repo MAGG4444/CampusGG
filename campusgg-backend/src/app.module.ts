@@ -8,6 +8,7 @@ import { LobbiesController } from './lobbies/lobbies.controller';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
+import { RedisModule } from './redis/redis.module';
 import { DatabaseController } from './database/database.controller';
 
 @Module({
@@ -30,6 +31,7 @@ import { DatabaseController } from './database/database.controller';
 
     UsersModule,
     AuthModule,
+    RedisModule,
   ],
 
   controllers: [AppController, LobbiesController, DatabaseController],
