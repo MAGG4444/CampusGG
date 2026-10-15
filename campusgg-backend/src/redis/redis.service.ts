@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   Logger,
@@ -8,19 +7,37 @@ import {
 } from '@nestjs/common';
 
 import { ConfigService } from '@nestjs/config';
-import { createClient, type RedisClientType } from 'redis';
+import { createClient } from 'redis';
+
+// Factory function allows TypeScript to infer the
+// exact Redis client type without empty object types.
+function createRedisClient(url: string) {
+  return createClient({
+    url,
+    socket: {
+      connectTimeout: 5000,
+      reconnectStrategy: (retries: number) => {
+        if (retries >= 3) {
+          return false;
+        }
+
+        return Math.min(100 * 2 ** retries, 1000);
+      },
+    },
+    disableOfflineQueue: true,
+  });
+}
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
 
-  private client?: RedisClientType<{}, {}, {}, 3, {}>;
+  private client?: ReturnType<typeof createRedisClient>;
 
   constructor(private readonly config: ConfigService) {}
 
   async onModuleInit(): Promise<void> {
-    const enabled =
-      this.config.get<string>('REDIS_ENABLED') === 'true';
+    const enabled = this.config.get<string>('REDIS_ENABLED') === 'true';
 
     if (!enabled) {
       this.logger.log('Redis disabled. Skipping connection.');
@@ -28,38 +45,16 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     const host = this.config.get<string>('REDIS_HOST');
-    const port = Number(
-      this.config.get<string>('REDIS_PORT') ?? '6379',
-    );
-    const tls =
-      this.config.get<string>('REDIS_TLS') === 'true';
+    const port = Number(this.config.get<string>('REDIS_PORT') ?? '6379');
+    const tls = this.config.get<string>('REDIS_TLS') === 'true';
 
-    if (
-      !host ||
-      !Number.isInteger(port) ||
-      port < 1 ||
-      port > 65535
-    ) {
+    if (!host || !Number.isInteger(port) || port < 1 || port > 65535) {
       throw new Error('Invalid Redis host or port');
     }
 
-    // redis:// for local Redis, rediss:// for TLS
     const protocol = tls ? 'rediss' : 'redis';
 
-    const client = createClient({
-      url: `${protocol}://${host}:${port}`,
-      socket: {
-        connectTimeout: 5000,
-        reconnectStrategy: (retries) => {
-          if (retries >= 3) {
-            return false;
-          }
-
-          return Math.min(100 * 2 ** retries, 1000);
-        },
-      },
-      disableOfflineQueue: true,
-    });
+    const client = createRedisClient(`${protocol}://${host}:${port}`);
 
     this.client = client;
 
@@ -87,28 +82,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  async onModuleDestroy(): Promise<void> {
+  onModuleDestroy(): void {
     if (this.client?.isOpen) {
       this.client.destroy();
       this.logger.log('Redis connection closed.');
     }
   }
 
-  private getClient(): RedisClientType<{}, {}, {}, 3, {}> {
-    if (!this.client?.isReady) {
-      throw new ServiceUnavailableException(
-        'Redis is currently unavailable',
-      );
+  private getClient() {
+    const client = this.client;
+
+    if (!client?.isReady) {
+      throw new ServiceUnavailableException('Redis is currently unavailable');
     }
 
-    return this.client;
+    return client;
   }
 
-  async set(
-    key: string,
-    value: string,
-    expirationSeconds?: number,
-  ) {
+  async set(key: string, value: string, expirationSeconds?: number) {
     const client = this.getClient();
 
     if (expirationSeconds !== undefined) {
