@@ -5,5 +5,9 @@
   "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@nestjs/typeorm$": "<rootDir>/__mocks__/@nestjs/typeorm.ts",
+    "^@nestjs/config$": "<rootDir>/__mocks__/@nestjs/config.ts"
   }
 }

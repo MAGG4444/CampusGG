@@ -4,9 +4,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LobbiesController } from './lobbies/lobbies.controller';
+import { LobbiesModule } from './lobbies/lobbies.module';
 
 import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { RedisModule } from './redis/redis.module';
 import { DatabaseController } from './database/database.controller';
 
 @Module({
@@ -23,19 +25,17 @@ import { DatabaseController } from './database/database.controller';
 
         autoLoadEntities: true,
 
-        synchronize:
-          configService.get<string>('NODE_ENV') !== 'production',
+        synchronize: configService.get<string>('NODE_ENV') !== 'production',
       }),
     }),
 
     UsersModule,
+    AuthModule,
+    RedisModule,
+    LobbiesModule,
   ],
 
-  controllers: [
-    AppController,
-    LobbiesController,
-    DatabaseController,
-  ],
+  controllers: [AppController, DatabaseController],
 
   providers: [AppService],
 })
