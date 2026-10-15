@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 
 import { UsersService } from '../users/users.service';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
+import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 import { Lobby, LobbyVisibility } from './lobby.entity';
 
 @Injectable()
@@ -15,8 +16,13 @@ export class LobbiesService {
   ) {}
 
   // Retrieve all lobbies from PostgreSQL
-  async findAll(): Promise<Lobby[]> {
+
+  async findAll(filters: SearchLobbiesDto = {}): Promise<Lobby[]> {
     return this.lobbiesRepository.find({
+      where: {
+        ...(filters.game ? { game: filters.game } : {}),
+        ...(filters.skillLevel ? { skillLevel: filters.skillLevel } : {}),
+      },
       order: {
         createdAt: 'DESC',
       },

@@ -1,14 +1,16 @@
 import { Controller, Get, Param, ParseUUIDPipe } from '@nestjs/common';
 
 import { LobbiesService } from './lobbies.service';
+import { Query } from '@nestjs/common';
+import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 
 @Controller('lobbies')
 export class LobbiesController {
   constructor(private readonly lobbiesService: LobbiesService) {}
   //temporary endpoitn for testing PostgreSQL
   @Get('db')
-  async getDatabaseLobbies() {
-    return this.lobbiesService.findAll();
+  async getDatabaseLobbies(@Query() filters: SearchLobbiesDto) {
+    return this.lobbiesService.findAll(filters);
   }
 
   @Get(':id')
