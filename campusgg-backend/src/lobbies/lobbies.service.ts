@@ -206,4 +206,37 @@ export class LobbiesService {
       await manager.remove(LobbyMember, membership);
     });
   }
+
+  // Retrieve the actual participants of a lobby.
+  async findMembers(lobbyId: string): Promise<
+    Array<{
+      id: string;
+      username: string;
+      role: LobbyMemberRole;
+    }>
+  > {
+    // Preserve our existing 404 behavior.
+    await this.findOne(lobbyId);
+
+    const memberships = await this.lobbiesRepository.manager
+      .getRepository(LobbyMember)
+      .find({
+        where: {
+          lobby: { id: lobbyId },
+        },
+        relations: {
+          user: true,
+        },
+        order: {
+          joinedAt: 'ASC',
+        },
+      });
+
+    // Return only information needed by the frontend.
+    return memberships.map((membership) => ({
+      id: membership.user.id,
+      username: membership.user.username,
+      role: membership.role,
+    }));
+  }
 }
