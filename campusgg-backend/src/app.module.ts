@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { LobbiesController } from './lobbies/lobbies.controller';
+import { LobbiesModule } from './lobbies/lobbies.module';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -32,9 +32,10 @@ import { DatabaseController } from './database/database.controller';
     UsersModule,
     AuthModule,
     RedisModule,
+    LobbiesModule,
   ],
 
-  controllers: [AppController, LobbiesController, DatabaseController],
+  controllers: [AppController, DatabaseController],
 
   providers: [AppService],
 })
