@@ -1,64 +1,130 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
-import { createClient, RedisClientType } from 'redis';
+
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+
+import { ConfigService } from '@nestjs/config';
+import { createClient, type RedisClientType } from 'redis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client!: RedisClientType;
+  private readonly logger = new Logger(RedisService.name);
 
-  async onModuleInit() {
-    const redisEnabled = process.env.REDIS_ENABLED === 'true';
+  private client?: RedisClientType<{}, {}, {}, 3, {}>;
 
-    if (!redisEnabled) {
-      console.log('Redis disabled for local development.');
+  constructor(private readonly config: ConfigService) {}
+
+  async onModuleInit(): Promise<void> {
+    const enabled =
+      this.config.get<string>('REDIS_ENABLED') === 'true';
+
+    if (!enabled) {
+      this.logger.log('Redis disabled. Skipping connection.');
       return;
     }
 
-    const host = process.env.REDIS_HOST;
-    const port = process.env.REDIS_PORT || '6379';
+    const host = this.config.get<string>('REDIS_HOST');
+    const port = Number(
+      this.config.get<string>('REDIS_PORT') ?? '6379',
+    );
+    const tls =
+      this.config.get<string>('REDIS_TLS') === 'true';
 
-    this.client = createClient({
+    if (
+      !host ||
+      !Number.isInteger(port) ||
+      port < 1 ||
+      port > 65535
+    ) {
+      throw new Error('Invalid Redis host or port');
+    }
+
+    // redis:// for local Redis, rediss:// for TLS
+    const protocol = tls ? 'rediss' : 'redis';
+
+    const client = createClient({
+      url: `${protocol}://${host}:${port}`,
       socket: {
-        host,
-        port: Number(port),
-        tls: true,
+        connectTimeout: 5000,
+        reconnectStrategy: (retries) => {
+          if (retries >= 3) {
+            return false;
+          }
+
+          return Math.min(100 * 2 ** retries, 1000);
+        },
       },
+      disableOfflineQueue: true,
     });
 
-    this.client.on('error', (error) => {
-      console.error('Redis Client Error:', error);
-    });
+    this.client = client;
 
-    console.log('Attempting to connect to AWS ElastiCache...');
+    client.on('error', (error: Error) => {
+      this.logger.error(`Redis error: ${error.message}`);
+    });
 
     try {
-      await this.client.connect();
-      console.log('Connected to AWS ElastiCache');
-    } catch {
-      console.error('Could not connect to AWS ElastiCache.');
+      this.logger.log(`Connecting to Redis at ${host}:${port}`);
+
+      await client.connect();
+
+      this.logger.log('Successfully connected to Redis');
+    } catch (error) {
+      this.logger.error(
+        'Failed to connect to Redis',
+        error instanceof Error ? error.stack : String(error),
+      );
+
+      if (client.isOpen) {
+        client.destroy();
+      }
+
+      throw error;
     }
   }
 
-  async onModuleDestroy() {
+  async onModuleDestroy(): Promise<void> {
     if (this.client?.isOpen) {
-      await this.client.quit();
+      this.client.destroy();
+      this.logger.log('Redis connection closed.');
     }
   }
 
-  async set(key: string, value: string, expirationSeconds?: number) {
-    if (expirationSeconds) {
-      return this.client.set(key, value, {
+  private getClient(): RedisClientType<{}, {}, {}, 3, {}> {
+    if (!this.client?.isReady) {
+      throw new ServiceUnavailableException(
+        'Redis is currently unavailable',
+      );
+    }
+
+    return this.client;
+  }
+
+  async set(
+    key: string,
+    value: string,
+    expirationSeconds?: number,
+  ) {
+    const client = this.getClient();
+
+    if (expirationSeconds !== undefined) {
+      return client.set(key, value, {
         EX: expirationSeconds,
       });
     }
 
-    return this.client.set(key, value);
+    return client.set(key, value);
   }
 
   async get(key: string) {
-    return this.client.get(key);
+    return this.getClient().get(key);
   }
 
   async delete(key: string) {
-    return this.client.del(key);
+    return this.getClient().del(key);
   }
 }
