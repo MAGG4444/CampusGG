@@ -1,0 +1,195 @@
+
+const API_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:3000'
+
+async function request(path, { token, ...options } = {}) {
+  const response = await fetch(`${API_URL}${path}`, {
+    ...options,
+    headers: {
+      ...(options.body
+        ? { 'Content-Type': 'application/json' }
+        : {}),
+      ...(token
+        ? { Authorization: `Bearer ${token}` }
+        : {}),
+      ...options.headers,
+    },
+  })
+
+  const data = await response.json().catch(() => null)
+
+  if (!response.ok) {
+    const message = Array.isArray(data?.message)
+      ? data.message.join(', ')
+      : data?.message
+
+    const error = new Error(
+      message || `Request failed (${response.status})`
+    )
+
+    error.status = response.status
+    throw error
+  }
+
+  return data
+}
+
+const id = (value) => encodeURIComponent(value)
+
+export function getForumPost(postId, signal) {
+  return request(`/forum/posts/${id(postId)}`, {
+    signal,
+  })
+}
+
+export function createForumPost(payload, token) {
+  return request('/forum/posts', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+  })
+}
+
+export function updateForumPost(postId, payload, token) {
+  return request(`/forum/posts/${id(postId)}`, {
+    method: 'PATCH',
+    token,
+    body: JSON.stringify(payload),
+  })
+}
+
+export function deleteForumPost(postId, token) {
+  return request(`/forum/posts/${id(postId)}`, {
+    method: 'DELETE',
+    token,
+  })
+}
+
+export function getForumComments(
+  postId,
+  page = 1,
+  limit = 50,
+  signal,
+) {
+  return request(
+    `/forum/posts/${id(postId)}/comments?page=${page}&limit=${limit}`,
+    { signal },
+  )
+}
+
+export async function getAllForumComments(postId, signal) {
+  const comments = []
+  let page = 1
+
+  for (;;) {
+    const result = await getForumComments(
+      postId,
+      page,
+      50,
+      signal,
+    )
+
+    if (!Array.isArray(result.comments)) {
+      throw new Error('Invalid comments response')
+    }
+
+    comments.push(...result.comments)
+
+    if (
+      result.comments.length === 0 ||
+      comments.length >= Number(result.total)
+    ) {
+      break
+    }
+
+    page += 1
+  }
+
+  return comments
+}
+
+export function createForumComment(postId, content, token) {
+  return request(`/forum/posts/${id(postId)}/comments`, {
+    method: 'POST',
+    token,
+    body: JSON.stringify({ content }),
+  })
+}
+
+export function updateForumComment(
+  postId,
+  commentId,
+  content,
+  token,
+) {
+  return request(
+    `/forum/posts/${id(postId)}/comments/${id(commentId)}`,
+    {
+      method: 'PATCH',
+      token,
+      body: JSON.stringify({ content }),
+    },
+  )
+}
+
+export function deleteForumComment(
+  postId,
+  commentId,
+  token,
+) {
+  return request(
+    `/forum/posts/${id(postId)}/comments/${id(commentId)}`,
+    {
+      method: 'DELETE',
+      token,
+    },
+  )
+}
+
+export function likeForumPost(postId, token) {
+  return request(`/forum/posts/${id(postId)}/like`, {
+    method: 'POST',
+    token,
+  })
+}
+
+export function unlikeForumPost(postId, token) {
+  return request(`/forum/posts/${id(postId)}/like`, {
+    method: 'DELETE',
+    token,
+  })
+}
+
+export function getMyForumLike(postId, token, signal) {
+  return request(`/forum/posts/${id(postId)}/likes/me`, {
+    token,
+    signal,
+  })
+}
+
+export function getForumLikeCount(postId, signal) {
+  return request(`/forum/posts/${id(postId)}/likes`, {
+    signal,
+  })
+}
+
+export async function getForumRecommendations(
+  game,
+  excludingPostId,
+  signal,
+) {
+  if (!game) return []
+
+  const response = await request(
+    '/forum/posts?page=1&limit=50',
+    { signal },
+  )
+
+  return Array.isArray(response.posts)
+    ? response.posts.filter(
+        (item) =>
+          item.id !== excludingPostId &&
+          item.game?.toLowerCase() === game.toLowerCase()
+      )
+    : []
+}

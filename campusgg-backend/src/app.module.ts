@@ -10,6 +10,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { DatabaseController } from './database/database.controller';
+import { ForumModule } from './forum/forum.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { DatabaseController } from './database/database.controller';
     AuthModule,
     RedisModule,
     LobbiesModule,
+    ForumModule,
   ],
 
   controllers: [AppController, DatabaseController],
