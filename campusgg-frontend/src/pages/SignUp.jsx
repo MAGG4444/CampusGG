@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { RegistrationApiError, registerUser } from '../services/authApi.js'
 import './SignIn.css'
 import './SignUp.css'
 
@@ -26,6 +27,9 @@ const fields = [
     type: 'text',
     autoComplete: 'username',
     placeholder: 'campusplayer',
+    hint: '3–50 characters',
+    minLength: 3,
+    maxLength: 50,
   },
   {
     name: 'displayName',
@@ -33,6 +37,8 @@ const fields = [
     type: 'text',
     autoComplete: 'name',
     placeholder: 'Campus Player',
+    hint: 'Up to 100 characters',
+    maxLength: 100,
   },
   {
     name: 'password',
@@ -40,6 +46,9 @@ const fields = [
     type: 'password',
     autoComplete: 'new-password',
     placeholder: 'Create a password',
+    hint: '8–100 characters',
+    minLength: 8,
+    maxLength: 100,
   },
   {
     name: 'confirmPassword',
@@ -47,24 +56,46 @@ const fields = [
     type: 'password',
     autoComplete: 'new-password',
     placeholder: 'Re-enter your password',
+    minLength: 8,
+    maxLength: 100,
   },
 ]
 
 function validate(values) {
   const errors = {}
   const email = values.email.trim()
+  const username = values.username.trim()
+  const displayName = values.displayName.trim()
 
   if (!email) {
     errors.email = 'Enter your .edu email address.'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  } else if (!/^[^\s@]+@(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/.test(email)) {
     errors.email = 'Enter a valid email address.'
   } else if (!email.toLowerCase().endsWith('.edu')) {
     errors.email = 'Use an email address that ends in .edu.'
   }
 
-  if (!values.username.trim()) errors.username = 'Enter a username.'
-  if (!values.displayName.trim()) errors.displayName = 'Enter your display name.'
-  if (!values.password) errors.password = 'Enter a password.'
+  if (!username) {
+    errors.username = 'Enter a username.'
+  } else if (username.length < 3) {
+    errors.username = 'Username must be at least 3 characters.'
+  } else if (username.length > 50) {
+    errors.username = 'Username cannot exceed 50 characters.'
+  }
+
+  if (!displayName) {
+    errors.displayName = 'Enter your display name.'
+  } else if (displayName.length > 100) {
+    errors.displayName = 'Display name cannot exceed 100 characters.'
+  }
+
+  if (!values.password) {
+    errors.password = 'Enter a password.'
+  } else if (values.password.length < 8) {
+    errors.password = 'Password must be at least 8 characters.'
+  } else if (values.password.length > 100) {
+    errors.password = 'Password cannot exceed 100 characters.'
+  }
 
   if (!values.confirmPassword) {
     errors.confirmPassword = 'Confirm your password.'
@@ -75,10 +106,50 @@ function validate(values) {
   return errors
 }
 
+function mapBackendErrors(error) {
+  if (!(error instanceof RegistrationApiError)) {
+    return {
+      fieldErrors: {},
+      formError: 'CampusGG could not create your account right now. Please try again.',
+    }
+  }
+
+  const fieldErrors = {}
+  const formMessages = []
+
+  error.messages.forEach((message) => {
+    const normalizedMessage = message.toLowerCase()
+    const mentionsEmail = normalizedMessage.includes('email')
+    const mentionsUsername = normalizedMessage.includes('username')
+
+    if (mentionsEmail && mentionsUsername) {
+      formMessages.push(message)
+    } else if (mentionsEmail) {
+      fieldErrors.email = message
+    } else if (mentionsUsername) {
+      fieldErrors.username = message
+    } else if (normalizedMessage.includes('display name')) {
+      fieldErrors.displayName = message
+    } else if (normalizedMessage.includes('password')) {
+      fieldErrors.password = message
+    } else {
+      formMessages.push(message)
+    }
+  })
+
+  return {
+    fieldErrors,
+    formError: formMessages.join(' ') || (Object.keys(fieldErrors).length ? '' : error.message),
+  }
+}
+
 function SignUp() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
-  const [successMessage, setSuccessMessage] = useState('')
+  const [formError, setFormError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [registeredEmail, setRegisteredEmail] = useState('')
+  const submissionInFlight = useRef(false)
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -91,15 +162,16 @@ function SignUp() {
       delete nextErrors[name]
       return nextErrors
     })
-    setSuccessMessage('')
+    setFormError('')
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
+    if (submissionInFlight.current) return
 
     const nextErrors = validate(values)
     setErrors(nextErrors)
-    setSuccessMessage('')
+    setFormError('')
 
     const firstInvalidField = fields.find((field) => nextErrors[field.name])
     if (firstInvalidField) {
@@ -107,9 +179,29 @@ function SignUp() {
       return
     }
 
-    setSuccessMessage(
-      'Registration form is ready. Account creation will be connected in the next step.',
-    )
+    const registrationData = {
+      email: values.email.trim().toLowerCase(),
+      username: values.username.trim(),
+      displayName: values.displayName.trim(),
+      password: values.password,
+    }
+
+    submissionInFlight.current = true
+    setIsSubmitting(true)
+
+    try {
+      await registerUser(registrationData)
+      setValues(initialValues)
+      setErrors({})
+      setRegisteredEmail(registrationData.email)
+    } catch (error) {
+      const backendErrors = mapBackendErrors(error)
+      setErrors(backendErrors.fieldErrors)
+      setFormError(backendErrors.formError)
+    } finally {
+      submissionInFlight.current = false
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -123,10 +215,27 @@ function SignUp() {
           Join your campus gaming community and find your next squad.
         </p>
 
-        <form className="signup-form" noValidate onSubmit={handleSubmit}>
+        {registeredEmail ? (
+          <div className="signup-complete" role="status" aria-labelledby="signup-complete-title">
+            <p className="signup-complete-kicker">Registration submitted</p>
+            <h2 id="signup-complete-title">Check Your Email</h2>
+            <p>
+              Account created. Check <strong>{registeredEmail}</strong> to verify your CampusGG
+              account before signing in.
+            </p>
+            <Link className="signin-submit signup-signin-link" to="/signin">
+              Back to Sign In
+            </Link>
+          </div>
+        ) : (
+          <form className="signup-form" noValidate onSubmit={handleSubmit} aria-busy={isSubmitting}>
           <div className="signup-form-grid">
             {fields.map((field) => {
               const errorId = `signup-${field.name}-error`
+              const hintId = field.hint ? `signup-${field.name}-hint` : null
+              const describedBy = [hintId, errors[field.name] ? errorId : null]
+                .filter(Boolean)
+                .join(' ') || undefined
 
               return (
                 <div
@@ -144,10 +253,18 @@ function SignUp() {
                     placeholder={field.placeholder}
                     value={values[field.name]}
                     onChange={handleChange}
+                    minLength={field.minLength}
+                    maxLength={field.maxLength}
                     aria-invalid={errors[field.name] ? 'true' : undefined}
-                    aria-describedby={errors[field.name] ? errorId : undefined}
+                    aria-describedby={describedBy}
+                    disabled={isSubmitting}
                     required
                   />
+                  {field.hint && (
+                    <span className="signup-field-hint" id={hintId}>
+                      {field.hint}
+                    </span>
+                  )}
                   {errors[field.name] && (
                     <span className="signup-field-error" id={errorId}>
                       {errors[field.name]}
@@ -158,20 +275,27 @@ function SignUp() {
             })}
           </div>
 
-          <button className="signin-submit signup-submit" type="submit">
-            Sign Up
-          </button>
-
-          {successMessage && (
-            <p className="signup-success" role="status">
-              {successMessage}
+          {formError && (
+            <p className="signin-error signup-form-error" role="alert">
+              {formError}
             </p>
           )}
-        </form>
 
-        <p className="auth-switch">
-          Already have an account? <Link to="/signin">Sign In</Link>
-        </p>
+          <button
+            className="signin-submit signup-submit"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Creating Account...' : 'Sign Up'}
+          </button>
+        </form>
+        )}
+
+        {!registeredEmail && (
+          <p className="auth-switch">
+            Already have an account? <Link to="/signin">Sign In</Link>
+          </p>
+        )}
       </section>
     </div>
   )
