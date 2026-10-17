@@ -1,26 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer, { Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: Transporter | null = null;
+  private resend: Resend | null = null;
 
   constructor(private readonly configService: ConfigService) {
-    const smtpHost = this.configService.get<string>('SMTP_HOST');
-    if (smtpHost) {
-      const portVal = this.configService.get<string | number>('SMTP_PORT');
-      const port = portVal ? Number(portVal) : 587;
-      const user = this.configService.get<string>('SMTP_USER');
-      const pass = this.configService.get<string>('SMTP_PASS');
-
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port,
-        secure: port === 465,
-        auth: user && pass ? { user, pass } : undefined,
-      });
+    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+    if (apiKey) {
+      this.resend = new Resend(apiKey);
     }
   }
 
@@ -31,7 +21,7 @@ export class MailService {
   ): Promise<void> {
     const mailFrom =
       this.configService.get<string>('MAIL_FROM') ||
-      'CampusGG <noreply@campusgg.edu>';
+      'CampusGG <onboarding@resend.dev>';
 
     const subject = 'Verify your CampusGG Student Account';
 
@@ -62,18 +52,35 @@ export class MailService {
       </div>
     `.trim();
 
-    if (this.transporter) {
-      await this.transporter.sendMail({
-        from: mailFrom,
-        to: email,
-        subject,
-        text,
-        html,
-      });
-      this.logger.log(`Verification email sent to ${email}`);
+    if (this.resend) {
+      try {
+        const { data, error } = await this.resend.emails.send({
+          from: mailFrom,
+          to: email,
+          subject,
+          text,
+          html,
+        });
+
+        if (error) {
+          this.logger.error(`Resend API error sending to ${email}:`, error);
+          throw error;
+        }
+
+        this.logger.log(
+          `Verification email sent to ${email} (Resend ID: ${data?.id})`,
+        );
+      } catch (err) {
+        this.logger.error(
+          `Failed to send verification email to ${email}:`,
+          err,
+        );
+        throw err;
+      }
     } else {
+      // Dev fallback: log the code to console if no API key configured
       this.logger.log(
-        `[DEV MODE - No SMTP configured] Verification code for ${username} (${email}): ${code}`,
+        `[DEV MODE - No Resend API key] Verification code for ${username} (${email}): ${code}`,
       );
     }
   }
