@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { Flag, Heart, MessageCircle } from 'lucide-react'
 
@@ -10,7 +9,22 @@ import {
   unlikeForumPost,
 } from '../api/forum.js'
 
-function ForumPost({
+// Remount the interactive content when the post, signed-in user, or
+// server-provided like count changes. This initializes component state
+// without synchronously resetting it inside an effect.
+function ForumPost(props) {
+  const { token } = useAuth()
+
+  return (
+    <ForumPostContent
+      key={`${props.id ?? ''}:${token ?? ''}:${props.likes ?? 0}`}
+      {...props}
+      token={token}
+    />
+  )
+}
+
+function ForumPostContent({
   id,
   title,
   author,
@@ -21,9 +35,8 @@ function ForumPost({
   replies,
   onReadMore,
   onReport,
+  token,
 }) {
-  const { token } = useAuth()
-
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(
     Number(likes) || 0
@@ -33,10 +46,6 @@ function ForumPost({
 
   useEffect(() => {
     const controller = new AbortController()
-
-    setLikeCount(Number(likes) || 0)
-    setIsLiked(false)
-    setStatus('')
 
     if (token && id) {
       getMyForumLike(id, token, controller.signal)
@@ -53,7 +62,7 @@ function ForumPost({
     }
 
     return () => controller.abort()
-  }, [id, token, likes])
+  }, [id, token])
 
   async function toggleLike() {
     if (!token) {

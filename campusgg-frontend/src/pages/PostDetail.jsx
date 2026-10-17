@@ -55,10 +55,25 @@ function normalizeComment(comment) {
   }
 }
 
+// The route and authenticated user identify the data on this page.
+// Using a key resets its state when either changes, without calling
+// synchronous setState setters at the top of an effect.
 function PostDetail() {
-  const navigate = useNavigate()
   const { postId } = useParams()
   const { token, user } = useAuth()
+
+  return (
+    <PostDetailContent
+      key={`${postId ?? ''}:${token ?? ''}`}
+      postId={postId}
+      token={token}
+      user={user}
+    />
+  )
+}
+
+function PostDetailContent({ postId, token, user }) {
+  const navigate = useNavigate()
 
   const replyInputRef = useRef(null)
 
@@ -102,20 +117,6 @@ function PostDetail() {
 
   useEffect(() => {
     const controller = new AbortController()
-
-    setIsLoading(true)
-    setLoadError('')
-    setFeedback('')
-    setPost(null)
-    setComments([])
-    setRecommendations([])
-    setIsLiked(false)
-    setIsLikeStatusReady(false)
-    setReplyText('')
-    setReplyTarget(null)
-    setIsEditingPost(false)
-    setIsSaved(false)
-    setRecommendationPage(1)
 
     async function load() {
       try {
