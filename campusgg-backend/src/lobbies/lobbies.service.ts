@@ -207,6 +207,50 @@ export class LobbiesService {
     });
   }
 
+  // ============================================================
+  // ADD MEMBERS (batch)
+  // Add multiple users to a lobby as members.
+  // Used by the matchmaking service to populate a lobby from a MatchGroup.
+  // ============================================================
+
+  async addMembers(
+    lobbyId: string,
+    userIds: string[],
+  ): Promise<void> {
+    return this.lobbiesRepository.manager.transaction(async (manager) => {
+      const lobby = await manager.findOne(Lobby, {
+        where: { id: lobbyId },
+      });
+
+      if (!lobby) {
+        throw new NotFoundException(`Lobby ${lobbyId} not found`);
+      }
+
+      for (const userId of userIds) {
+        const user = await this.usersService.findOne(userId);
+
+        const existing = await manager.findOne(LobbyMember, {
+          where: {
+            lobby: { id: lobbyId },
+            user: { id: userId },
+          },
+        });
+
+        if (existing) {
+          continue;
+        }
+
+        const membership = manager.create(LobbyMember, {
+          lobby,
+          user,
+          role: LobbyMemberRole.MEMBER,
+        });
+
+        await manager.save(LobbyMember, membership);
+      }
+    });
+  }
+
   // Retrieve the actual participants of a lobby.
   async findMembers(lobbyId: string): Promise<
     Array<{

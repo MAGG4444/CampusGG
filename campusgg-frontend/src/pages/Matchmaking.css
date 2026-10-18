@@ -1,0 +1,240 @@
+/**
+ * @file Matchmaking.css
+ * @description Styles for the /matchmaking queue page.
+ */
+
+.matchmaking-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+.matchmaking-back-button {
+  align-self: flex-start;
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  font-size: 1.25rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.matchmaking-back-button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.matchmaking-heading {
+  text-align: center;
+  max-width: 42rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-kicker {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  opacity: 0.7;
+}
+
+.matchmaking-heading h1 {
+  font-size: 2rem;
+  margin: 0 0 0.75rem;
+}
+
+.matchmaking-heading p {
+  margin: 0;
+  opacity: 0.8;
+  line-height: 1.6;
+}
+
+.matchmaking-feedback {
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  text-align: center;
+  max-width: 42rem;
+}
+
+.matchmaking-feedback.error {
+  background: #fdecea;
+  color: #b00020;
+  border: 1px solid #f5c6c6;
+}
+
+.matchmaking-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 34rem;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field-input,
+.field-input-wide {
+  padding: 0.6rem 0.8rem;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.field-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.inline-group {
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.chip {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 999px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip:hover {
+  border-color: #2563eb;
+}
+
+.chip-selected {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.checkbox-input {
+  width: auto;
+  margin-right: 0.5rem;
+  cursor: pointer;
+}
+
+.intensity-label {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  opacity: 0.8;
+}
+
+.matchmaking-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.footer-action {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.footer-action:hover:not(:disabled) {
+  border-color: #2563eb;
+  background: #f0f7ff;
+}
+
+.footer-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.footer-cancel {
+  border-color: #9ca3af;
+}
+
+.footer-cancel:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.footer-queue {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.footer-queue:hover:not(:disabled) {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.matchmaking-queueing {
+  max-width: 34rem;
+  width: 100%;
+  text-align: center;
+  padding: 1.5rem;
+  border: 1px dashed #ccc;
+  border-radius: 8px;
+  background: #f9fafb;
+  margin-top: 1rem;
+}
+
+.matchmaking-queueing p {
+  margin: 0 0 0.5rem;
+}
+
+.queueing-hint {
+  margin: 0;
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+.matchmaking-corner-logo {
+  margin-top: auto;
+  width: 120px;
+  height: auto;
+  opacity: 0.4;
+}
+
+.page-enter {
+  animation: pageEnter 0.4s ease-out;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

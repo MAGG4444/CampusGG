@@ -11,6 +11,7 @@ import Forum from './pages/Forum.jsx'
 import Home from './pages/Home.jsx'
 import Lobby from './pages/Lobby.jsx'
 import LobbyDetail from './pages/LobbyDetail.jsx'
+import Matchmaking from './pages/Matchmaking.jsx'
 import PostDetail from './pages/PostDetail.jsx'
 import Profile from './pages/Profile.jsx'
 import SignIn from './pages/SignIn.jsx'
@@ -28,6 +29,7 @@ function App() {
                 <Route path="/" element={<Home />} />
                 <Route path="/lobby" element={<Lobby />} />
                 <Route path="/lobby/:lobbyId" element={<LobbyDetail />} />
+                <Route path="/matchmaking" element={<Matchmaking />} />
                 <Route path="/create-lobby" element={<CreateLobby />} />
                 <Route path="/forum" element={<Forum />} />
                 <Route path="/forum/:postId" element={<PostDetail />} />
