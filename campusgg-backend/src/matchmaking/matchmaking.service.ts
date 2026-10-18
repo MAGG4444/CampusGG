@@ -38,9 +38,7 @@ import { UsersService } from '../users/users.service.js';
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
-export class MatchmakingService
-  implements OnModuleInit, OnModuleDestroy
-{
+export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MatchmakingService.name);
 
   /** The singleton engine instance (created in onModuleInit). */

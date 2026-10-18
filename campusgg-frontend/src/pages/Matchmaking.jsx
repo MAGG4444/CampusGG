@@ -52,30 +52,6 @@ function Matchmaking() {
   const availableRoles = GAME_ROLES[form.game] ?? []
   const hasRoles = availableRoles.length > 0
 
-  // Reset role selections when switching games if they're no longer valid.
-  useEffect(() => {
-    if (!hasRoles) {
-      setForm((prev) => ({ ...prev, primaryRole: '', secondaryRole: '' }))
-      return
-    }
-
-    const validPrimary = availableRoles.includes(form.primaryRole)
-    const validSecondary = availableRoles.includes(form.secondaryRole)
-
-    if (!validPrimary || !validSecondary) {
-      setForm((prev) => ({
-        ...prev,
-        primaryRole: validPrimary ? prev.primaryRole : availableRoles[0],
-        secondaryRole:
-          validSecondary && prev.secondaryRole !== prev.primaryRole
-            ? prev.secondaryRole
-            : availableRoles.length > 1
-              ? availableRoles[1]
-              : availableRoles[0],
-      }))
-    }
-  }, [form.game, availableRoles, hasRoles])
-
   // Require authentication before accessing the queue.
   // Remember where we were so we can return after sign-in.
   useEffect(() => {
@@ -83,6 +59,34 @@ function Matchmaking() {
       navigate('/signin', { state: { from: '/matchmaking' } })
     }
   }, [token, navigate])
+
+  // Handle game selection change: switch game and validate/reset role
+  // selections in the same event, avoiding a setState-in-effect pattern.
+  function handleGameChange(game) {
+    const roles = GAME_ROLES[game] ?? []
+
+    setForm((prev) => {
+      if (roles.length === 0) {
+        return { ...prev, game, primaryRole: '', secondaryRole: '' }
+      }
+
+      const validPrimary = roles.includes(prev.primaryRole)
+      const validSecondary = roles.includes(prev.secondaryRole)
+
+      return {
+        ...prev,
+        game,
+        primaryRole: validPrimary ? prev.primaryRole : roles[0],
+        secondaryRole:
+          validSecondary && prev.secondaryRole !== prev.primaryRole
+            ? prev.secondaryRole
+            : roles.length > 1
+              ? roles[1]
+              : roles[0],
+      }
+    })
+    setFeedback('')
+  }
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -256,7 +260,7 @@ function Matchmaking() {
             id="game"
             className="field-input"
             value={form.game}
-            onChange={(e) => updateField('game', e.target.value)}
+            onChange={(e) => handleGameChange(e.target.value)}
           >
             {GAMES.map((game) => (
               <option key={game} value={game}>

@@ -158,7 +158,7 @@ export class MatchmakingEngine {
    * @returns true if the player was found and removed, false otherwise.
    */
   dequeue(userId: string): boolean {
-    for (const [game, players] of this.queue.entries()) {
+    for (const players of this.queue.values()) {
       const index = players.findIndex((p) => p.userId === userId);
       if (index !== -1) {
         players.splice(index, 1);
