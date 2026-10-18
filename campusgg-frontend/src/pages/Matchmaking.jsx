@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
-import logo from '../assets/LOGO.png'
 import './Matchmaking.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -9,14 +8,26 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const GAMES = [
   'CS2',
   'Valorant',
-  'Rocket League',
   'League of Legends',
   'Dota',
   'OW2',
+  'Rocket League',
   'It Takes Two',
 ]
 
-const ROLES = ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support']
+/**
+ * Role options per game. Games without fixed roles (Rocket League, It Takes Two)
+ * map to an empty array, so the role sections are hidden for those titles.
+ */
+const GAME_ROLES = {
+  CS2: ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support'],
+  Valorant: ['Controller', 'Duelist', 'Initiator', 'Sentinel'],
+  'League of Legends': ['Top', 'Jungle', 'Mid', 'ADC', 'Support'],
+  Dota: ['Carry', 'Mid', 'Offlane', 'Soft Support', 'Hard Support'],
+  OW2: ['Tank', 'Damage', 'Support'],
+  'Rocket League': [],
+  'It Takes Two': [],
+}
 
 const initialForm = {
   game: 'CS2',
@@ -37,10 +48,39 @@ function Matchmaking() {
   const [feedback, setFeedback] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Roles available for the currently selected game.
+  const availableRoles = GAME_ROLES[form.game] ?? []
+  const hasRoles = availableRoles.length > 0
+
+  // Reset role selections when switching games if they're no longer valid.
+  useEffect(() => {
+    if (!hasRoles) {
+      setForm((prev) => ({ ...prev, primaryRole: '', secondaryRole: '' }))
+      return
+    }
+
+    const validPrimary = availableRoles.includes(form.primaryRole)
+    const validSecondary = availableRoles.includes(form.secondaryRole)
+
+    if (!validPrimary || !validSecondary) {
+      setForm((prev) => ({
+        ...prev,
+        primaryRole: validPrimary ? prev.primaryRole : availableRoles[0],
+        secondaryRole:
+          validSecondary && prev.secondaryRole !== prev.primaryRole
+            ? prev.secondaryRole
+            : availableRoles.length > 1
+              ? availableRoles[1]
+              : availableRoles[0],
+      }))
+    }
+  }, [form.game, availableRoles, hasRoles])
+
   // Require authentication before accessing the queue.
+  // Remember where we were so we can return after sign-in.
   useEffect(() => {
     if (!token) {
-      navigate('/signin')
+      navigate('/signin', { state: { from: '/matchmaking' } })
     }
   }, [token, navigate])
 
@@ -146,11 +186,28 @@ function Matchmaking() {
     }
   }
 
-  function handleCancel() {
+  async function handleCancel() {
     if (pollInterval.current) {
       clearInterval(pollInterval.current)
       pollInterval.current = null
     }
+
+    // Remove the player from the backend queue.
+    if (token) {
+      try {
+        await fetch(`${API_URL}/matchmaking/dequeue`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId: user.id }),
+        })
+      } catch {
+        // Ignore errors — the frontend state is already reset.
+      }
+    }
+
     setStatus('idle')
     setFeedback('Queue cancelled.')
   }
@@ -227,56 +284,61 @@ function Matchmaking() {
           />
         </div>
 
-        <div className="form-group inline-group">
-          <span className="field-label">Primary Role</span>
-          <div className="chip-row">
-            {ROLES.map((role) => (
-              <button
-                key={role}
-                className={`chip ${
-                  form.primaryRole === role ? 'chip-selected' : ''
-                }`}
-                type="button"
-                aria-pressed={form.primaryRole === role}
-                onClick={() => updateField('primaryRole', role)}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-        </div>
+        {hasRoles && (
+          <>
+            <div className="form-group inline-group">
+              <span className="field-label">Primary Role</span>
+              <div className="chip-row">
+                {availableRoles.map((role) => (
+                  <button
+                    key={role}
+                    className={`chip ${
+                      form.primaryRole === role ? 'chip-selected' : ''
+                    }`}
+                    type="button"
+                    aria-pressed={form.primaryRole === role}
+                    onClick={() => updateField('primaryRole', role)}
+                  >
+                    {role}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <div className="form-group inline-group">
-          <span className="field-label">Secondary Role</span>
-          <div className="chip-row">
-            {ROLES.map((role) => (
-              <button
-                key={role}
-                className={`chip ${
-                  form.secondaryRole === role ? 'chip-selected' : ''
-                }`}
-                type="button"
-                aria-pressed={form.secondaryRole === role}
-                onClick={() => updateField('secondaryRole', role)}
-              >
-                {role}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="form-group inline-group">
+              <span className="field-label">Secondary Role</span>
+              <div className="chip-row">
+                {availableRoles.map((role) => (
+                  <button
+                    key={role}
+                    className={`chip ${
+                      form.secondaryRole === role ? 'chip-selected' : ''
+                    }`}
+                    type="button"
+                    aria-pressed={form.secondaryRole === role}
+                    onClick={() => updateField('secondaryRole', role)}
+                  >
+                    {role}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="form-group">
-          <label className="field-label" htmlFor="mic">
-            Microphone
-          </label>
-          <input
-            id="mic"
-            className="checkbox-input"
-            type="checkbox"
-            checked={form.micEnabled}
-            onChange={(e) => updateField('micEnabled', e.target.checked)}
-          />
-          <span>I have a microphone</span>
+          <div className="checkbox-group">
+            <input
+              id="mic"
+              className="checkbox-input"
+              type="checkbox"
+              checked={form.micEnabled}
+              onChange={(e) => updateField('micEnabled', e.target.checked)}
+            />
+            <label htmlFor="mic" className="field-label">
+              I have a microphone
+            </label>
+          </div>
         </div>
 
         <div className="form-group">
@@ -337,14 +399,16 @@ function Matchmaking() {
             We will check for a match every few seconds and move you to a
             lobby automatically when your squad is ready.
           </p>
+          <button
+            className="footer-action footer-cancel"
+            type="button"
+            onClick={handleCancel}
+          >
+            Cancel Queue
+          </button>
         </div>
       )}
 
-      <img
-        className="matchmaking-corner-logo"
-        src={logo}
-        alt="CampusGG logo"
-      />
     </div>
   )
 }

@@ -17,7 +17,8 @@ function Home() {
           <h1 id="home-title">Queue up with a campus community built to play.</h1>
           <p className="home-lede">CampusGG is the home base for finding teammates, joining focused lobbies, and sharing the conversations that make every game better.</p>
           <div className="home-actions">
-            <Link className="home-primary-action" to="/lobby">Explore lobbies <ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className="home-primary-action" to="/matchmaking">Find Teammates <ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className="home-secondary-action" to="/lobby">Explore lobbies</Link>
             <Link className="home-secondary-action" to="/forum">Visit the forum</Link>
           </div>
           <div className="home-signal-row" aria-label="CampusGG community highlights">

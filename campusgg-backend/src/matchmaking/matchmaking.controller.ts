@@ -32,4 +32,10 @@ export class MatchmakingController {
     this.matchmakingService.processQueue();
     return { ok: true };
   }
+
+  @Post('dequeue')
+  dequeue(@Body('userId') userId: string) {
+    const removed = this.matchmakingService.dequeue(userId);
+    return { ok: true, removed };
+  }
 }

@@ -115,6 +115,13 @@ export class MatchmakingService
   }
 
   /**
+   * Remove a player from the matchmaking queue by user ID.
+   */
+  dequeue(userId: string): boolean {
+    return this.engine.dequeue(userId);
+  }
+
+  /**
    * Check whether a user has been matched and, if so, return the lobby ID.
    * Consumes the result so the frontend only receives it once.
    */
