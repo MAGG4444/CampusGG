@@ -1,33 +1,32 @@
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { MailService } from './mail.service';
 
-jest.mock('nodemailer');
+jest.mock('resend');
 
 describe('MailService', () => {
-  const mockSendMail = jest.fn();
+  const mockSend = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (nodemailer.createTransport as jest.Mock).mockReturnValue({
-      sendMail: mockSendMail,
-    });
+    (Resend as jest.Mock).mockImplementation(() => ({
+      emails: {
+        send: mockSend,
+      },
+    }));
   });
 
-  describe('with SMTP_HOST configured', () => {
+  describe('with RESEND_API_KEY configured', () => {
     let mailService: MailService;
     let configService: ConfigService;
 
     beforeEach(() => {
       configService = {
         get: jest.fn((key: string) => {
-          const config: Record<string, string | number> = {
-            SMTP_HOST: 'smtp.campusgg.edu',
-            SMTP_PORT: '587',
-            SMTP_USER: 'smtp_user',
-            SMTP_PASS: 'smtp_pass',
-            MAIL_FROM: 'CampusGG <noreply@campusgg.edu>',
+          const config: Record<string, string> = {
+            RESEND_API_KEY: 're_test_key',
+            MAIL_FROM: 'CampusGG <onboarding@resend.dev>',
             APP_BASE_URL: 'http://localhost:3000',
           };
           return config[key];
@@ -37,20 +36,15 @@ describe('MailService', () => {
       mailService = new MailService(configService);
     });
 
-    it('should create transporter with configured SMTP credentials', () => {
-      expect(nodemailer.createTransport).toHaveBeenCalledWith({
-        host: 'smtp.campusgg.edu',
-        port: 587,
-        secure: false,
-        auth: {
-          user: 'smtp_user',
-          pass: 'smtp_pass',
-        },
-      });
+    it('should create Resend client with configured API key', () => {
+      expect(Resend).toHaveBeenCalledWith('re_test_key');
     });
 
     it('should send verification email with 6-digit code and template', async () => {
-      mockSendMail.mockResolvedValueOnce({ messageId: 'msg-123' });
+      mockSend.mockResolvedValueOnce({
+        data: { id: 'email_123' },
+        error: null,
+      });
 
       await mailService.sendVerificationEmail(
         'student@purdue.edu',
@@ -58,14 +52,14 @@ describe('MailService', () => {
         '482910',
       );
 
-      expect(mockSendMail).toHaveBeenCalledTimes(1);
-      const call = mockSendMail.mock.calls[0] as unknown as [
+      expect(mockSend).toHaveBeenCalledTimes(1);
+      const call = mockSend.mock.calls[0] as unknown as [
         Record<string, string>,
       ];
       const mailArgs = call[0];
 
       expect(mailArgs.to).toBe('student@purdue.edu');
-      expect(mailArgs.from).toBe('CampusGG <noreply@campusgg.edu>');
+      expect(mailArgs.from).toBe('CampusGG <onboarding@resend.dev>');
       expect(mailArgs.subject).toContain('Verify');
       expect(mailArgs.text).toContain('482910');
       expect(mailArgs.html).toContain('482910');
@@ -74,28 +68,7 @@ describe('MailService', () => {
     });
   });
 
-  describe('with SMTP_PORT=465 (SSL)', () => {
-    it('should set secure to true for port 465', () => {
-      const configService = {
-        get: jest.fn((key: string) => {
-          if (key === 'SMTP_HOST') return 'smtp.campusgg.edu';
-          if (key === 'SMTP_PORT') return 465;
-          return undefined;
-        }),
-      } as unknown as ConfigService;
-
-      new MailService(configService);
-
-      expect(nodemailer.createTransport).toHaveBeenCalledWith(
-        expect.objectContaining({
-          port: 465,
-          secure: true,
-        }),
-      );
-    });
-  });
-
-  describe('without SMTP_HOST configured (Dev Mode Fallback)', () => {
+  describe('without RESEND_API_KEY configured (Dev Mode Fallback)', () => {
     let mailService: MailService;
     let loggerSpy: jest.SpyInstance;
 
@@ -112,8 +85,8 @@ describe('MailService', () => {
       loggerSpy.mockRestore();
     });
 
-    it('should not create a transporter', () => {
-      expect(nodemailer.createTransport).not.toHaveBeenCalled();
+    it('should not create a Resend client', () => {
+      expect(Resend).not.toHaveBeenCalled();
     });
 
     it('should log verification code instead of sending email', async () => {
@@ -123,9 +96,9 @@ describe('MailService', () => {
         '654321',
       );
 
-      expect(mockSendMail).not.toHaveBeenCalled();
+      expect(mockSend).not.toHaveBeenCalled();
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEV MODE - No SMTP configured]'),
+        expect.stringContaining('[DEV MODE - No Resend API key]'),
       );
       expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('654321'));
     });
