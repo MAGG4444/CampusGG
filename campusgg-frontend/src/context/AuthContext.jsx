@@ -138,6 +138,86 @@ export function AuthProvider({ children }) {
         return authenticatedUser
       },
 
+      // Register a new student account with a .edu email.
+      // The backend sends a 6-digit verification email and returns the user.
+      async signUp({ email, username, displayName, password }) {
+        const response = await fetch(`${API_URL}/api/auth/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            username: username.trim(),
+            displayName: displayName.trim(),
+            password,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          const message = Array.isArray(data.message)
+            ? data.message.join(', ')
+            : data.message
+
+          throw new Error(message || 'Unable to create account')
+        }
+
+        return data
+      },
+
+      // Verify a student email using the 6-digit code sent by the backend.
+      async verifyEmail(email, code) {
+        const response = await fetch(`${API_URL}/api/auth/verify`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+            code: code.trim(),
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          const message = Array.isArray(data.message)
+            ? data.message.join(', ')
+            : data.message
+
+          throw new Error(message || 'Unable to verify email')
+        }
+
+        return data
+      },
+
+      // Resend a fresh 6-digit verification code to an unverified account.
+      async resendVerification(email) {
+        const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email.trim().toLowerCase(),
+          }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+          const message = Array.isArray(data.message)
+            ? data.message.join(', ')
+            : data.message
+
+          throw new Error(message || 'Unable to resend verification code')
+        }
+
+        return data
+      },
+
       // End the local authentication session.
       signOut() {
         sessionStorage.removeItem(SESSION_KEY)

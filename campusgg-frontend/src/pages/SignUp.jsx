@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/useAuth.js'
 import './SignIn.css'
 import './SignUp.css'
 
@@ -79,6 +80,10 @@ function SignUp() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
   const [successMessage, setSuccessMessage] = useState('')
+  const [formError, setFormError] = useState('')
+  const { signUp } = useAuth()
+  const navigate = useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -92,9 +97,10 @@ function SignUp() {
       return nextErrors
     })
     setSuccessMessage('')
+    setFormError('')
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     const nextErrors = validate(values)
@@ -107,9 +113,29 @@ function SignUp() {
       return
     }
 
-    setSuccessMessage(
-      'Registration form is ready. Account creation will be connected in the next step.',
-    )
+    setSuccessMessage('')
+    setFormError('')
+    setIsSubmitting(true)
+
+    try {
+      await signUp({
+        email: values.email,
+        username: values.username,
+        displayName: values.displayName,
+        password: values.password,
+      })
+
+      // Registration succeeded — send them to verify their email.
+      navigate('/verify-email', { state: { email: values.email } })
+    } catch (err) {
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to create account. Please try again.',
+      )
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -158,8 +184,18 @@ function SignUp() {
             })}
           </div>
 
-          <button className="signin-submit signup-submit" type="submit">
-            Sign Up
+          {formError && (
+            <p className="signin-error" id="signup-error" role="alert">
+              {formError}
+            </p>
+          )}
+
+          <button
+            className="signin-submit signup-submit"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Creating Account...' : 'Sign Up'}
           </button>
 
           {successMessage && (

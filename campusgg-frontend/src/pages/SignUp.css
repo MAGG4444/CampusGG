@@ -47,6 +47,37 @@
   line-height: 1.5;
 }
 
+.resend-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 4px;
+  color: var(--gold-bright);
+  font-weight: 800;
+  text-decoration: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.resend-link:hover {
+  color: var(--gold-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.resend-link:focus-visible {
+  border-radius: 4px;
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.resend-link:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
 @media (max-width: 640px) {
   .signup-page {
     padding-block: 28px;
