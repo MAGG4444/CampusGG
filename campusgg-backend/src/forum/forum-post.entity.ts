@@ -1,4 +1,3 @@
-
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -44,11 +43,9 @@ export class ForumPost {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 
-
   @OneToMany(() => ForumPostLike, (like) => like.post)
   likes!: ForumPostLike[];
 
   // Populated by our query; not stored as a column.
   likeCount?: number;
- 
 }

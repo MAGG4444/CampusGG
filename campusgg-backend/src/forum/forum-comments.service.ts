@@ -1,4 +1,3 @@
-
 import {
   ForbiddenException,
   Injectable,
@@ -27,11 +26,7 @@ export class ForumCommentsService {
     private readonly users: Repository<User>,
   ) {}
 
-  async create(
-    postId: string,
-    dto: CreateForumCommentDto,
-    userId: string,
-  ) {
+  async create(postId: string, dto: CreateForumCommentDto, userId: string) {
     const post = await this.posts.findOneBy({
       id: postId,
     });
@@ -46,9 +41,7 @@ export class ForumCommentsService {
     });
 
     if (!author) {
-      throw new ForbiddenException(
-        'A verified account is required',
-      );
+      throw new ForbiddenException('A verified account is required');
     }
 
     const comment = this.comments.create({
@@ -72,11 +65,7 @@ export class ForumCommentsService {
     };
   }
 
-  async findAll(
-    postId: string,
-    page = 1,
-    limit = 20,
-  ) {
+  async findAll(postId: string, page = 1, limit = 20) {
     const post = await this.posts.findOneBy({
       id: postId,
     });
@@ -116,82 +105,72 @@ export class ForumCommentsService {
     };
   }
 
+  async update(
+    postId: string,
+    commentId: string,
+    dto: UpdateForumCommentDto,
+    userId: string,
+  ) {
+    const comment = await this.comments.findOne({
+      where: {
+        id: commentId,
+        post: { id: postId },
+      },
+      relations: {
+        author: true,
+      },
+    });
 
-async update(
-  postId: string,
-  commentId: string,
-  dto: UpdateForumCommentDto,
-  userId: string,
-) {
-  const comment = await this.comments.findOne({
-    where: {
-      id: commentId,
-      post: { id: postId },
-    },
-    relations: {
-      author: true,
-    },
-  });
+    if (!comment) {
+      throw new NotFoundException('Forum comment not found');
+    }
 
-  if (!comment) {
-    throw new NotFoundException('Forum comment not found');
+    // Verify comment ownership
+    if (comment.author.id !== userId) {
+      throw new ForbiddenException("You cannot edit another user's comment");
+    }
+
+    comment.content = dto.content.trim();
+
+    const updated = await this.comments.save(comment);
+
+    return {
+      id: updated.id,
+      content: updated.content,
+      author: {
+        id: comment.author.id,
+        username: comment.author.username,
+        displayName: comment.author.displayName,
+      },
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    };
   }
 
-  // Verify comment ownership
-  if (comment.author.id !== userId) {
-    throw new ForbiddenException(
-      'You cannot edit another user\'s comment',
-    );
+  async remove(postId: string, commentId: string, userId: string) {
+    const comment = await this.comments.findOne({
+      where: {
+        id: commentId,
+        post: { id: postId },
+      },
+      relations: {
+        author: true,
+      },
+    });
+
+    if (!comment) {
+      throw new NotFoundException('Forum comment not found');
+    }
+
+    // Verify comment ownership
+    if (comment.author.id !== userId) {
+      throw new ForbiddenException("You cannot delete another user's comment");
+    }
+
+    await this.comments.remove(comment);
+
+    return {
+      message: 'Forum comment deleted successfully',
+    };
   }
-
-  comment.content = dto.content.trim();
-
-  const updated = await this.comments.save(comment);
-
-  return {
-    id: updated.id,
-    content: updated.content,
-    author: {
-      id: comment.author.id,
-      username: comment.author.username,
-      displayName: comment.author.displayName,
-    },
-    createdAt: updated.createdAt,
-    updatedAt: updated.updatedAt,
-  };
-}
-
-async remove(
-  postId: string,
-  commentId: string,
-  userId: string,
-) {
-  const comment = await this.comments.findOne({
-    where: {
-      id: commentId,
-      post: { id: postId },
-    },
-    relations: {
-      author: true,
-    },
-  });
-
-  if (!comment) {
-    throw new NotFoundException('Forum comment not found');
-  }
-
-  // Verify comment ownership
-  if (comment.author.id !== userId) {
-    throw new ForbiddenException(
-      'You cannot delete another user\'s comment',
-    );
-  }
-
-  await this.comments.remove(comment);
-
-  return {
-    message: 'Forum comment deleted successfully',
-  };
-}
-
 }

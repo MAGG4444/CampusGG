@@ -4,6 +4,7 @@ import { useAuth } from '../context/useAuth.js'
 import './Navbar.css'
 
 const navItems = [
+  { to: '/matchmaking', label: 'Matchmaking', icon: Gamepad2 },
   { to: '/lobby', label: 'Lobby', icon: UsersRound },
   { to: '/forum', label: 'Forum', icon: MessageSquareText },
 ]

@@ -140,7 +140,7 @@ export function AuthProvider({ children }) {
 
       // Register a new student account with a .edu email.
       // The backend sends a 6-digit verification email and returns the user.
-      async signUp({ email, username, displayName, password }) {
+      async signUp({ email, username, displayName = '', password }) {
         const response = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
           headers: {

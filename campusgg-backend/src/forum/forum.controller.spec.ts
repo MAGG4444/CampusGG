@@ -1,8 +1,4 @@
-
-import {
-  Test,
-  TestingModule,
-} from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 
 // Mock the guard before loading the controller.
@@ -35,19 +31,17 @@ describe('ForumController', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
 
-    const module: TestingModule =
-      await Test.createTestingModule({
-        controllers: [ForumController],
-        providers: [
-          {
-            provide: ForumService,
-            useValue: forumServiceMock,
-          },
-        ],
-      }).compile();
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ForumController],
+      providers: [
+        {
+          provide: ForumService,
+          useValue: forumServiceMock,
+        },
+      ],
+    }).compile();
 
-    controller =
-      module.get<ForumController>(ForumController);
+    controller = module.get<ForumController>(ForumController);
   });
 
   it('should be defined', () => {
@@ -64,12 +58,9 @@ describe('ForumController', () => {
 
     forumServiceMock.findAll.mockResolvedValue(result);
 
-    await expect(
-      controller.findAll(1, 25),
-    ).resolves.toEqual(result);
+    await expect(controller.findAll(1, 25)).resolves.toEqual(result);
 
-    expect(forumServiceMock.findAll)
-      .toHaveBeenCalledWith(1, 25);
+    expect(forumServiceMock.findAll).toHaveBeenCalledWith(1, 25);
   });
 
   it('should retrieve a specific post', async () => {
@@ -83,12 +74,9 @@ describe('ForumController', () => {
 
     forumServiceMock.findOne.mockResolvedValue(post);
 
-    await expect(
-      controller.findOne(postId),
-    ).resolves.toEqual(post);
+    await expect(controller.findOne(postId)).resolves.toEqual(post);
 
-    expect(forumServiceMock.findOne)
-      .toHaveBeenCalledWith(postId);
+    expect(forumServiceMock.findOne).toHaveBeenCalledWith(postId);
   });
 
   it('should reject post creation without a user', () => {
@@ -98,13 +86,9 @@ describe('ForumController', () => {
     };
 
     expect(() =>
-      controller.create(
-        dto,
-        {} as Parameters<ForumController['create']>[1],
-      ),
+      controller.create(dto, {} as Parameters<ForumController['create']>[1]),
     ).toThrow(UnauthorizedException);
 
-    expect(forumServiceMock.create)
-      .not.toHaveBeenCalled();
+    expect(forumServiceMock.create).not.toHaveBeenCalled();
   });
 });

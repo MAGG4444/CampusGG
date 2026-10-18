@@ -1,10 +1,4 @@
-
-import {
-  IsString,
-  IsOptional,
-  MinLength,
-  MaxLength,
-} from 'class-validator';
+import { IsString, IsOptional, MinLength, MaxLength } from 'class-validator';
 
 export class CreateForumPostDto {
   @IsString()

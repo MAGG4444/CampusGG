@@ -1,4 +1,3 @@
-
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
@@ -19,12 +18,7 @@ import { ForumLikeStatusController } from './forum-like-status.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      ForumPost,
-      ForumComment,
-      ForumPostLike,
-      User,
-    ]),
+    TypeOrmModule.forFeature([ForumPost, ForumComment, ForumPostLike, User]),
     AuthModule,
   ],
   controllers: [
@@ -32,9 +26,6 @@ import { ForumLikeStatusController } from './forum-like-status.controller';
     ForumCommentsController,
     ForumLikeStatusController,
   ],
-  providers: [
-    ForumService,
-    ForumCommentsService,
-  ],
+  providers: [ForumService, ForumCommentsService],
 })
 export class ForumModule {}

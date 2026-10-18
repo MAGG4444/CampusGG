@@ -1,11 +1,12 @@
 
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import './SignIn.css'
 
 function SignIn() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { signIn } = useAuth()
 
   const [email, setEmail] = useState('')
@@ -38,8 +39,8 @@ function SignIn() {
       // Clear the password after successful login.
       setPassword('')
 
-      // Navigate to the homepage.
-      navigate('/')
+      // Return to where the user was trying to go (e.g., /matchmaking).
+      navigate(location.state?.from?.pathname || '/')
     } catch (err) {
       setError(
         err instanceof Error

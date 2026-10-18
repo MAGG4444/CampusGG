@@ -1,10 +1,4 @@
-
-import {
-  IsString,
-  MaxLength,
-  MinLength,
-  Matches,
-} from 'class-validator';
+import { IsString, MaxLength, MinLength, Matches } from 'class-validator';
 
 export class CreateForumCommentDto {
   @IsString()
