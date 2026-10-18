@@ -1,8 +1,4 @@
-
-import {
-  Test,
-  TestingModule,
-} from '@nestjs/testing';
+import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 
@@ -38,24 +34,23 @@ describe('ForumService', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
 
-    const module: TestingModule =
-      await Test.createTestingModule({
-        providers: [
-          ForumService,
-          {
-            provide: getRepositoryToken(ForumPost),
-            useValue: postsRepositoryMock,
-          },
-          {
-            provide: getRepositoryToken(User),
-            useValue: usersRepositoryMock,
-          },
-          {
-            provide: getRepositoryToken(ForumPostLike),
-            useValue: likesRepositoryMock,
-          },
-        ],
-      }).compile();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        ForumService,
+        {
+          provide: getRepositoryToken(ForumPost),
+          useValue: postsRepositoryMock,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: usersRepositoryMock,
+        },
+        {
+          provide: getRepositoryToken(ForumPostLike),
+          useValue: likesRepositoryMock,
+        },
+      ],
+    }).compile();
 
     service = module.get<ForumService>(ForumService);
   });
@@ -80,26 +75,24 @@ describe('ForumService', () => {
       likeCount: 3,
     });
 
-    expect(postsRepositoryMock.findOneBy)
-      .toHaveBeenCalledWith({
-        id: postId,
-      });
+    expect(postsRepositoryMock.findOneBy).toHaveBeenCalledWith({
+      id: postId,
+    });
 
-    expect(likesRepositoryMock.count)
-      .toHaveBeenCalledWith({
-        where: {
-          post: {
-            id: postId,
-          },
+    expect(likesRepositoryMock.count).toHaveBeenCalledWith({
+      where: {
+        post: {
+          id: postId,
         },
-      });
+      },
+    });
   });
 
   it('should reject like-count requests for missing posts', async () => {
     postsRepositoryMock.findOneBy.mockResolvedValue(null);
 
-    await expect(
-      service.getLikeCount('missing-post'),
-    ).rejects.toThrow(NotFoundException);
+    await expect(service.getLikeCount('missing-post')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

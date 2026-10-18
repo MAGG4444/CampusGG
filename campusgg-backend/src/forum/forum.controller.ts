@@ -1,4 +1,3 @@
-
 import {
   Body,
   Controller,
@@ -14,7 +13,6 @@ import {
   UseGuards,
   Delete,
   Patch,
-
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -26,9 +24,7 @@ import { UpdateForumPostDto } from './dto/update-forum-post.dto';
 
 @Controller('forum/posts')
 export class ForumController {
-  constructor(
-    private readonly forumService: ForumService,
-  ) {}
+  constructor(private readonly forumService: ForumService) {}
 
   @Get()
   findAll(
@@ -42,9 +38,7 @@ export class ForumController {
   }
 
   @Get(':id')
-  findOne(
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.forumService.findOne(id);
   }
 
@@ -63,74 +57,69 @@ export class ForumController {
     return this.forumService.create(dto, userId);
   }
 
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateForumPostDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user?.id;
 
-@Patch(':id')
-@UseGuards(JwtAuthGuard)
-update(
-  @Param('id', ParseUUIDPipe) id: string,
-  @Body() dto: UpdateForumPostDto,
-  @Req() request: AuthenticatedRequest,
-) {
-  const userId = request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
 
-  if (!userId) {
-    throw new UnauthorizedException();
+    return this.forumService.update(id, dto, userId);
   }
 
-  return this.forumService.update(id, dto, userId);
-}
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user?.id;
 
-@Delete(':id')
-@UseGuards(JwtAuthGuard)
-remove(
-  @Param('id', ParseUUIDPipe) id: string,
-  @Req() request: AuthenticatedRequest,
-) {
-  const userId = request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
 
-  if (!userId) {
-    throw new UnauthorizedException();
+    return this.forumService.remove(id, userId);
   }
 
-  return this.forumService.remove(id, userId);
-}
+  @Post(':id/like')
+  @UseGuards(JwtAuthGuard)
+  likePost(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user?.id;
 
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
 
-@Post(':id/like')
-@UseGuards(JwtAuthGuard)
-likePost(
-  @Param('id', ParseUUIDPipe) id: string,
-  @Req() request: AuthenticatedRequest,
-) {
-  const userId = request.user?.id;
-
-  if (!userId) {
-    throw new UnauthorizedException();
+    return this.forumService.likePost(id, userId);
   }
 
-  return this.forumService.likePost(id, userId);
-}
+  @Delete(':id/like')
+  @UseGuards(JwtAuthGuard)
+  unlikePost(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user?.id;
 
-@Delete(':id/like')
-@UseGuards(JwtAuthGuard)
-unlikePost(
-  @Param('id', ParseUUIDPipe) id: string,
-  @Req() request: AuthenticatedRequest,
-) {
-  const userId = request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
 
-  if (!userId) {
-    throw new UnauthorizedException();
+    return this.forumService.unlikePost(id, userId);
   }
 
-  return this.forumService.unlikePost(id, userId);
-}
-
-@Get(':id/likes')
-getLikeCount(
-  @Param('id', ParseUUIDPipe) id: string,
-) {
-  return this.forumService.getLikeCount(id);
-}
-
+  @Get(':id/likes')
+  getLikeCount(@Param('id', ParseUUIDPipe) id: string) {
+    return this.forumService.getLikeCount(id);
+  }
 }

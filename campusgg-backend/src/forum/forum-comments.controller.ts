@@ -1,4 +1,3 @@
-
 import {
   Body,
   Controller,
@@ -14,12 +13,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  JwtAuthGuard,
-} from '../auth/jwt-auth.guard';
-import type {
-  AuthenticatedRequest,
-} from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
 
 import { ForumCommentsService } from './forum-comments.service';
 import { CreateForumCommentDto } from './dto/create-forum-comment.dto';
@@ -28,9 +23,7 @@ import { UpdateForumCommentDto } from './dto/update-forum-comment.dto';
 
 @Controller('forum/posts/:postId/comments')
 export class ForumCommentsController {
-  constructor(
-    private readonly commentsService: ForumCommentsService,
-  ) {}
+  constructor(private readonly commentsService: ForumCommentsService) {}
 
   @Get()
   findAll(
@@ -42,11 +35,7 @@ export class ForumCommentsController {
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe)
     limit: number,
   ) {
-    return this.commentsService.findAll(
-      postId,
-      page,
-      limit,
-    );
+    return this.commentsService.findAll(postId, page, limit);
   }
 
   @Post()
@@ -62,54 +51,39 @@ export class ForumCommentsController {
       throw new UnauthorizedException();
     }
 
-    return this.commentsService.create(
-      postId,
-      dto,
-      userId,
-    );
+    return this.commentsService.create(postId, dto, userId);
   }
 
+  @Patch(':commentId')
+  @UseGuards(JwtAuthGuard)
+  update(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @Body() dto: UpdateForumCommentDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user?.id;
 
-@Patch(':commentId')
-@UseGuards(JwtAuthGuard)
-update(
-  @Param('postId', ParseUUIDPipe) postId: string,
-  @Param('commentId', ParseUUIDPipe) commentId: string,
-  @Body() dto: UpdateForumCommentDto,
-  @Req() request: AuthenticatedRequest,
-) {
-  const userId = request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
 
-  if (!userId) {
-    throw new UnauthorizedException();
+    return this.commentsService.update(postId, commentId, dto, userId);
   }
 
-  return this.commentsService.update(
-    postId,
-    commentId,
-    dto,
-    userId,
-  );
-}
+  @Delete(':commentId')
+  @UseGuards(JwtAuthGuard)
+  remove(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user?.id;
 
-@Delete(':commentId')
-@UseGuards(JwtAuthGuard)
-remove(
-  @Param('postId', ParseUUIDPipe) postId: string,
-  @Param('commentId', ParseUUIDPipe) commentId: string,
-  @Req() request: AuthenticatedRequest,
-) {
-  const userId = request.user?.id;
+    if (!userId) {
+      throw new UnauthorizedException();
+    }
 
-  if (!userId) {
-    throw new UnauthorizedException();
+    return this.commentsService.remove(postId, commentId, userId);
   }
-
-  return this.commentsService.remove(
-    postId,
-    commentId,
-    userId,
-  );
-}
-
 }

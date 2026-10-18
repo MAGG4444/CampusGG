@@ -213,10 +213,7 @@ export class LobbiesService {
   // Used by the matchmaking service to populate a lobby from a MatchGroup.
   // ============================================================
 
-  async addMembers(
-    lobbyId: string,
-    userIds: string[],
-  ): Promise<void> {
+  async addMembers(lobbyId: string, userIds: string[]): Promise<void> {
     return this.lobbiesRepository.manager.transaction(async (manager) => {
       const lobby = await manager.findOne(Lobby, {
         where: { id: lobbyId },
