@@ -7,7 +7,6 @@ import './SignUp.css'
 const initialValues = {
   email: '',
   username: '',
-  displayName: '',
   password: '',
   confirmPassword: '',
 }
@@ -27,13 +26,7 @@ const fields = [
     type: 'text',
     autoComplete: 'username',
     placeholder: 'campusplayer',
-  },
-  {
-    name: 'displayName',
-    label: 'Display Name',
-    type: 'text',
-    autoComplete: 'name',
-    placeholder: 'Campus Player',
+    className: 'signup-field-wide',
   },
   {
     name: 'password',
@@ -64,7 +57,6 @@ function validate(values) {
   }
 
   if (!values.username.trim()) errors.username = 'Enter a username.'
-  if (!values.displayName.trim()) errors.displayName = 'Enter your display name.'
   if (!values.password) errors.password = 'Enter a password.'
 
   if (!values.confirmPassword) {
@@ -121,7 +113,6 @@ function SignUp() {
       await signUp({
         email: values.email,
         username: values.username,
-        displayName: values.displayName,
         password: values.password,
       })
 

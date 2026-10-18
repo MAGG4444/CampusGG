@@ -18,7 +18,7 @@ export class User {
   @Column({ unique: true, length: 50 })
   username!: string;
 
-  @Column({ name: 'display_name', length: 100 })
+  @Column({ name: 'display_name', length: 100, nullable: true })
   displayName!: string;
 
   @Column({ name: 'edu_verified', default: false })
