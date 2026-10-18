@@ -64,7 +64,7 @@ export class MailService {
 
         if (error) {
           this.logger.error(`Resend API error sending to ${email}:`, error);
-          throw error;
+          throw new Error(`Resend API error sending to ${email}`);
         }
 
         this.logger.log(
@@ -75,7 +75,7 @@ export class MailService {
           `Failed to send verification email to ${email}:`,
           err,
         );
-        throw err;
+        throw new Error(`Failed to send verification email to ${email}`);
       }
     } else {
       // Dev fallback: log the code to console if no API key configured

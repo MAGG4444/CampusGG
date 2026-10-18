@@ -41,7 +41,10 @@ describe('MailService', () => {
     });
 
     it('should send verification email with 6-digit code and template', async () => {
-      mockSend.mockResolvedValueOnce({ data: { id: 'email_123' }, error: null });
+      mockSend.mockResolvedValueOnce({
+        data: { id: 'email_123' },
+        error: null,
+      });
 
       await mailService.sendVerificationEmail(
         'student@purdue.edu',
@@ -50,7 +53,9 @@ describe('MailService', () => {
       );
 
       expect(mockSend).toHaveBeenCalledTimes(1);
-      const call = mockSend.mock.calls[0] as unknown as [Record<string, string>];
+      const call = mockSend.mock.calls[0] as unknown as [
+        Record<string, string>,
+      ];
       const mailArgs = call[0];
 
       expect(mailArgs.to).toBe('student@purdue.edu');
