@@ -1,21 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { useDraftEditor } from '../hooks/useDraftEditor.js'
+import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
 import logo from '../assets/LOGO.png'
 import './CreateLobby.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
-const initialFormData = {
-  lobbyName: '',
-  subtitle: '',
-  administratorInput: '',
-  administrators: [],
-  tags: ['All Categories'],
-  details: '',
-  participantLimit: 'unlimited',
-  visibility: 'public',
-}
 
 const tagOptions = [
   'All Categories',
@@ -43,14 +34,18 @@ const maxDetailsLength = 500
 
 function CreateLobby() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const fromDrafts = location.state?.from === '/drafts'
+  const backPath = fromDrafts ? '/drafts' : '/lobby'
   const { token } = useAuth()
 
-  const [formData, setFormData] = useState(initialFormData)
-  const [, setSavedDraft] = useState(null)
   const [errors, setErrors] = useState({})
   const [adminFeedback, setAdminFeedback] = useState('')
-  const [statusMessage, setStatusMessage] = useState('')
   const [isPublishing, setIsPublishing] = useState(false)
+  const {
+    formData, setFormData, statusMessage, setStatusMessage, blocked,
+    save: handleSave, discard, completePublish, navigationBlocker,
+  } = useDraftEditor('lobby', isPublishing)
 
   function updateField(field, value) {
     setFormData((currentData) => ({
@@ -117,13 +112,6 @@ function CreateLobby() {
     setAdminFeedback('Administrator added.')
   }
 
-  // Keep the existing local draft behavior.
-  function handleSave() {
-    setSavedDraft(formData)
-    setErrors({})
-    setStatusMessage('Draft saved for this session.')
-  }
-
   function validateForm() {
     const nextErrors = {}
 
@@ -162,6 +150,8 @@ function CreateLobby() {
 
   async function handlePublish(event) {
     event.preventDefault()
+
+    if (blocked) return
 
     if (isPublishing) {
       return
@@ -236,6 +226,8 @@ function CreateLobby() {
         throw new Error(message || 'Unable to publish lobby.')
       }
 
+      completePublish()
+
       // Lobby was successfully created in PostgreSQL.
       setStatusMessage('Lobby published successfully.')
 
@@ -253,21 +245,20 @@ function CreateLobby() {
   }
 
   function handleDelete() {
-    setFormData(initialFormData)
-    setSavedDraft(null)
+    if (!discard()) return
     setErrors({})
     setAdminFeedback('')
-    setStatusMessage('Lobby cleared.')
   }
 
   return (
     <div className="create-lobby-wrapper page-enter">
+      <DraftNavigationDialog blocker={navigationBlocker} />
       <form className="create-lobby-page" onSubmit={handlePublish}>
         <button
           className="back-button"
           type="button"
-          aria-label="Back to Lobby"
-          onClick={() => navigate('/lobby')}
+          aria-label={fromDrafts ? 'Back to My Drafts' : 'Back to Lobby'}
+          onClick={() => navigate(backPath)}
         >
           &larr;
         </button>
@@ -548,12 +539,17 @@ function CreateLobby() {
           ) : null}
         </div>
 
+        <p>
+          <Link to="/drafts">My Drafts</Link>{' · '}
+          <Link to="/create-lobby" state={location.state}>Start a new lobby</Link>
+        </p>
+
         <div className="create-actions">
           <button
             className="footer-action footer-save"
             type="button"
             onClick={handleSave}
-            disabled={isPublishing}
+            disabled={isPublishing || blocked}
           >
             Save
           </button>
@@ -561,7 +557,7 @@ function CreateLobby() {
           <button
             className="footer-action footer-publish"
             type="submit"
-            disabled={isPublishing}
+            disabled={isPublishing || blocked}
           >
             {isPublishing ? 'Publishing...' : 'Publish'}
           </button>
@@ -578,6 +574,7 @@ function CreateLobby() {
 
         <div
           className="create-status"
+          aria-atomic="true"
           aria-live="polite"
           role={statusMessage.includes('Unable') ? 'alert' : 'status'}
         >
