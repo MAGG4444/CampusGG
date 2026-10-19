@@ -1,5 +1,5 @@
 import './App.css'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, createRoutesFromElements, Route, RouterProvider } from 'react-router-dom'
 import Layout from './components/Layout.jsx'
 import NotificationProvider from './components/notifications/NotificationProvider.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
@@ -7,6 +7,7 @@ import { JoinedLobbiesProvider } from './context/JoinedLobbiesContext.jsx'
 import Chat from './pages/Chat.jsx'
 import CreateLobby from './pages/CreateLobby.jsx'
 import CreatePost from './pages/CreatePost.jsx'
+import Drafts from './pages/Drafts.jsx'
 import Forum from './pages/Forum.jsx'
 import Home from './pages/Home.jsx'
 import Lobby from './pages/Lobby.jsx'
@@ -17,29 +18,30 @@ import SignIn from './pages/SignIn.jsx'
 import SignUp from './pages/SignUp.jsx'
 import VerifyEmail from './pages/VerifyEmail.jsx'
 
+const router = createBrowserRouter(createRoutesFromElements(
+  <Route element={<Layout />}>
+    <Route path="/" element={<Home />} />
+    <Route path="/lobby" element={<Lobby />} />
+    <Route path="/lobby/:lobbyId" element={<LobbyDetail />} />
+    <Route path="/create-lobby" element={<CreateLobby />} />
+    <Route path="/forum" element={<Forum />} />
+    <Route path="/forum/:postId" element={<PostDetail />} />
+    <Route path="/create-post" element={<CreatePost />} />
+    <Route path="/chat" element={<Chat />} />
+    <Route path="/profile" element={<Profile />} />
+    <Route path="/drafts" element={<Drafts />} />
+    <Route path="/signin" element={<SignIn />} />
+    <Route path="/signup" element={<SignUp />} />
+    <Route path="/verify-email" element={<VerifyEmail />} />
+  </Route>
+))
+
 function App() {
   return (
     <NotificationProvider>
       <AuthProvider>
         <JoinedLobbiesProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Home />} />
-                <Route path="/lobby" element={<Lobby />} />
-                <Route path="/lobby/:lobbyId" element={<LobbyDetail />} />
-                <Route path="/create-lobby" element={<CreateLobby />} />
-                <Route path="/forum" element={<Forum />} />
-                <Route path="/forum/:postId" element={<PostDetail />} />
-                <Route path="/create-post" element={<CreatePost />} />
-                <Route path="/chat" element={<Chat />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/signin" element={<SignIn />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
+          <RouterProvider router={router} />
         </JoinedLobbiesProvider>
       </AuthProvider>
     </NotificationProvider>
