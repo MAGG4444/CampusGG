@@ -1,0 +1,2002 @@
+[
+  {
+    "userId": "usr_0b39a6c6-a367-43a6-991d-06c093bafb78",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Liberal Arts",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18196
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.56,
+    "queueTime": 25
+  },
+  {
+    "userId": "usr_2eba2627-c96b-4bb3-a4d0-bbc42e368fcc",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Electrical Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19286
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "IGL",
+      "micEnabled": false
+    },
+    "intensity": 0.42,
+    "queueTime": 38
+  },
+  {
+    "userId": "usr_b4034f5d-6af0-400a-858e-2e2c3e3afb1d",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20457
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.59,
+    "queueTime": 242
+  },
+  {
+    "userId": "usr_10e1b5ff-d9e9-4d1c-a240-60a90690a9d9",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Psychology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14184
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.42,
+    "queueTime": 58
+  },
+  {
+    "userId": "usr_3032c11b-6ba3-47ad-b685-2d47b6894715",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Electrical Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20883
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.36,
+    "queueTime": 130
+  },
+  {
+    "userId": "usr_13639888-a2a7-4527-b4d0-6e1eef473c35",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Data Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17782
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.59,
+    "queueTime": 13
+  },
+  {
+    "userId": "usr_56a59971-3352-4fdf-a503-57f2caa9d51f",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20531
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.72,
+    "queueTime": 204
+  },
+  {
+    "userId": "usr_19f8a2a5-0ad0-4b8e-a003-10cb91d95e44",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Liberal Arts",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18003
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.68,
+    "queueTime": 52
+  },
+  {
+    "userId": "usr_af081e51-66e2-4be9-ad1e-8ef632df6e82",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekday Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 22571
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.81,
+    "queueTime": 111
+  },
+  {
+    "userId": "usr_73378e8c-74ec-480d-aeff-d2e43fa796be",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Communications",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20081
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.71,
+    "queueTime": 32
+  },
+  {
+    "userId": "usr_bab3b688-9733-4132-9d61-04f3cf66addd",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 10000
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.82,
+    "queueTime": 5
+  },
+  {
+    "userId": "usr_e059c9b7-13f9-4b5c-8d5b-faad69b0efd8",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 10000
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.82,
+    "queueTime": 12
+  },
+  {
+    "userId": "usr_ed819a03-526f-43a0-ab62-12994fdcd467",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Data Science",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19141
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.79,
+    "queueTime": 136
+  },
+  {
+    "userId": "usr_177d5360-dad3-4a41-9cbb-decd85d71dd2",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Economics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 12321
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.87,
+    "queueTime": 36
+  },
+  {
+    "userId": "usr_c23b2b6c-7738-4da8-b438-0a1938e3f398",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Psychology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18375
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": false
+    },
+    "intensity": 0.24,
+    "queueTime": 123
+  },
+  {
+    "userId": "usr_104753a6-4ebe-41f6-99db-9143ccaf2150",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Electrical Engineering",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15727
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.9,
+    "queueTime": 311
+  },
+  {
+    "userId": "usr_1369c4ac-edf4-4f9e-8773-daaf62a19af6",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Liberal Arts",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14780
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.91,
+    "queueTime": 209
+  },
+  {
+    "userId": "usr_31c60042-f19c-4219-8991-6256c0f9a96d",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Data Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17305
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.56,
+    "queueTime": 41
+  },
+  {
+    "userId": "usr_aed16eb8-94fa-477d-abfb-f69d85007905",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekend Morning"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18889
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.43,
+    "queueTime": 5
+  },
+  {
+    "userId": "usr_2415c328-d792-4ba5-972b-cf33edcc0307",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Game Design",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16926
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.66,
+    "queueTime": 3
+  },
+  {
+    "userId": "usr_1ab8d055-3b2a-42aa-998b-4b04d5216eb8",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Psychology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15859
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.83,
+    "queueTime": 49
+  },
+  {
+    "userId": "usr_ad1b8678-070b-4dc0-a0e1-ec3b236d3fb5",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20934
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.78,
+    "queueTime": 31
+  },
+  {
+    "userId": "usr_68782d1e-7d5c-4cba-a2ce-debb39829b64",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Finance",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18250
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.25,
+    "queueTime": 138
+  },
+  {
+    "userId": "usr_0338c3a9-c46c-486c-83f6-3551e00d56d0",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Game Design",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 12954
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.69,
+    "queueTime": 35
+  },
+  {
+    "userId": "usr_fae742ea-5ba3-447e-818e-9ad8c39abb05",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Mechanical Engineering",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18010
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.66,
+    "queueTime": 174
+  },
+  {
+    "userId": "usr_0dcc98e9-8ee9-4547-9654-c24a4eb09a5e",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20168
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.2,
+    "queueTime": 58
+  },
+  {
+    "userId": "usr_ba921f39-8328-4824-8049-70bf1507c1b2",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Psychology",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 10000
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.37,
+    "queueTime": 16
+  },
+  {
+    "userId": "usr_23b62cd4-e762-4845-aa76-96bc06166c0c",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17959
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.26,
+    "queueTime": 391
+  },
+  {
+    "userId": "usr_2bc0e007-3521-48f7-8778-4925ba8b6f9a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18584
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Entry",
+      "micEnabled": false
+    },
+    "intensity": 0.63,
+    "queueTime": 4
+  },
+  {
+    "userId": "usr_ea403049-94fe-4a5a-8c98-492da0319848",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 13389
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.34,
+    "queueTime": 3
+  },
+  {
+    "userId": "usr_25550d3f-773c-4300-b433-42c5fff92341",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Economics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18997
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.15,
+    "queueTime": 151
+  },
+  {
+    "userId": "usr_15cb5f14-1e1a-4424-8c76-142c97e4f337",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Liberal Arts",
+      "activeSchedule": "Weekday Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18697
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.36,
+    "queueTime": 122
+  },
+  {
+    "userId": "usr_34939715-0ccf-4548-acd8-b6bdc5f04d45",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Economics",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 11110
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.29,
+    "queueTime": 147
+  },
+  {
+    "userId": "usr_609d74ba-8f0f-4fb7-917c-027272820ffa",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20415
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.51,
+    "queueTime": 0
+  },
+  {
+    "userId": "usr_f883201f-5b0e-4331-9753-2cb30d191e7a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Game Design",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16893
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Lurker",
+      "micEnabled": false
+    },
+    "intensity": 0.56,
+    "queueTime": 55
+  },
+  {
+    "userId": "usr_2f928da7-4ceb-443a-8940-3366fd9f724f",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16083
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.75,
+    "queueTime": 13
+  },
+  {
+    "userId": "usr_819c075e-05e6-4167-ad3c-fe9c213090c2",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Biology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18486
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.2,
+    "queueTime": 48
+  },
+  {
+    "userId": "usr_923abfaa-291d-41ff-a39f-27f44ff0a93c",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16971
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.25,
+    "queueTime": 289
+  },
+  {
+    "userId": "usr_780b0bf7-8e19-4da8-966a-d9609f81057a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umn.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19010
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": false
+    },
+    "intensity": 0.35,
+    "queueTime": 140
+  },
+  {
+    "userId": "usr_01545dbc-c390-433b-9a5f-d5b14d6fcc8c",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Psychology",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14224
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.21,
+    "queueTime": 24
+  },
+  {
+    "userId": "usr_2788186e-d987-4251-a7bb-913fb2f229da",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Weekday Morning"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18720
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": false
+    },
+    "intensity": 0.31,
+    "queueTime": 1
+  },
+  {
+    "userId": "usr_a72fd2b1-1421-4049-9093-073f1c79a24c",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Finance",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15685
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.2,
+    "queueTime": 45
+  },
+  {
+    "userId": "usr_cb968d2b-ddc4-4ab8-adb1-1ee89926ba7a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Communications",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 24100
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.47,
+    "queueTime": 142
+  },
+  {
+    "userId": "usr_a4f942a9-bee0-43bc-be8d-5f3619c4090e",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekday Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 21063
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.46,
+    "queueTime": 76
+  },
+  {
+    "userId": "usr_2c9aefcf-1ac2-4835-8348-b7762193d935",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 22798
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.85,
+    "queueTime": 47
+  },
+  {
+    "userId": "usr_cdf9c23c-4b63-4ca1-9de7-98ada0fd1253",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Game Design",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15664
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": false
+    },
+    "intensity": 0.45,
+    "queueTime": 18
+  },
+  {
+    "userId": "usr_8f8e4694-ac6c-420d-b857-02a4ef1d3837",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Communications",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17637
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "IGL",
+      "micEnabled": false
+    },
+    "intensity": 0.53,
+    "queueTime": 128
+  },
+  {
+    "userId": "usr_462b7981-6ce0-440d-b378-a7b89159c37c",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Economics",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15956
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": false
+    },
+    "intensity": 0.95,
+    "queueTime": 57
+  },
+  {
+    "userId": "usr_416caa27-f8fa-4bd1-b505-b8085bc58b82",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17882
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Lurker",
+      "micEnabled": false
+    },
+    "intensity": 0.36,
+    "queueTime": 61
+  },
+  {
+    "userId": "usr_d9aad95d-1c7d-4561-be71-53c23f7aa504",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16189
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": false
+    },
+    "intensity": 0.39,
+    "queueTime": 38
+  },
+  {
+    "userId": "usr_a98ca758-0106-48a9-8fdc-ee4104448e49",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16733
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.83,
+    "queueTime": 24
+  },
+  {
+    "userId": "usr_9f4e8dd3-aa57-4857-afa1-392680e33469",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Economics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16600
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.51,
+    "queueTime": 138
+  },
+  {
+    "userId": "usr_9793a2a8-743e-4b1e-8950-043a02999ae5",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17133
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.54,
+    "queueTime": 47
+  },
+  {
+    "userId": "usr_5c3c0a48-b543-457a-bfcb-b0d861d4a8b1",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15196
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.21,
+    "queueTime": 25
+  },
+  {
+    "userId": "usr_4077c536-0438-4080-a8d7-2614efaf59f6",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16369
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.59,
+    "queueTime": 73
+  },
+  {
+    "userId": "usr_b724ad8e-9dfc-416e-a8c3-695a76b3da0e",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 13594
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "IGL",
+      "micEnabled": false
+    },
+    "intensity": 0.41,
+    "queueTime": 107
+  },
+  {
+    "userId": "usr_6234467a-48bb-4a04-899a-7680fc50d994",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "northwestern.edu",
+      "major": "Psychology",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 22673
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.75,
+    "queueTime": 141
+  },
+  {
+    "userId": "usr_2d4d9597-f995-404a-9b7d-eb4698a19047",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Communications",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19075
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.26,
+    "queueTime": 18
+  },
+  {
+    "userId": "usr_d0ba945a-7760-4508-90c0-526ef8d15884",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Communications",
+      "activeSchedule": "Weekday Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19417
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Lurker",
+      "micEnabled": false
+    },
+    "intensity": 0.24,
+    "queueTime": 51
+  },
+  {
+    "userId": "usr_844ecc7a-4985-41fe-b2d0-0cc8c6697e05",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 21026
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.55,
+    "queueTime": 69
+  },
+  {
+    "userId": "usr_ae5fea4a-d6c0-4239-bd8c-898c08c52c49",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Liberal Arts",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16972
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.59,
+    "queueTime": 85
+  },
+  {
+    "userId": "usr_d5b5c61c-60ad-4b90-965c-3b0e6c580582",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Psychology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18190
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.19,
+    "queueTime": 40
+  },
+  {
+    "userId": "usr_bf7db6bf-0e0b-4439-99bd-74158ded1fa9",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19452
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.15,
+    "queueTime": 3
+  },
+  {
+    "userId": "usr_2eb03d54-69c5-4ad3-b38b-aa68fdabdbda",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14843
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.79,
+    "queueTime": 262
+  },
+  {
+    "userId": "usr_08d0ae7d-acde-4cde-9327-c76f6a7a2975",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17461
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": false
+    },
+    "intensity": 0.67,
+    "queueTime": 5
+  },
+  {
+    "userId": "usr_6736cf5f-94ee-46d5-9134-9c78aef34094",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Data Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 24005
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.61,
+    "queueTime": 190
+  },
+  {
+    "userId": "usr_e490592e-1625-447e-b2e9-6cad98cfc7c0",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Data Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18206
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.23,
+    "queueTime": 154
+  },
+  {
+    "userId": "usr_227ff90c-d84f-46ea-b731-bea8c52596a9",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekday Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16962
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.25,
+    "queueTime": 47
+  },
+  {
+    "userId": "usr_ea99a073-c89e-48a1-986d-9859a5a6d523",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18452
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.72,
+    "queueTime": 59
+  },
+  {
+    "userId": "usr_d9a320c2-76c5-478c-97f6-ab75f891bc27",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "indiana.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16728
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": false
+    },
+    "intensity": 0.58,
+    "queueTime": 180
+  },
+  {
+    "userId": "usr_abaeec4f-2917-4db3-bfb5-8fab1cb6d990",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umn.edu",
+      "major": "Communications",
+      "activeSchedule": "Weekday Morning"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16290
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.69,
+    "queueTime": 67
+  },
+  {
+    "userId": "usr_0e980b0b-287d-4d5b-9aef-636a74e1d9c8",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18353
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.59,
+    "queueTime": 107
+  },
+  {
+    "userId": "usr_c16d0b29-deaa-43c1-95d6-bbc0efd9a31a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 13719
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": false
+    },
+    "intensity": 0.53,
+    "queueTime": 66
+  },
+  {
+    "userId": "usr_56cbf973-6db7-4bb4-a0ea-cb38303052fe",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Electrical Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14993
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.4,
+    "queueTime": 148
+  },
+  {
+    "userId": "usr_5968d09e-454a-43da-9bec-a82b188f09ab",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umn.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 11411
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.1,
+    "queueTime": 388
+  },
+  {
+    "userId": "usr_7d56f6c4-65ff-4f6d-81ca-fda5ed8df017",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Mechanical Engineering",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18760
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.18,
+    "queueTime": 7
+  },
+  {
+    "userId": "usr_f3252311-b7f8-437e-a4ad-77c85acd51c0",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Data Science",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14935
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.45,
+    "queueTime": 26
+  },
+  {
+    "userId": "usr_2743b856-a199-4d40-9a82-2ffe81e8c9cd",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17779
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.58,
+    "queueTime": 69
+  },
+  {
+    "userId": "usr_a0557624-0806-479a-869a-f23a8f0c5ca5",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Data Science",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14071
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.61,
+    "queueTime": 185
+  },
+  {
+    "userId": "usr_4ab065e9-ea48-4683-b17a-7987afa5c468",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Weekday Morning"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 15044
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": false
+    },
+    "intensity": 0.34,
+    "queueTime": 40
+  },
+  {
+    "userId": "usr_c4380f55-aea9-43d5-932f-7f30146b8e1b",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umn.edu",
+      "major": "Mechanical Engineering",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 21000
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.46,
+    "queueTime": 243
+  },
+  {
+    "userId": "usr_b7686218-8a52-40b1-aaf0-6c1efbed9c9d",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Game Design",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17439
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.42,
+    "queueTime": 60
+  },
+  {
+    "userId": "usr_74a3d088-7150-4039-b8d2-3105e30c5318",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "osu.edu",
+      "major": "Computer Science",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18463
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.5,
+    "queueTime": 159
+  },
+  {
+    "userId": "usr_7b41b70f-54df-4f65-a615-4dc019b917f7",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20207
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.69,
+    "queueTime": 39
+  },
+  {
+    "userId": "usr_137decaa-6658-433d-922d-123e518de4db",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "wisc.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 19358
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Lurker",
+      "micEnabled": true
+    },
+    "intensity": 0.06,
+    "queueTime": 147
+  },
+  {
+    "userId": "usr_59809268-9a9b-4662-b058-9d6a9be86e55",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20464
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.63,
+    "queueTime": 12
+  },
+  {
+    "userId": "usr_ac98124d-16ad-4a58-b1c0-73ea05807cbb",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Communications",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16000
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.35,
+    "queueTime": 10
+  },
+  {
+    "userId": "usr_c8e927aa-6c00-4360-9dbc-5b88a39042a5",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "indiana.edu",
+      "major": "Computer Engineering",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17672
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.74,
+    "queueTime": 47
+  },
+  {
+    "userId": "usr_50cfc87b-331a-402a-9a77-452319fe9b7a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "umich.edu",
+      "major": "Mathematics",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 18187
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.36,
+    "queueTime": 102
+  },
+  {
+    "userId": "usr_42f97037-c5e8-4431-a4b2-434f063d9c42",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Mechanical Engineering",
+      "activeSchedule": "Weekday Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 12435
+    },
+    "preferences": {
+      "primaryRole": "AWPer",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.44,
+    "queueTime": 67
+  },
+  {
+    "userId": "usr_20c9f411-8f3f-4ddf-be77-13e0aa5ee7c1",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Finance",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 17266
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.45,
+    "queueTime": 94
+  },
+  {
+    "userId": "usr_cc3839f9-6c57-4e51-af85-d374a82351ca",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Biology",
+      "activeSchedule": "Weekday Evening"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16501
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.24,
+    "queueTime": 119
+  },
+  {
+    "userId": "usr_71df1791-4a5c-4441-9594-0704fe57aa85",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "msu.edu",
+      "major": "Data Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20913
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.11,
+    "queueTime": 23
+  },
+  {
+    "userId": "usr_3de8b414-b352-4a05-b82c-fe8da408830a",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Game Design",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16482
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.73,
+    "queueTime": 134
+  },
+  {
+    "userId": "usr_b57d85f8-55a4-434c-be96-cbe6ccf6c5e1",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Game Design",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 21648
+    },
+    "preferences": {
+      "primaryRole": "Lurker",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.43,
+    "queueTime": 120
+  },
+  {
+    "userId": "usr_a7f29f0d-184c-4de2-b7d9-03070d8719d9",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "purdue.edu",
+      "major": "Data Science",
+      "activeSchedule": "Friday Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 10450
+    },
+    "preferences": {
+      "primaryRole": "Support",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.32,
+    "queueTime": 255
+  },
+  {
+    "userId": "usr_f2299334-0d81-47cf-8a3e-d0eace8c35fa",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Psychology",
+      "activeSchedule": "Late Night"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 14369
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "Support",
+      "micEnabled": true
+    },
+    "intensity": 0.33,
+    "queueTime": 22
+  },
+  {
+    "userId": "usr_5c626916-e869-4c01-90a9-9112f2571d09",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 16138
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "IGL",
+      "micEnabled": true
+    },
+    "intensity": 0.76,
+    "queueTime": 296
+  },
+  {
+    "userId": "usr_923b5fae-6972-424a-b1d7-aec80387520e",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "psu.edu",
+      "major": "Business Administration",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 20827
+    },
+    "preferences": {
+      "primaryRole": "IGL",
+      "secondaryRole": "Entry",
+      "micEnabled": true
+    },
+    "intensity": 0.69,
+    "queueTime": 20
+  },
+  {
+    "userId": "usr_e9c01d9e-d597-41ca-ad50-7f80cf67bf29",
+    "game": "CS2",
+    "profile": {
+      "universityDomain": "illinois.edu",
+      "major": "Information Technology",
+      "activeSchedule": "Weekend Afternoon"
+    },
+    "stats": {
+      "game": "CS2",
+      "rating": 21254
+    },
+    "preferences": {
+      "primaryRole": "Entry",
+      "secondaryRole": "AWPer",
+      "micEnabled": true
+    },
+    "intensity": 0.59,
+    "queueTime": 127
+  }
+]
