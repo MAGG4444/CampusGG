@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { User } from './user.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 
 @Injectable()
@@ -32,5 +33,20 @@ export class UsersService {
     }
 
     return user;
+  }
+
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<User> {
+    // Update only supplied editable columns. A full entity save could overwrite concurrent changes.
+    const changes: UpdateProfileDto = {};
+    if (dto.displayName !== undefined) changes.displayName = dto.displayName;
+    if (dto.bio !== undefined) changes.bio = dto.bio.trim();
+    if (dto.favoriteGames !== undefined)
+      changes.favoriteGames = dto.favoriteGames;
+    if (dto.skillLevel !== undefined) changes.skillLevel = dto.skillLevel;
+    if (Object.keys(changes).length) {
+      const result = await this.usersRepository.update(id, changes);
+      if (!result.affected) throw new NotFoundException('User not found');
+    }
+    return this.findOne(id);
   }
 }

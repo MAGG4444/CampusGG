@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Profile editing — mock integration fixture</title></head>
+<body><div id="root"></div>
+<script type="module">
+import React from 'react'
+import { createRoot } from 'react-dom/client'
+import { createMemoryRouter, RouterProvider } from 'react-router-dom'
+import { AuthProvider } from '/src/context/AuthContext.jsx'
+import Profile from '/src/pages/Profile.jsx'
+import '/src/index.css'
+import '/src/App.css'
+
+const user = { id: 'profile-test', username: 'tester', email: 'tester@example.edu', displayName: 'Original Player', bio: 'Original bio', favoriteGames: ['Valorant'], skillLevel: 'Intermediate' }
+const token = `test.${btoa(JSON.stringify({ sub: user.id, exp: Math.floor(Date.now() / 1000) + 3600 }))}.test`
+sessionStorage.setItem('campusgg-auth', JSON.stringify({ user, token }))
+window.profileTest = { mode: 'success', requests: 0 }
+window.fetch = async (url, options) => {
+  if (url.endsWith('/users/me') && !options.method) return new Response(JSON.stringify(user), { status: 200 })
+  if (!url.endsWith('/users/me') || options.method !== 'PATCH') throw new Error('Unexpected API request')
+  window.profileTest.requests += 1
+  if (window.profileTest.mode === 'pending') await new Promise((resolve) => { window.profileTest.resolve = resolve })
+  if (window.profileTest.mode === 'error') return new Response(JSON.stringify({ message: 'Mock save failed' }), { status: 500 })
+  return new Response(JSON.stringify({ ...user, ...JSON.parse(options.body) }), { status: 200 })
+}
+const router = createMemoryRouter([
+  { path: '/profile', element: React.createElement(Profile) },
+  { path: '/drafts', element: React.createElement('h1', null, 'My Drafts destination') },
+  { path: '/', element: React.createElement('h1', null, 'Signed out') },
+  { path: '/signin', element: React.createElement('h1', null, 'Sign In') },
+], { initialEntries: ['/profile'] })
+createRoot(document.getElementById('root')).render(React.createElement(AuthProvider,
+  { profileUpdatesEnabled: new URLSearchParams(location.search).get('enabled') === 'true' },
+  React.createElement(RouterProvider, { router })))
+</script></body></html>

@@ -21,6 +21,20 @@ export class User {
   @Column({ name: 'display_name', length: 100 })
   displayName!: string;
 
+  @Column({ type: 'varchar', length: 500, default: '' })
+  bio?: string;
+
+  @Column({
+    name: 'favorite_games',
+    type: 'text',
+    array: true,
+    default: () => "'{}'::text[]",
+  })
+  favoriteGames?: string[];
+
+  @Column({ name: 'skill_level', type: 'varchar', length: 20, default: '' })
+  skillLevel?: string;
+
   @Column({ name: 'edu_verified', default: false })
   eduVerified!: boolean;
 

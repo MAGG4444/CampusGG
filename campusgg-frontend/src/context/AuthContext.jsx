@@ -1,6 +1,8 @@
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AuthContext } from './authContext.js'
+import { getCurrentUser, updateUserProfile } from '../api/users.js'
+import { sessionWithProfile } from '../utils/profile.js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 const SESSION_KEY = 'campusgg-auth'
@@ -48,8 +50,27 @@ function restoreSession() {
   }
 }
 
-export function AuthProvider({ children }) {
+export function AuthProvider({ children, profileUpdatesEnabled = true }) {
   const [session, setSession] = useState(restoreSession)
+  const sessionRef = useRef(session)
+  const profileRequest = useRef(false)
+
+  // Reconcile a restored session with PostgreSQL; transient failures keep the cached profile.
+  useEffect(() => {
+    const original = sessionRef.current
+    if (!original) return
+    let cancelled = false
+    getCurrentUser(original.token).then((account) => {
+      if (cancelled || profileRequest.current || sessionRef.current !== original) return
+      const updated = sessionWithProfile(original, account)
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated))
+      sessionRef.current = updated
+      setSession(updated)
+    }).catch(() => {
+      // A failed refresh must not overwrite the current profile or resurrect a signed-out session.
+    })
+    return () => { cancelled = true }
+  }, [])
 
   const user = session?.user ?? null
   const token = session?.token ?? null
@@ -59,6 +80,31 @@ export function AuthProvider({ children }) {
       user,
       token,
       isAuthenticated: user !== null,
+      canUpdateProfile: profileUpdatesEnabled,
+
+      async updateProfile(values) {
+        if (!profileUpdatesEnabled) throw new Error('Profile saving requires backend support and is not available yet.')
+        const original = sessionRef.current
+        if (!original) throw new Error('Please sign in before updating your profile.')
+        if (profileRequest.current) throw new Error('A profile update is already in progress.')
+        profileRequest.current = true
+        try {
+          const response = await updateUserProfile(values, original.token)
+          if (sessionRef.current !== original) throw new Error('Your session changed. Please reopen your profile.')
+          const updated = sessionWithProfile(original, response)
+          // Cache only a confirmed server response, following the existing session convention.
+          try {
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify(updated))
+          } catch {
+            throw new Error('Your profile was saved on the server, but this browser could not refresh your session. Sign in again to reload it.')
+          }
+          sessionRef.current = updated
+          setSession(updated)
+          return updated.user
+        } finally {
+          profileRequest.current = false
+        }
+      },
 
       // Authenticate using the NestJS backend.
       async signIn(email, password) {
@@ -99,29 +145,8 @@ export function AuthProvider({ children }) {
         }
 
         // Retrieve the user's real profile from PostgreSQL.
-        const userResponse = await fetch(
-          `${API_URL}/users/${encodeURIComponent(payload.sub)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${data.access_token}`,
-            },
-          },
-        )
-
-        if (!userResponse.ok) {
-          throw new Error('Unable to retrieve user profile')
-        }
-
-        const account = await userResponse.json()
-
-        const authenticatedUser = {
-          ...account,
-
-          // Frontend-only defaults for fields not yet in the database.
-          bio: account.bio ?? '',
-          favoriteGames: account.favoriteGames ?? [],
-          skillLevel: account.skillLevel ?? '',
-        }
+        const authenticatedUser = await getCurrentUser(data.access_token)
+        if (authenticatedUser.id !== payload.sub) throw new Error('Profile response does not match the signed-in account.')
 
         const newSession = {
           user: authenticatedUser,
@@ -133,6 +158,7 @@ export function AuthProvider({ children }) {
           JSON.stringify(newSession),
         )
 
+        sessionRef.current = newSession
         setSession(newSession)
 
         return authenticatedUser
@@ -221,10 +247,11 @@ export function AuthProvider({ children }) {
       // End the local authentication session.
       signOut() {
         sessionStorage.removeItem(SESSION_KEY)
+        sessionRef.current = null
         setSession(null)
       },
     }),
-    [user, token],
+    [user, token, profileUpdatesEnabled],
   )
 
   return (

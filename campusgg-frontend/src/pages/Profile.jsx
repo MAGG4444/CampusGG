@@ -2,26 +2,28 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { ArrowRight, FilePenLine } from 'lucide-react'
 import VersionLabel from '../components/VersionLabel.jsx'
 import { useAuth } from '../context/useAuth.js'
+import ProfileEditor, { ProfileLeaveDialog } from '../components/ProfileEditor.jsx'
+import { useProfileEditor } from '../hooks/useProfileEditor.js'
 import './Profile.css'
 
-function Profile() {
-  const { user, isAuthenticated, signOut } = useAuth()
+function ProfileContent({ user }) {
+  const { signOut, updateProfile, canUpdateProfile } = useAuth()
+  const editor = useProfileEditor(user, updateProfile, canUpdateProfile)
   const navigate = useNavigate()
-
-  if (!isAuthenticated) {
-    return <Navigate to="/signin" replace />
-  }
 
   const profileName = user.displayName || user.username
   const avatarInitial = profileName.charAt(0).toUpperCase()
 
   function handleSignOut() {
+    if (!editor.discard()) return
+    // Leave the protected page before clearing auth so its redirect cannot win the navigation.
+    navigate('/', { replace: true, flushSync: true })
     signOut()
-    navigate('/', { replace: true })
   }
 
   return (
     <div className="profile-page page-enter">
+      <ProfileLeaveDialog blocker={editor.blocker} />
       <section className="profile-card" aria-labelledby="profile-title">
         <header className="profile-header">
           <div
@@ -36,9 +38,15 @@ function Profile() {
             <h1 id="profile-title">{profileName}</h1>
             <p className="profile-username">@{user.username}</p>
           </div>
+          {!editor.editing && <button className="profile-edit-button profile-edit-trigger" type="button" onClick={editor.begin}>Edit Profile</button>}
         </header>
+        <div aria-live="polite" aria-atomic="true">
+          {editor.feedback && <p role={editor.feedback.type === 'error' ? 'alert' : 'status'}
+            className={editor.feedback.type === 'error' ? 'profile-error' : 'profile-success'}>{editor.feedback.message}</p>}
+        </div>
 
         <div className="profile-grid">
+          {editor.editing ? <ProfileEditor user={user} editor={editor} /> : <>
           <section className="profile-section" aria-labelledby="contact-heading">
             <h2 id="contact-heading">Account</h2>
             <dl className="profile-details">
@@ -81,6 +89,7 @@ function Profile() {
             <h2 id="about-heading">About Me</h2>
             <p>{user.bio || 'No bio added yet.'}</p>
           </section>
+          </>}
           <Link className="profile-section profile-drafts" to="/drafts" aria-labelledby="profile-drafts-title">
             <FilePenLine size={28} aria-hidden="true" />
             <div>
@@ -93,7 +102,7 @@ function Profile() {
 
         <div className="profile-actions">
           <VersionLabel />
-          <button className="profile-signout" type="button" onClick={handleSignOut}>
+          <button className="profile-signout" type="button" onClick={handleSignOut} disabled={editor.isSaving}>
             Sign Out
           </button>
         </div>
@@ -102,4 +111,8 @@ function Profile() {
   )
 }
 
-export default Profile
+export default function Profile() {
+  const { user, isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <Navigate to="/signin" replace />
+  return <ProfileContent key={user.id} user={user} />
+}

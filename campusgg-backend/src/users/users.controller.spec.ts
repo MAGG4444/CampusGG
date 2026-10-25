@@ -4,6 +4,15 @@ import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 
+// Real JWT verification is covered by the PostgreSQL integration suite.
+jest.mock('../auth/jwt-auth.guard', () => ({
+  JwtAuthGuard: class {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
 describe('UsersController', () => {
   let controller: UsersController;
   let service: Partial<Record<keyof UsersService, jest.Mock>>;
