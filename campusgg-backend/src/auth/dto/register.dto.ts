@@ -18,10 +18,10 @@ export class RegisterDto {
   @MaxLength(50, { message: 'Username cannot exceed 50 characters.' })
   username!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Display name cannot be empty.' })
   @MaxLength(100, { message: 'Display name cannot exceed 100 characters.' })
-  displayName!: string;
+  displayName?: string;
 
   @IsOptional()
   @IsString()

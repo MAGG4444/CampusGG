@@ -43,6 +43,9 @@ export type {
 } from './engine/matchmaking-engine.js';
 export { MatchmakingEngine } from './engine/matchmaking-engine.js';
 
+// ── Matchmaking service (lobby handoff bridge) ────────────────────────
+export { MatchmakingService } from './matchmaking.service.js';
+
 // ── 23.3: Scoring — config, strategies, factory ────────────────────────────
 export {
   SKILL_WEIGHT,

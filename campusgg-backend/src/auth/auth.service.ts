@@ -45,16 +45,9 @@ export class AuthService {
     if (!registerDto?.username || typeof registerDto.username !== 'string') {
       throw new BadRequestException('A valid username is required.');
     }
-    if (
-      !registerDto?.displayName ||
-      typeof registerDto.displayName !== 'string'
-    ) {
-      throw new BadRequestException('A valid display name is required.');
-    }
-
     const email = registerDto.email.trim().toLowerCase();
     const username = registerDto.username.trim();
-    const displayName = registerDto.displayName.trim();
+    const displayName = (registerDto.displayName || username).trim();
 
     // ── 1. Validate .edu email ───────────────────────────────────────────
     if (!EDU_EMAIL_REGEX.test(email)) {

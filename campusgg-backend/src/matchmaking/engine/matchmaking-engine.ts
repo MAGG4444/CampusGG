@@ -151,6 +151,24 @@ export class MatchmakingEngine {
   }
 
   /**
+   * Remove a player from the matchmaking queue by user ID.
+   * Searches all game partitions and removes the first matching player.
+   *
+   * @param userId - The ID of the player to remove.
+   * @returns true if the player was found and removed, false otherwise.
+   */
+  dequeue(userId: string): boolean {
+    for (const players of this.queue.values()) {
+      const index = players.findIndex((p) => p.userId === userId);
+      if (index !== -1) {
+        players.splice(index, 1);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Process the entire queue once.
    *
    * @returns Array of MatchGroup payloads that were handed off.
