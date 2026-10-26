@@ -1,3 +1,4 @@
+import { myContentReturnTo } from '../utils/myContentNavigation.js'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -13,7 +14,7 @@ import {
   Trash2,
 } from 'lucide-react'
 
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 
 import logo from '../assets/LOGO.png'
@@ -74,6 +75,9 @@ function PostDetail() {
 
 function PostDetailContent({ postId, token, user }) {
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = myContentReturnTo(location.state, '/forum')
+  const returnLabel = returnTo === '/forum' ? 'Forum' : 'My Content'
 
   const replyInputRef = useRef(null)
 
@@ -459,7 +463,7 @@ function PostDetailContent({ postId, token, user }) {
     try {
       await deleteForumPost(post.id, token)
 
-      navigate('/forum', {
+      navigate(returnTo, {
         replace: true,
       })
     } catch (error) {
@@ -478,8 +482,8 @@ function PostDetailContent({ postId, token, user }) {
         <button
           className="post-back-button"
           type="button"
-          aria-label="Back to Forum"
-          onClick={() => navigate('/forum')}
+          aria-label={`Back to ${returnLabel}`}
+          onClick={() => navigate(returnTo)}
         >
           <ArrowLeft
             size={28}
@@ -506,9 +510,9 @@ function PostDetailContent({ postId, token, user }) {
               <button
                 className="post-return-button"
                 type="button"
-                onClick={() => navigate('/forum')}
+                onClick={() => navigate(returnTo)}
               >
-                Return to Forum
+                Return to {returnLabel}
               </button>
             </>
           )}
@@ -526,8 +530,8 @@ function PostDetailContent({ postId, token, user }) {
       <button
         className="post-back-button"
         type="button"
-        aria-label="Back to Forum"
-        onClick={() => navigate('/forum')}
+        aria-label={`Back to ${returnLabel}`}
+        onClick={() => navigate(returnTo)}
       >
         <ArrowLeft
           size={28}

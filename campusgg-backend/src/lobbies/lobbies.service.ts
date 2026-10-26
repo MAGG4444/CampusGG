@@ -1,4 +1,9 @@
 import {
+  MyContentItemDto,
+  MyContentPageDto,
+  MyContentQueryDto,
+} from '../common/dto/my-content.dto';
+import {
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -21,6 +26,32 @@ export class LobbiesService {
     private readonly lobbiesRepository: Repository<Lobby>,
     private readonly usersService: UsersService,
   ) {}
+
+  async findMine(
+    userId: string,
+    query: MyContentQueryDto,
+  ): Promise<MyContentPageDto> {
+    const { page, limit } = query;
+    // Filter ownership in SQL; no membership/author lookup per result.
+    const owned = this.lobbiesRepository
+      .createQueryBuilder('lobby')
+      .where('lobby.host_id = :userId', { userId });
+    const [items, total] = await Promise.all([
+      owned
+        .clone()
+        .select('lobby.id', 'id')
+        .addSelect('lobby.lobbyName', 'title')
+        .addSelect('LEFT(lobby.details, 240)', 'preview')
+        .addSelect('lobby.createdAt', 'createdAt')
+        .orderBy('lobby.createdAt', 'DESC')
+        .addOrderBy('lobby.id', 'DESC')
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .getRawMany<MyContentItemDto>(),
+      owned.getCount(),
+    ]);
+    return { items, total, page, limit };
+  }
 
   // ============================================================
   // GET ALL LOBBIES
