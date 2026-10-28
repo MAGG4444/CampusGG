@@ -1,7 +1,8 @@
+import { myContentReturnTo } from '../utils/myContentNavigation.js'
 
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Filter } from 'lucide-react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import logo from '../assets/LOGO.png'
 import LobbyMemberCard from '../components/LobbyMemberCard.jsx'
@@ -18,6 +19,9 @@ const MEMBERS_PER_PAGE = 4
 
 function LobbyDetail() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const returnTo = myContentReturnTo(location.state, '/lobby')
+  const returnLabel = returnTo === '/lobby' ? 'Lobby Feed' : 'My Content'
   const { lobbyId } = useParams()
 
   const { user, token } = useAuth()
@@ -194,7 +198,7 @@ function LobbyDetail() {
 
     try {
       await leaveLobby(lobby.id)
-      navigate('/lobby')
+      navigate(returnTo)
     } catch (error) {
       setFeedback(
         error instanceof Error
@@ -240,9 +244,9 @@ function LobbyDetail() {
           <button
             className="lobby-return-button"
             type="button"
-            onClick={() => navigate('/lobby')}
+            onClick={() => navigate(returnTo)}
           >
-            Return to Lobby
+            Return to {returnLabel}
           </button>
         </section>
       </div>
@@ -282,8 +286,8 @@ function LobbyDetail() {
       <button
         className="lobby-detail-back-button"
         type="button"
-        aria-label="Back to Lobby Feed"
-        onClick={() => navigate('/lobby')}
+        aria-label={`Back to ${returnLabel}`}
+        onClick={() => navigate(returnTo)}
       >
         <ArrowLeft
           size={28}

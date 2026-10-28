@@ -1,5 +1,5 @@
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { ArrowRight, FilePenLine } from 'lucide-react'
+import { ArrowRight, FolderOpen } from 'lucide-react'
 import VersionLabel from '../components/VersionLabel.jsx'
 import { useAuth } from '../context/useAuth.js'
 import './Profile.css'
@@ -81,11 +81,11 @@ function Profile() {
             <h2 id="about-heading">About Me</h2>
             <p>{user.bio || 'No bio added yet.'}</p>
           </section>
-          <Link className="profile-section profile-drafts" to="/drafts" aria-labelledby="profile-drafts-title">
-            <FilePenLine size={28} aria-hidden="true" />
+          <Link className="profile-section profile-content" to="/my-content" aria-labelledby="profile-content-title">
+            <FolderOpen size={28} aria-hidden="true" />
             <div>
-              <h2 id="profile-drafts-title">My Drafts</h2>
-              <p>Continue your saved lobbies and forum posts.</p>
+              <h2 id="profile-content-title">My Content</h2>
+              <p>Manage your posts, lobbies, and drafts.</p>
             </div>
             <ArrowRight size={22} aria-hidden="true" />
           </Link>

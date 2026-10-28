@@ -1,4 +1,6 @@
+import { draftEditorReturnTo } from '../utils/myContentNavigation.js'
 import { useState } from 'react'
+import { FilePenLine } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useDraftEditor } from '../hooks/useDraftEditor.js'
@@ -35,8 +37,9 @@ const maxDetailsLength = 500
 function CreateLobby() {
   const navigate = useNavigate()
   const location = useLocation()
-  const fromDrafts = location.state?.from === '/drafts'
-  const backPath = fromDrafts ? '/drafts' : '/lobby'
+  // Saving a new draft adds draftId to the URL without changing its entry point.
+  const [backPath] = useState(() => draftEditorReturnTo(location, '/lobby'))
+  const fromDrafts = backPath === '/my-content?tab=drafts'
   const { token } = useAuth()
 
   const [errors, setErrors] = useState({})
@@ -257,7 +260,7 @@ function CreateLobby() {
         <button
           className="back-button"
           type="button"
-          aria-label={fromDrafts ? 'Back to My Drafts' : 'Back to Lobby'}
+          aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Lobby'}
           onClick={() => navigate(backPath)}
         >
           &larr;
@@ -539,12 +542,11 @@ function CreateLobby() {
           ) : null}
         </div>
 
-        <p>
-          <Link to="/drafts">My Drafts</Link>{' · '}
-          <Link to="/create-lobby" state={location.state}>Start a new lobby</Link>
-        </p>
-
         <div className="create-actions">
+          <Link className="footer-action editor-drafts-link" to="/my-content?tab=drafts">
+            <FilePenLine size={18} aria-hidden="true" />
+            My Drafts
+          </Link>
           <button
             className="footer-action footer-save"
             type="button"

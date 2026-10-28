@@ -1,3 +1,8 @@
+import {
+  MyContentItemDto,
+  MyContentPageDto,
+  MyContentQueryDto,
+} from '../common/dto/my-content.dto';
 
 import {
   ForbiddenException,
@@ -28,6 +33,32 @@ export class ForumService {
   ) {}
 
 
+
+  async findMine(
+    userId: string,
+    query: MyContentQueryDto,
+  ): Promise<MyContentPageDto> {
+    const { page, limit } = query;
+    // Filter ownership in SQL; no membership/author lookup per result.
+    const owned = this.posts
+      .createQueryBuilder('post')
+      .where('post.author_id = :userId', { userId });
+    const [items, total] = await Promise.all([
+      owned
+        .clone()
+        .select('post.id', 'id')
+        .addSelect('post.title', 'title')
+        .addSelect('LEFT(post.content, 240)', 'preview')
+        .addSelect('post.createdAt', 'createdAt')
+        .orderBy('post.createdAt', 'DESC')
+        .addOrderBy('post.id', 'DESC')
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .getRawMany<MyContentItemDto>(),
+      owned.getCount(),
+    ]);
+    return { items, total, page, limit };
+  }
 
 private baseQuery() {
   return this.posts

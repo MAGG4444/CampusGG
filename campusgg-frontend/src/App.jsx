@@ -14,6 +14,7 @@ import Lobby from './pages/Lobby.jsx'
 import LobbyDetail from './pages/LobbyDetail.jsx'
 import PostDetail from './pages/PostDetail.jsx'
 import Profile from './pages/Profile.jsx'
+import MyContent from './pages/MyContent.jsx'
 import SignIn from './pages/SignIn.jsx'
 import SignUp from './pages/SignUp.jsx'
 import VerifyEmail from './pages/VerifyEmail.jsx'
@@ -29,6 +30,7 @@ const router = createBrowserRouter(createRoutesFromElements(
     <Route path="/create-post" element={<CreatePost />} />
     <Route path="/chat" element={<Chat />} />
     <Route path="/profile" element={<Profile />} />
+    <Route path="/my-content" element={<MyContent />} />
     <Route path="/drafts" element={<Drafts />} />
     <Route path="/signin" element={<SignIn />} />
     <Route path="/signup" element={<SignUp />} />

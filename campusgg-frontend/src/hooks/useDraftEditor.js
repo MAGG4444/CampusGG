@@ -63,7 +63,7 @@ export function useDraftEditor(type, isPublishing) {
       const draft = saveDraft(userId, type, formData, id)
       setEditor((current) => ({
         ...current, id: draft.id, savedData: JSON.stringify(draft.formData),
-        statusMessage: automatic ? 'Draft automatically saved.' : 'Draft saved successfully.',
+        statusMessage: automatic ? 'Draft automatically saved locally in this browser.' : 'Draft saved locally in this browser.',
       }))
       if (id === null) {
         navigationGuard.replaceDraftUrl(() => setParams((current) => {

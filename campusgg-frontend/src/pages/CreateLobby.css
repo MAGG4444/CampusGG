@@ -65,3 +65,11 @@
   .footer-action { width: 100%; }
   .create-status { text-align: center; }
 }
+
+.editor-drafts-link, .editor-drafts-link:visited { display: inline-flex; align-items: center; justify-content: center; gap: 8px; margin-right: auto; border-color: var(--border-strong); background: transparent; color: var(--text); text-decoration: none; white-space: nowrap; }
+.editor-drafts-link:hover { border-color: var(--gold); color: var(--gold-bright); background: rgba(213, 178, 82, 0.08); }
+.editor-drafts-link:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 4px; }
+@media (max-width: 680px) {
+  .create-lobby-page > .create-actions { flex-wrap: wrap; }
+  .editor-drafts-link { width: 100%; margin-right: 0; margin-bottom: 8px; }
+}

@@ -1,6 +1,7 @@
+import { draftEditorReturnTo } from '../utils/myContentNavigation.js'
 
 import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, FilePenLine } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../context/useAuth.js'
@@ -30,8 +31,9 @@ const visibilityOptions = [
 function CreatePost() {
   const navigate = useNavigate()
   const location = useLocation()
-  const fromDrafts = location.state?.from === '/drafts'
-  const backPath = fromDrafts ? '/drafts' : '/forum'
+  // Saving a new draft adds draftId to the URL without changing its entry point.
+  const [backPath] = useState(() => draftEditorReturnTo(location, '/forum'))
+  const fromDrafts = backPath === '/my-content?tab=drafts'
   const { token } = useAuth()
 
   const [errors, setErrors] = useState({})
@@ -156,7 +158,7 @@ function CreatePost() {
         <button
           className="back-button create-post-back-button"
           type="button"
-          aria-label={fromDrafts ? 'Back to My Drafts' : 'Back to Forum'}
+          aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Forum'}
           onClick={() => navigate(backPath)}
         >
           <ArrowLeft
@@ -365,12 +367,11 @@ function CreatePost() {
           </small>
         </div>
 
-        <p>
-          <Link to="/drafts">My Drafts</Link>{' · '}
-          <Link to="/create-post" state={location.state}>Start a new post</Link>
-        </p>
-
         <div className="create-actions create-post-actions">
+          <Link className="footer-action editor-drafts-link" to="/my-content?tab=drafts">
+            <FilePenLine size={18} aria-hidden="true" />
+            My Drafts
+          </Link>
           <button
             className="footer-action footer-save"
             type="button"

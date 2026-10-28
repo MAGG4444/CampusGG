@@ -1,3 +1,4 @@
+import { MyContentQueryDto } from '../common/dto/my-content.dto';
 
 import {
   Body,
@@ -39,6 +40,16 @@ export class ForumController {
     limit: number,
   ) {
     return this.forumService.findAll(page, limit);
+  }
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  findMine(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: MyContentQueryDto,
+  ) {
+    if (!request.user?.id) throw new UnauthorizedException();
+    return this.forumService.findMine(request.user.id, query);
   }
 
   @Get(':id')
