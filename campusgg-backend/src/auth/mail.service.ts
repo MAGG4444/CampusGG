@@ -21,34 +21,29 @@ export class MailService {
   ): Promise<void> {
     const mailFrom =
       this.configService.get<string>('MAIL_FROM') ||
-      'CampusGG <onboarding@resend.dev>';
+      'CampusGG <noreply@notifications.campusgg.net>';
 
-    const subject = 'Verify your CampusGG Student Account';
+    const subject = `Your CampusGG verification code is: ${code}`;
 
     const text = [
-      `Hi ${username},`,
+      username ? `Hi ${username},` : 'Hello,',
       '',
-      'To complete your registration and verify your .edu email, please enter the following 6-digit code on the website:',
+      'Your email verification code is:',
       code,
       '',
-      'This code will expire in 10 minutes.',
+      'This verification code will expire in 10 minutes. If this was not you, please ignore this email.',
       '',
-      'See you in the lobby,',
-      'The CampusGG Team',
+      '— The CampusGG Team',
     ].join('\n');
 
+    const greeting = username ? `<p>Hi ${username},</p>` : '';
     const html = `
-      <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto;">
+      <div style="font-family: sans-serif; padding: 20px;">
         <h2>Welcome to CampusGG!</h2>
-        <p>Hi ${username},</p>
-        <p>To complete your registration and verify your .edu email, please enter the following 6-digit code on the website:</p>
-        <h1 style="font-size: 36px; letter-spacing: 8px; color: #000; text-align: center; background-color: #f4f4f4; padding: 20px; border-radius: 8px;">
-          ${code}
-        </h1>
-        <p style="color: #d9534f; font-weight: bold;">This code will expire in 10 minutes.</p>
-        <p>See you in the lobby,<br/>The CampusGG Team</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin-top: 20px;" />
-        <p style="font-size: 12px; color: #999;">If you didn't request this email, you can safely ignore it.</p>
+        ${greeting}
+        <p>Your email verification code is:</p>
+        <h1 style="color: #4F46E5; letter-spacing: 4px;">${code}</h1>
+        <p>This verification code will expire in 10 minutes. If this was not you, please ignore this email.</p>
       </div>
     `.trim();
 
@@ -56,20 +51,20 @@ export class MailService {
       try {
         const { data, error } = await this.resend.emails.send({
           from: mailFrom,
-          to: email,
+          to: [email],
           subject,
           text,
           html,
         });
 
         if (error) {
-          this.logger.error(`Resend API error sending to ${email}:`, error);
-          throw new Error(`Resend API error sending to ${email}`);
+          this.logger.error('Failed to send email:', error);
+          throw new Error(
+            `Resend API error sending to ${email}: ${JSON.stringify(error)}`,
+          );
         }
 
-        this.logger.log(
-          `Verification email sent to ${email} (Resend ID: ${data?.id})`,
-        );
+        this.logger.log(`Email sent successfully, ID: ${data?.id}`);
       } catch (err) {
         this.logger.error(
           `Failed to send verification email to ${email}:`,

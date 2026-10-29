@@ -26,7 +26,7 @@ describe('MailService', () => {
         get: jest.fn((key: string) => {
           const config: Record<string, string> = {
             RESEND_API_KEY: 're_test_key',
-            MAIL_FROM: 'CampusGG <onboarding@resend.dev>',
+            MAIL_FROM: 'CampusGG <noreply@notifications.campusgg.net>',
             APP_BASE_URL: 'http://localhost:3000',
           };
           return config[key];
@@ -54,17 +54,23 @@ describe('MailService', () => {
 
       expect(mockSend).toHaveBeenCalledTimes(1);
       const call = mockSend.mock.calls[0] as unknown as [
-        Record<string, string>,
+        Record<string, unknown>,
       ];
       const mailArgs = call[0];
 
-      expect(mailArgs.to).toBe('student@purdue.edu');
-      expect(mailArgs.from).toBe('CampusGG <onboarding@resend.dev>');
-      expect(mailArgs.subject).toContain('Verify');
+      expect(mailArgs.to).toEqual(['student@purdue.edu']);
+      expect(mailArgs.from).toBe(
+        'CampusGG <noreply@notifications.campusgg.net>',
+      );
+      expect(mailArgs.subject).toBe(
+        'Your CampusGG verification code is: 482910',
+      );
       expect(mailArgs.text).toContain('482910');
       expect(mailArgs.html).toContain('482910');
       expect(mailArgs.html).toContain('Hi BoilerGamer,');
-      expect(mailArgs.html).toContain('This code will expire in 10 minutes.');
+      expect(mailArgs.html).toContain(
+        'This verification code will expire in 10 minutes.',
+      );
     });
   });
 
