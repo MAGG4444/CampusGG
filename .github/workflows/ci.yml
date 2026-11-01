@@ -9,6 +9,7 @@ on:
     branches:
       - main
       - dev
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -92,3 +93,114 @@ jobs:
         with:
           name: campusgg-frontend-v${{ steps.version.outputs.version }}
           path: campusgg-frontend/dist
+
+  generate-sbom:
+    name: Generate and Inspect SBOM (Syft)
+    needs: [build-and-test, frontend-build-and-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            campusgg-backend/package-lock.json
+            campusgg-frontend/package-lock.json
+
+      - name: Install Backend and Frontend Dependencies (for license detection)
+        run: |
+          npm --prefix campusgg-backend ci
+          npm --prefix campusgg-frontend ci
+
+      - name: Ensure doc directory exists
+        run: mkdir -p doc
+
+      - name: Run Syft to generate CycloneDX SBOM.json
+        uses: anchore/sbom-action@v0
+        with:
+          path: ./
+          format: cyclonedx-json
+          output-file: doc/SBOM.json
+          upload-artifact: false
+
+      - name: Analyze SBOM for Assignment Report
+        run: |
+          node -e '
+          const fs = require("fs");
+          const sbom = JSON.parse(fs.readFileSync("doc/SBOM.json", "utf8"));
+
+          const pkgFiles = [
+            "package.json",
+            "campusgg-backend/package.json",
+            "campusgg-frontend/package.json"
+          ];
+          const directDeps = new Set();
+          for (const file of pkgFiles) {
+            if (fs.existsSync(file)) {
+              const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+              Object.keys(pkg.dependencies || {}).forEach(d => directDeps.add(d));
+              Object.keys(pkg.devDependencies || {}).forEach(d => directDeps.add(d));
+            }
+          }
+
+          const components = (sbom.components || []).filter(c => c.type === "library");
+          const uniquePackages = new Map();
+          const licenseCounts = {};
+          const transitiveDeps = [];
+
+          for (const c of components) {
+            const key = `${c.name}@${c.version}`;
+            if (!uniquePackages.has(key)) {
+              uniquePackages.set(key, c);
+              const lics = (c.licenses || [])
+                .map(l => l.license?.id || l.license?.name || l.expression || "Unknown")
+                .join(", ") || "Unknown/None";
+              licenseCounts[lics] = (licenseCounts[lics] || 0) + 1;
+
+              if (!directDeps.has(c.name)) {
+                transitiveDeps.push(key);
+              }
+            }
+          }
+
+          console.log("=== 1. DEPENDENCY COUNTS ===");
+          console.log("Total SBOM component entries:", (sbom.components || []).length);
+          console.log("Unique library packages (name@version):", uniquePackages.size);
+          console.log("Direct dependencies (Backend + Frontend package.json):", directDeps.size);
+          console.log("Transitive dependencies:", transitiveDeps.length);
+
+          console.log("\n=== 2. LICENSE SUMMARY ===");
+          console.table(Object.entries(licenseCounts).sort((a, b) => b[1] - a[1]));
+
+          console.log("\n=== 3. SAMPLE TRANSITIVE / UNEXPECTED DEPENDENCIES (First 50) ===");
+          console.log(transitiveDeps.slice(0, 50).join(", "));
+          '
+
+      - name: Upload SBOM.json artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: campusgg-sbom
+          path: doc/SBOM.json
+
+      - name: Commit and push doc/SBOM.json to repository
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add doc/SBOM.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(sbom): update doc/SBOM.json [skip ci]"
+            git pull --rebase origin ${{ github.ref_name }}
+            git push origin HEAD:${{ github.ref_name }}
+          else
+            echo "doc/SBOM.json is already up to date."
+          fi
