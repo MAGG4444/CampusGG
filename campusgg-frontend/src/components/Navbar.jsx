@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom'
-import { Gamepad2, LogIn, MessageSquareText, UserRound, UsersRound } from 'lucide-react'
+import { Gamepad2, LogIn, MessageCircle, MessageSquareText, UserRound, UsersRound } from 'lucide-react'
 import { useAuth } from '../context/useAuth.js'
 import './Navbar.css'
 
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/matchmaking', label: 'Matchmaking', icon: Gamepad2 },
   { to: '/lobby', label: 'Lobby', icon: UsersRound },
   { to: '/forum', label: 'Forum', icon: MessageSquareText },
+  { to: '/chat', label: 'Connection', icon: MessageCircle },
 ]
 
 function Navbar() {

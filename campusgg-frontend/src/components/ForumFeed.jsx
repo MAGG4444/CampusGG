@@ -1,7 +1,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { Clock, Filter } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 
 import logo from '../assets/LOGO.png'
 import ForumPost from './ForumPost.jsx'
@@ -527,13 +527,6 @@ function ForumFeed() {
         className="lobby-bottom-controls forum-bottom-controls"
         aria-label="Forum bottom controls"
       >
-        <Link
-          className="connection-panel"
-          to="/chat"
-        >
-          Connection
-        </Link>
-
         <nav
           className="pagination"
           aria-label="Forum pagination"

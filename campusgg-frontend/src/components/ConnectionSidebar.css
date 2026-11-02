@@ -1,0 +1,116 @@
+.app-workspace {
+  --connection-sidebar-active-width: 0px;
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--connection-sidebar-active-width);
+  transition: grid-template-columns var(--transition);
+}
+
+.app-workspace-sidebar-open {
+  --connection-sidebar-active-width: clamp(260px, 25vw, 360px);
+}
+
+.app-main { min-width: 0; }
+
+.connection-sidebar {
+  min-width: 0;
+  overflow: hidden;
+  border-left: 1px solid transparent;
+  background: linear-gradient(180deg, rgba(18, 36, 59, 0.98), rgba(8, 21, 37, 0.99));
+  visibility: hidden;
+  transition: border-color var(--transition), visibility 0s linear var(--transition);
+}
+
+.app-workspace-sidebar-open .connection-sidebar {
+  border-left-color: var(--border-strong);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.connection-sidebar-header {
+  min-width: 240px;
+  min-height: 70px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  background: rgba(13, 27, 47, 0.76);
+}
+
+.connection-sidebar-header h2 {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+}
+
+.connection-sidebar-toggle {
+  position: absolute;
+  z-index: 30;
+  top: 50%;
+  right: var(--connection-sidebar-active-width);
+  width: 30px;
+  height: 46px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-right: 0;
+  border-radius: 12px 0 0 12px;
+  background: var(--surface-strong);
+  color: var(--gold-bright);
+  box-shadow: -8px 8px 24px rgba(0, 0, 0, 0.2);
+  transform: translateY(-50%);
+  transition: right var(--transition), background var(--transition-fast), color var(--transition-fast);
+}
+
+.connection-sidebar-toggle:hover {
+  background: var(--gold);
+  color: var(--ink);
+}
+
+@media (max-width: 700px) {
+  .app-workspace {
+    --connection-sidebar-active-height: 0px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, auto) var(--connection-sidebar-active-height);
+    transition: grid-template-rows var(--transition);
+  }
+
+  .app-workspace-sidebar-open {
+    --connection-sidebar-active-width: 0px;
+    --connection-sidebar-active-height: 180px;
+  }
+
+  .connection-sidebar {
+    grid-row: 2;
+    border-top: 1px solid transparent;
+    border-left: 0;
+  }
+
+  .app-workspace-sidebar-open .connection-sidebar {
+    border-top-color: var(--border-strong);
+  }
+
+  .connection-sidebar-toggle {
+    top: 50%;
+    right: 0;
+  }
+
+  .app-workspace-sidebar-open .connection-sidebar-toggle {
+    top: auto;
+    right: 0;
+    bottom: var(--connection-sidebar-active-height);
+    transform: none;
+  }
+
+  .connection-sidebar-header { min-width: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-workspace,
+  .connection-sidebar,
+  .connection-sidebar-toggle { transition: none; }
+}

@@ -124,16 +124,16 @@
 .login-button:hover { background: var(--gold-bright); color: var(--ink); }
 .login-button.nav-link-active::after { display: none; }
 
-@media (max-width: 640px) {
+@media (max-width: 760px) {
   .topbar-inner { min-height: 68px; padding-block: 10px; gap: 10px; }
   .brand-mark { width: 36px; height: 36px; }
-  .brand-word { font-size: 1.15rem; }
+  .brand-word { display: none; }
   .nav { gap: 2px; }
   .nav-link { min-width: 44px; padding: 0 11px; font-size: 0; gap: 0; }
   .nav-link svg { width: 19px; height: 19px; }
   .login-button { margin-left: 2px; font-size: 0.8rem; gap: 7px; }
 }
 
-@media (max-width: 340px) {
-  .brand-word { display: none; }
+@media (max-width: 360px) {
+  .login-button { font-size: 0; gap: 0; }
 }
