@@ -7,6 +7,7 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^(\\.{1,2}/.*)\\.js$": "$1",
     "^@nestjs/typeorm$": "<rootDir>/__mocks__/@nestjs/typeorm.ts",
     "^@nestjs/config$": "<rootDir>/__mocks__/@nestjs/config.ts"
   }
