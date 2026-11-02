@@ -4,6 +4,14 @@ import { UsersService } from './users.service';
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 
+jest.mock('../auth/jwt-auth.guard', () => ({
+  JwtAuthGuard: class {
+    canActivate() {
+      return true;
+    }
+  },
+}));
+
 describe('UsersController', () => {
   let controller: UsersController;
   let service: Partial<Record<keyof UsersService, jest.Mock>>;
@@ -13,6 +21,7 @@ describe('UsersController', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       findOne: jest.fn(),
+      updateProfile: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -103,5 +112,46 @@ describe('UsersController', () => {
     const result = await controller.create(dto);
     expect(result).not.toHaveProperty('verificationToken');
     expect(result).not.toHaveProperty('password');
+  });
+
+  it('returns private account data only from the authenticated me route', async () => {
+    service.findOne!.mockResolvedValue({
+      id: 'uuid-1',
+      email: 'student@purdue.edu',
+      username: 'student',
+      displayName: 'Student One',
+      gamingProfiles: [],
+    });
+
+    const result = await controller.findMe({
+      user: { id: 'uuid-1' },
+    } as never);
+
+    expect(service.findOne).toHaveBeenCalledWith('uuid-1');
+    expect(result).toHaveProperty('email', 'student@purdue.edu');
+  });
+
+  it('updates only the authenticated user profile', async () => {
+    service.updateProfile!.mockResolvedValue({
+      id: 'uuid-1',
+      email: 'student@purdue.edu',
+      username: 'student',
+      displayName: 'Updated Name',
+      gamingProfiles: [
+        {
+          game: 'Valorant',
+          preferredRoles: ['Controller'],
+          experienceLevel: 'Intermediate',
+        },
+      ],
+    });
+
+    await controller.updateMe({ user: { id: 'uuid-1' } } as never, {
+      displayName: 'Updated Name',
+    });
+
+    expect(service.updateProfile).toHaveBeenCalledWith('uuid-1', {
+      displayName: 'Updated Name',
+    });
   });
 });

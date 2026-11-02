@@ -7,6 +7,12 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
+export interface GamingProfile {
+  game: string;
+  preferredRoles: string[];
+  experienceLevel: string;
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -20,6 +26,16 @@ export class User {
 
   @Column({ name: 'display_name', length: 100, nullable: true })
   displayName!: string;
+
+  @Column({ type: 'varchar', length: 500, default: '' })
+  bio?: string;
+
+  @Column({
+    name: 'gaming_profiles',
+    type: 'jsonb',
+    default: () => "'[]'::jsonb",
+  })
+  gamingProfiles?: GamingProfile[];
 
   @Column({ name: 'edu_verified', default: false })
   eduVerified!: boolean;
