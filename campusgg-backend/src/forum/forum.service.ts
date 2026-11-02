@@ -1,4 +1,9 @@
 import {
+  MyContentItemDto,
+  MyContentPageDto,
+  MyContentQueryDto,
+} from '../common/dto/my-content.dto';
+import {
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -24,6 +29,35 @@ export class ForumService {
     @InjectRepository(ForumPostLike)
     private readonly likes: Repository<ForumPostLike>,
   ) {}
+
+  async findMine(
+    userId: string,
+    query: MyContentQueryDto,
+  ): Promise<MyContentPageDto> {
+    const { page, limit } = query;
+
+    // Filter ownership in SQL; no author lookup is needed for each result.
+    const owned = this.posts
+      .createQueryBuilder('post')
+      .where('post.author_id = :userId', { userId });
+
+    const [items, total] = await Promise.all([
+      owned
+        .clone()
+        .select('post.id', 'id')
+        .addSelect('post.title', 'title')
+        .addSelect('LEFT(post.content, 240)', 'preview')
+        .addSelect('post.createdAt', 'createdAt')
+        .orderBy('post.createdAt', 'DESC')
+        .addOrderBy('post.id', 'DESC')
+        .offset((page - 1) * limit)
+        .limit(limit)
+        .getRawMany<MyContentItemDto>(),
+      owned.getCount(),
+    ]);
+
+    return { items, total, page, limit };
+  }
 
   private baseQuery() {
     return this.posts

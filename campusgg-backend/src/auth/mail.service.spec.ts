@@ -103,4 +103,36 @@ describe('MailService', () => {
       expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('654321'));
     });
   });
+
+  describe('without RESEND_API_KEY in production', () => {
+    it('should fail without logging the verification code', async () => {
+      const configService = {
+        get: jest.fn((key: string) =>
+          key === 'NODE_ENV' ? 'production' : undefined,
+        ),
+      } as unknown as ConfigService;
+      const logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+      const errorSpy = jest
+        .spyOn(Logger.prototype, 'error')
+        .mockImplementation();
+      const mailService = new MailService(configService);
+
+      await expect(
+        mailService.sendVerificationEmail(
+          'student@purdue.edu',
+          'Student',
+          '123456',
+        ),
+      ).rejects.toThrow('Email delivery is not configured');
+
+      expect(mockSend).not.toHaveBeenCalled();
+      expect(logSpy).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Email delivery is not configured in production',
+      );
+
+      logSpy.mockRestore();
+      errorSpy.mockRestore();
+    });
+  });
 });

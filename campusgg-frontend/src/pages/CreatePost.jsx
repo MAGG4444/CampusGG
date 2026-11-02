@@ -1,26 +1,18 @@
+import { draftEditorReturnTo } from '../utils/myContentNavigation.js'
 
 import { useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { ArrowLeft, FilePenLine } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../context/useAuth.js'
+import { useDraftEditor } from '../hooks/useDraftEditor.js'
+import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
 import { createForumPost } from '../api/forum.js'
 
 import logo from '../assets/LOGO.png'
 
 import './CreateLobby.css'
 import './CreatePost.css'
-
-const DRAFT_KEY = 'campusgg-forum-draft'
-
-const initialFormData = {
-  title: '',
-  subtitle: '',
-  tag: 'All Categories',
-  game: '',
-  content: '',
-  visibility: 'Public',
-}
 
 const tagOptions = [
   'All Categories',
@@ -36,28 +28,20 @@ const visibilityOptions = [
   'Visible to Lobby Members',
 ]
 
-function getSavedDraft() {
-  try {
-    const value = JSON.parse(
-      localStorage.getItem(DRAFT_KEY) || 'null'
-    )
-
-    return value && typeof value === 'object'
-      ? { ...initialFormData, ...value }
-      : initialFormData
-  } catch {
-    return initialFormData
-  }
-}
-
 function CreatePost() {
   const navigate = useNavigate()
+  const location = useLocation()
+  // Saving a new draft adds draftId to the URL without changing its entry point.
+  const [backPath] = useState(() => draftEditorReturnTo(location, '/forum'))
+  const fromDrafts = backPath === '/my-content?tab=drafts'
   const { token } = useAuth()
 
-  const [formData, setFormData] = useState(getSavedDraft)
   const [errors, setErrors] = useState({})
-  const [statusMessage, setStatusMessage] = useState('')
   const [isPublishing, setIsPublishing] = useState(false)
+  const {
+    formData, setFormData, statusMessage, setStatusMessage, blocked,
+    save: handleSave, discard, completePublish, navigationBlocker,
+  } = useDraftEditor('post', isPublishing)
 
   function updateField(field, value) {
     setFormData((current) => ({
@@ -71,23 +55,6 @@ function CreatePost() {
     }))
 
     setStatusMessage('')
-  }
-
-  function handleSave() {
-    try {
-      localStorage.setItem(
-        DRAFT_KEY,
-        JSON.stringify(formData)
-      )
-
-      setStatusMessage(
-        'Draft saved locally on this browser (not published).'
-      )
-    } catch {
-      setStatusMessage(
-        'Unable to save draft in this browser.'
-      )
-    }
   }
 
   function validateForm() {
@@ -122,6 +89,8 @@ function CreatePost() {
 
   async function handlePublish(event) {
     event.preventDefault()
+
+    if (blocked || isPublishing) return
 
     const nextErrors = validateForm()
 
@@ -160,7 +129,7 @@ function CreatePost() {
         token
       )
 
-      localStorage.removeItem(DRAFT_KEY)
+      completePublish()
 
       navigate(`/forum/${post.id}`, {
         replace: true,
@@ -175,25 +144,13 @@ function CreatePost() {
   }
 
   function handleDelete() {
-    if (
-      !window.confirm(
-        'Clear this form and remove the locally saved draft?'
-      )
-    ) {
-      return
-    }
-
-    setFormData({ ...initialFormData })
-    localStorage.removeItem(DRAFT_KEY)
+    if (!discard()) return
     setErrors({})
-
-    setStatusMessage(
-      'Draft cleared. No published post was deleted.'
-    )
   }
 
   return (
     <div className="create-lobby-wrapper page-enter">
+      <DraftNavigationDialog blocker={navigationBlocker} />
       <form
         className="create-lobby-page create-post-page"
         onSubmit={handlePublish}
@@ -201,8 +158,8 @@ function CreatePost() {
         <button
           className="back-button create-post-back-button"
           type="button"
-          aria-label="Back to Forum"
-          onClick={() => navigate('/forum')}
+          aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Forum'}
+          onClick={() => navigate(backPath)}
         >
           <ArrowLeft
             size={28}
@@ -411,11 +368,15 @@ function CreatePost() {
         </div>
 
         <div className="create-actions create-post-actions">
+          <Link className="footer-action editor-drafts-link" to="/my-content?tab=drafts">
+            <FilePenLine size={18} aria-hidden="true" />
+            My Drafts
+          </Link>
           <button
             className="footer-action footer-save"
             type="button"
             onClick={handleSave}
-            disabled={isPublishing}
+            disabled={isPublishing || blocked}
           >
             Save
           </button>
@@ -423,7 +384,7 @@ function CreatePost() {
           <button
             className="footer-action footer-publish"
             type="submit"
-            disabled={isPublishing}
+            disabled={isPublishing || blocked}
           >
             {isPublishing
               ? 'Publishing...'
@@ -442,7 +403,8 @@ function CreatePost() {
 
         <div
           className="create-status"
-          role="status"
+          aria-atomic="true"
+          role={statusMessage.includes('Unable') ? 'alert' : 'status'}
           aria-live="polite"
         >
           {statusMessage}

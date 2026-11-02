@@ -77,11 +77,14 @@ export class MailService {
         );
         throw new Error(`Failed to send verification email to ${email}`);
       }
-    } else {
-      // Dev fallback: log the code to console if no API key configured
+    } else if (this.configService.get<string>('NODE_ENV') !== 'production') {
+      // Local-development fallback: log the short-lived code to the console.
       this.logger.log(
         `[DEV MODE - No Resend API key] Verification code for ${username} (${email}): ${code}`,
       );
+    } else {
+      this.logger.error('Email delivery is not configured in production');
+      throw new Error('Email delivery is not configured');
     }
   }
 }

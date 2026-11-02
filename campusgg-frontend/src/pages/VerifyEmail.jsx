@@ -13,11 +13,13 @@ function VerifyEmail() {
   const [email, setEmail] = useState(initialEmail)
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
+  const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResending, setIsResending] = useState(false)
 
   async function handleVerify(event) {
     event.preventDefault()
+    setSuccessMessage('')
 
     if (!email.trim() || !code.trim()) {
       setError('Enter your email and the 6-digit verification code.')
@@ -51,8 +53,23 @@ function VerifyEmail() {
   async function handleResend(event) {
     event.preventDefault()
 
-    if (!email.trim()) {
+    if (isResending) return
+
+    setSuccessMessage('')
+    const trimmedEmail = email.trim()
+
+    if (!trimmedEmail) {
       setError('Enter your email address to resend the code.')
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError('Enter a valid email address.')
+      return
+    }
+
+    if (!trimmedEmail.toLowerCase().endsWith('.edu')) {
+      setError('Use an email address that ends in .edu.')
       return
     }
 
@@ -60,14 +77,12 @@ function VerifyEmail() {
     setIsResending(true)
 
     try {
-      await resendVerification(email)
+      await resendVerification(trimmedEmail)
       setError('')
-      // Use a temporary success-style message via error color won't work;
-      // instead show a brief confirmation by setting error to empty and
-      // relying on the button state change.
+      setSuccessMessage(`Verification code resent to ${trimmedEmail}. Check your inbox.`)
     } catch (err) {
       setError(
-        err instanceof Error
+        err instanceof Error && err.message
           ? err.message
           : 'Unable to resend verification code. Please try again.',
       )
@@ -102,6 +117,7 @@ function VerifyEmail() {
               onChange={(event) => {
                 setEmail(event.target.value)
                 setError('')
+                setSuccessMessage('')
               }}
               required
             />
@@ -132,6 +148,12 @@ function VerifyEmail() {
             </p>
           ) : null}
 
+          <div role="status" aria-live="polite" aria-atomic="true">
+            {successMessage ? (
+              <p className="signin-intro">{successMessage}</p>
+            ) : null}
+          </div>
+
           <button
             className="signin-submit"
             type="submit"
@@ -146,6 +168,7 @@ function VerifyEmail() {
               type="button"
               onClick={handleResend}
               disabled={isResending}
+              aria-busy={isResending}
               className="resend-link"
             >
               {isResending ? 'Resending...' : 'Resend code'}
