@@ -1,3 +1,4 @@
+import { MyContentQueryDto } from '../common/dto/my-content.dto';
 import {
   Body,
   Controller,
@@ -81,6 +82,16 @@ export class LobbiesController {
   // GET LOBBY BY ID
   // Retrieve a specific PostgreSQL lobby using its UUID
   // ============================================================
+
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  findMine(
+    @Req() request: AuthenticatedRequest,
+    @Query() query: MyContentQueryDto,
+  ) {
+    if (!request.user?.id) throw new UnauthorizedException();
+    return this.lobbiesService.findMine(request.user.id, query);
+  }
 
   @Get(':id')
   async getLobbyById(@Param('id', ParseUUIDPipe) id: string) {
