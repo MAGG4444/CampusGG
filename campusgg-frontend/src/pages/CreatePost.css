@@ -1,5 +1,58 @@
-.create-post-page { min-height: 640px; }
-.create-post-title-fields { width: 100%; }
-.create-post-content-input { min-height: 280px; padding: 18px; resize: vertical; font-size: 0.96rem; line-height: 1.7; }
-.create-post-actions { padding-top: 28px; }
-@media (max-width: 560px) { .create-post-content-input { min-height: 220px; } }
+.create-post-page {
+  --post-editor-width: 900px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+
+.create-post-page > .create-topbar,
+.create-post-page > .create-flow-heading,
+.create-post-title-fields,
+.create-post-content-group,
+.create-post-actions,
+.create-post-page > .create-status {
+  grid-column: 1;
+}
+
+.create-post-title-fields,
+.create-post-content-group,
+.create-post-actions,
+.create-post-page > .create-status {
+  width: min(100%, var(--post-editor-width));
+  justify-self: center;
+}
+
+.create-post-title-fields {
+  grid-row: 3;
+  padding-bottom: 24px;
+}
+
+.create-post-game-field {
+  width: min(100%, 340px);
+  margin-top: 20px;
+}
+
+.create-post-game-field > .create-field-label { margin-top: 0; }
+
+.create-post-content-group {
+  grid-row: 4;
+  min-width: 0;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.create-post-content-group > .create-field-label { margin-top: 0; }
+
+.create-post-content-input {
+  min-height: 300px;
+  padding: 17px;
+  resize: vertical;
+  font-size: 0.97rem;
+  line-height: 1.7;
+}
+
+.create-post-actions { grid-row: 5; }
+.create-post-page > .create-status { grid-row: 6; }
+
+@media (max-width: 560px) {
+  .create-post-content-input { min-height: 230px; }
+}

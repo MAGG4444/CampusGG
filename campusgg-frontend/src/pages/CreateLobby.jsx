@@ -1,10 +1,11 @@
 import { draftEditorReturnTo } from '../utils/myContentNavigation.js'
 import { useState } from 'react'
-import { FilePenLine } from 'lucide-react'
+import { ArrowLeft, FilePenLine } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useDraftEditor } from '../hooks/useDraftEditor.js'
 import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
+import GameSelect from '../components/GameSelect.jsx'
 import logo from '../assets/LOGO.png'
 import './CreateLobby.css'
 
@@ -47,7 +48,8 @@ function CreateLobby() {
   const [isPublishing, setIsPublishing] = useState(false)
   const {
     formData, setFormData, statusMessage, setStatusMessage, blocked,
-    save: handleSave, discard, completePublish, navigationBlocker,
+    hasSavedDraft, save: handleSave, discard, completePublish,
+    navigationBlocker,
   } = useDraftEditor('lobby', isPublishing)
 
   function updateField(field, value) {
@@ -132,6 +134,10 @@ function CreateLobby() {
         `Lobby details must be ${maxDetailsLength} characters or fewer.`
     }
 
+    if (formData.game.trim().length > 50) {
+      nextErrors.game = 'Game must be at most 50 characters.'
+    }
+
     if (formData.tags.length === 0) {
       nextErrors.tags = 'Please select at least one tag.'
     }
@@ -188,6 +194,10 @@ function CreateLobby() {
         lobbyName: formData.lobbyName.trim(),
         details: formData.details.trim(),
         visibility: formData.visibility,
+
+        ...(formData.game.trim()
+          ? { game: formData.game.trim() }
+          : {}),
 
         ...(formData.subtitle.trim()
           ? { subtitle: formData.subtitle.trim() }
@@ -256,23 +266,28 @@ function CreateLobby() {
   return (
     <div className="create-lobby-wrapper page-enter">
       <DraftNavigationDialog blocker={navigationBlocker} />
-      <form className="create-lobby-page" onSubmit={handlePublish}>
-        <button
-          className="back-button"
-          type="button"
-          aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Lobby'}
-          onClick={() => navigate(backPath)}
-        >
-          &larr;
-        </button>
+      <form className="create-lobby-page create-lobby-editor-page" onSubmit={handlePublish}>
+        <div className="create-topbar">
+          <button
+            className="back-button"
+            type="button"
+            aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Lobby'}
+            onClick={() => navigate(backPath)}
+          >
+            <ArrowLeft size={26} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        </div>
 
-        <header className="create-flow-heading">
-          <p className="page-kicker">New squad space</p>
-          <h1>Build your lobby</h1>
-          <p>
-            Set the tone, choose who can join, and give players
-            everything they need before queueing up.
-          </p>
+        <header className="create-flow-heading create-editor-heading">
+          <div className="create-flow-copy">
+            <p className="page-kicker">New lobby</p>
+            <h1>Create a lobby</h1>
+            <p>Set up a space for your next session.</p>
+          </div>
+          <Link className="editor-drafts-link" to="/my-content?tab=drafts">
+            <FilePenLine size={17} aria-hidden="true" />
+            My Drafts
+          </Link>
         </header>
 
         <div className="create-page-header-row">
@@ -288,7 +303,7 @@ function CreateLobby() {
               className="create-title-input"
               id="lobby-name"
               type="text"
-              placeholder="Give your lobby a clear name"
+              placeholder="Lobby name"
               value={formData.lobbyName}
               aria-describedby={
                 errors.lobbyName ? 'lobby-name-error' : undefined
@@ -316,7 +331,7 @@ function CreateLobby() {
               className="create-subtitle-input"
               id="lobby-subtitle"
               type="text"
-              placeholder="What kind of session are you planning?"
+              placeholder="Short summary"
               value={formData.subtitle}
               onChange={(event) =>
                 updateField('subtitle', event.target.value)
@@ -324,63 +339,58 @@ function CreateLobby() {
             />
           </div>
 
-          <div className="invite-admin-wrap">
-            <label
-              className="invite-label"
-              htmlFor="administrator-name"
-            >
-              Invite Administrator:
-            </label>
-
-            <div className="invite-row">
-              <input
-                className="admin-input"
-                id="administrator-name"
-                type="text"
-                placeholder="User Name"
-                value={formData.administratorInput}
-                aria-describedby={
-                  adminFeedback
-                    ? 'administrator-feedback'
-                    : undefined
-                }
-                onChange={(event) => {
-                  updateField(
-                    'administratorInput',
-                    event.target.value,
-                  )
-                  setAdminFeedback('')
-                }}
-              />
-
-              <button
-                className="small-add-button"
-                type="button"
-                onClick={addAdministrator}
-              >
-                + ADD
-              </button>
-            </div>
-
-            <div className="invite-helper">
-              {formData.administrators.length > 0
-                ? formData.administrators.join(', ')
-                : 'User Names'}
-            </div>
-
-            {adminFeedback ? (
-              <div
-                className="field-feedback"
-                id="administrator-feedback"
-              >
-                {adminFeedback}
-              </div>
-            ) : null}
-          </div>
         </div>
 
-        <div className="create-form-group">
-          <span className="create-label">Choose Tags:</span>
+        <div className="create-form-group create-details-group">
+          <label
+            className="create-field-label"
+            htmlFor="lobby-details"
+          >
+            Description
+          </label>
+
+          <textarea
+            className="fake-input fake-input-wide details-input"
+            id="lobby-details"
+            placeholder="What should players know?"
+            value={formData.details}
+            aria-describedby={
+              errors.details ? 'lobby-details-error' : undefined
+            }
+            aria-invalid={Boolean(errors.details)}
+            onChange={(event) =>
+              updateField('details', event.target.value)
+            }
+          />
+
+          {errors.details ? (
+            <div
+              className="field-error"
+              id="lobby-details-error"
+            >
+              {errors.details}
+            </div>
+          ) : null}
+        </div>
+
+        <aside className="create-lobby-settings-panel" aria-label="Lobby settings">
+        <div className="create-form-group create-settings-section create-game-group">
+          <label className="create-field-label" htmlFor="lobby-game">
+            Game <span>(optional)</span>
+          </label>
+          <GameSelect
+            id="lobby-game"
+            value={formData.game}
+            invalid={Boolean(errors.game)}
+            onChange={(game) => updateField('game', game)}
+          />
+          {errors.game ? (
+            <div className="field-error" role="alert">{errors.game}</div>
+          ) : null}
+        </div>
+
+        <div className="create-form-group create-settings-section create-tags-group">
+          <span className="create-label">Tags</span>
 
           <div
             className="tag-row"
@@ -414,42 +424,8 @@ function CreateLobby() {
           ) : null}
         </div>
 
-        <div className="create-form-group">
-          <label
-            className="create-field-label"
-            htmlFor="lobby-details"
-          >
-            Lobby details
-          </label>
-
-          <textarea
-            className="fake-input fake-input-wide details-input"
-            id="lobby-details"
-            placeholder="Share the goal, schedule, communication style, and anything players should know."
-            value={formData.details}
-            aria-describedby={
-              errors.details ? 'lobby-details-error' : undefined
-            }
-            aria-invalid={Boolean(errors.details)}
-            onChange={(event) =>
-              updateField('details', event.target.value)
-            }
-          />
-
-          {errors.details ? (
-            <div
-              className="field-error"
-              id="lobby-details-error"
-            >
-              {errors.details}
-            </div>
-          ) : null}
-        </div>
-
-        <div className="create-form-group inline-group">
-          <span className="create-label">
-            Participant Limit:
-          </span>
+        <div className="create-form-group inline-group create-settings-section create-limit-group">
+          <span className="create-label">Max players</span>
 
           <div
             className="tag-row"
@@ -494,10 +470,8 @@ function CreateLobby() {
           ) : null}
         </div>
 
-        <div className="create-form-group inline-group">
-          <span className="create-label">
-            Set Visibility:
-          </span>
+        <div className="create-form-group inline-group create-settings-section create-visibility-group">
+          <span className="create-label">Visibility</span>
 
           <div
             className="tag-row"
@@ -541,19 +515,86 @@ function CreateLobby() {
             </div>
           ) : null}
         </div>
+        </aside>
+
+        <details className="invite-admin-wrap create-admin-group">
+          <summary className="admin-summary">
+            <span>Administrators <span>(optional)</span></span>
+            <span className="admin-draft-note">Draft only</span>
+          </summary>
+          <div className="admin-content">
+            <label
+              className="invite-label"
+              htmlFor="administrator-name"
+            >
+              Username
+            </label>
+
+            <div className="invite-row">
+              <input
+                className="admin-input"
+                id="administrator-name"
+                type="text"
+                placeholder="Username"
+                value={formData.administratorInput}
+                aria-describedby={
+                  adminFeedback
+                    ? 'administrator-feedback'
+                    : undefined
+                }
+                onChange={(event) => {
+                  updateField(
+                    'administratorInput',
+                    event.target.value,
+                  )
+                  setAdminFeedback('')
+                }}
+              />
+
+              <button
+                className="small-add-button"
+                type="button"
+                onClick={addAdministrator}
+              >
+                Add
+              </button>
+            </div>
+
+            <div className="invite-helper">
+              {formData.administrators.length > 0
+                ? formData.administrators.join(', ')
+                : 'No administrators selected.'}
+            </div>
+
+            {adminFeedback ? (
+              <div
+                className="field-feedback"
+                id="administrator-feedback"
+              >
+                {adminFeedback}
+              </div>
+            ) : null}
+          </div>
+        </details>
 
         <div className="create-actions">
-          <Link className="footer-action editor-drafts-link" to="/my-content?tab=drafts">
-            <FilePenLine size={18} aria-hidden="true" />
-            My Drafts
-          </Link>
+          {hasSavedDraft && (
+            <button
+              className="footer-action footer-delete"
+              type="button"
+              onClick={handleDelete}
+              disabled={isPublishing}
+            >
+              Delete draft
+            </button>
+          )}
           <button
             className="footer-action footer-save"
             type="button"
             onClick={handleSave}
             disabled={isPublishing || blocked}
           >
-            Save
+            Save Draft
           </button>
 
           <button
@@ -561,16 +602,7 @@ function CreateLobby() {
             type="submit"
             disabled={isPublishing || blocked}
           >
-            {isPublishing ? 'Publishing...' : 'Publish'}
-          </button>
-
-          <button
-            className="footer-action footer-delete"
-            type="button"
-            onClick={handleDelete}
-            disabled={isPublishing}
-          >
-            Delete
+            {isPublishing ? 'Creating...' : 'Create Lobby'}
           </button>
         </div>
 

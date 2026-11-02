@@ -83,6 +83,26 @@ test('unknown fields and credentials are not persisted or restored', () => {
   assert.equal('password' in restored.formData, false)
 })
 
+test('legacy post subtitles are preserved as content and removed on the next save', () => {
+  const storage = memoryStorage()
+  const draft = saveDraft('alice', 'post', {
+    ...draftDefaults.post,
+    content: 'Original body',
+  }, null, storage)
+  const key = storage.key(0)
+  storage.setItem(key, JSON.stringify({
+    ...draft,
+    formData: { ...draft.formData, subtitle: 'Legacy summary' },
+  }))
+
+  const restored = getDraft('alice', draft.id, 'post', storage)
+  assert.equal(restored.formData.content, 'Legacy summary\n\nOriginal body')
+  assert.equal('subtitle' in restored.formData, false)
+
+  saveDraft('alice', 'post', restored.formData, draft.id, storage)
+  assert.equal(storage.getItem(key).includes('subtitle'), false)
+})
+
 test('drafts sort by updated time and cannot be opened in the wrong editor', () => {
   const storage = memoryStorage()
   const first = saveDraft('alice', 'lobby', draftDefaults.lobby, null, storage)
