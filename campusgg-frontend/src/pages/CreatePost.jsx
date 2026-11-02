@@ -7,26 +7,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useDraftEditor } from '../hooks/useDraftEditor.js'
 import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
+import GameSelect from '../components/GameSelect.jsx'
 import { createForumPost } from '../api/forum.js'
 
 import logo from '../assets/LOGO.png'
 
 import './CreateLobby.css'
 import './CreatePost.css'
-
-const tagOptions = [
-  'All Categories',
-  'Strategy',
-  'LFG',
-  'Meta Analysis',
-  'Tournaments',
-]
-
-const visibilityOptions = [
-  'Public',
-  'Private',
-  'Visible to Lobby Members',
-]
 
 function CreatePost() {
   const navigate = useNavigate()
@@ -40,7 +27,8 @@ function CreatePost() {
   const [isPublishing, setIsPublishing] = useState(false)
   const {
     formData, setFormData, statusMessage, setStatusMessage, blocked,
-    save: handleSave, discard, completePublish, navigationBlocker,
+    hasSavedDraft, save: handleSave, discard, completePublish,
+    navigationBlocker,
   } = useDraftEditor('post', isPublishing)
 
   function updateField(field, value) {
@@ -68,16 +56,8 @@ function CreatePost() {
       next.content = 'Post content is required.'
     }
 
-    const fullContent = [
-      formData.subtitle.trim(),
-      formData.content.trim(),
-    ]
-      .filter(Boolean)
-      .join('\n\n')
-
-    if (fullContent.length > 10000) {
-      next.content =
-        'The combined description and content must be 10,000 characters or less.'
+    if (formData.content.trim().length > 10000) {
+      next.content = 'Post content must be 10,000 characters or less.'
     }
 
     if (formData.game.trim().length > 50) {
@@ -111,19 +91,10 @@ function CreatePost() {
     setStatusMessage('')
 
     try {
-      // Include the short description in the content
-      // because the backend has no separate subtitle column.
-      const content = [
-        formData.subtitle.trim(),
-        formData.content.trim(),
-      ]
-        .filter(Boolean)
-        .join('\n\n')
-
       const post = await createForumPost(
         {
           title: formData.title.trim(),
-          content,
+          content: formData.content.trim(),
           game: formData.game.trim() || undefined,
         },
         token
@@ -155,31 +126,27 @@ function CreatePost() {
         className="create-lobby-page create-post-page"
         onSubmit={handlePublish}
       >
-        <button
-          className="back-button create-post-back-button"
-          type="button"
-          aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Forum'}
-          onClick={() => navigate(backPath)}
-        >
-          <ArrowLeft
-            size={28}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-        </button>
+        <div className="create-topbar">
+          <button
+            className="back-button create-post-back-button"
+            type="button"
+            aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Forum'}
+            onClick={() => navigate(backPath)}
+          >
+            <ArrowLeft size={28} strokeWidth={2.2} aria-hidden="true" />
+          </button>
+        </div>
 
-        <header className="create-flow-heading">
-          <p className="page-kicker">
-            Start a conversation
-          </p>
-
-          <h1>Create a forum post</h1>
-
-          <p>
-            Ask a question, share an insight, or bring
-            the campus gaming community together
-            around an idea.
-          </p>
+        <header className="create-flow-heading create-editor-heading">
+          <div className="create-flow-copy">
+            <p className="page-kicker">Start a conversation</p>
+            <h1>Create a forum post</h1>
+            <p>Share with the campus gaming community.</p>
+          </div>
+          <Link className="editor-drafts-link" to="/my-content?tab=drafts">
+            <FilePenLine size={17} aria-hidden="true" />
+            My Drafts
+          </Link>
         </header>
 
         <div className="create-title-fields create-post-title-fields">
@@ -194,7 +161,7 @@ function CreatePost() {
             className="create-title-input"
             id="post-title"
             type="text"
-            placeholder="Write a title that gets to the point"
+            placeholder="Post title"
             value={formData.title}
             maxLength={100}
             aria-invalid={Boolean(errors.title)}
@@ -209,93 +176,23 @@ function CreatePost() {
             </div>
           )}
 
-          <label
-            className="create-field-label"
-            htmlFor="post-subtitle"
-          >
-            Short description
-          </label>
-
-          <input
-            className="create-subtitle-input"
-            id="post-subtitle"
-            type="text"
-            placeholder="Add context for readers scanning the forum"
-            value={formData.subtitle}
-            maxLength={150}
-            onChange={(event) =>
-              updateField('subtitle', event.target.value)
-            }
-          />
-
-          <small>
-            The short description is included at the
-            start of your post content.
-          </small>
-
-          <label
-            className="create-field-label"
-            htmlFor="post-game"
-          >
-            Game (optional)
-          </label>
-
-          <input
-            className="create-subtitle-input"
-            id="post-game"
-            type="text"
-            maxLength={50}
-            placeholder="e.g. Valorant"
-            value={formData.game}
-            onChange={(event) =>
-              updateField('game', event.target.value)
-            }
-          />
-
-          {errors.game && (
-            <div className="field-error" role="alert">
-              {errors.game}
-            </div>
-          )}
-        </div>
-
-        <div className="create-form-group">
-          <span className="create-label">
-            Choose Tag:
-          </span>
-
-          <div
-            className="tag-row"
-            role="group"
-            aria-label="Choose Tag"
-          >
-            {tagOptions.map((tag) => (
-              <button
-                className={`mini-chip ${
-                  formData.tag === tag
-                    ? 'mini-chip-dark'
-                    : ''
-                }`}
-                key={tag}
-                type="button"
-                aria-pressed={formData.tag === tag}
-                onClick={() =>
-                  updateField('tag', tag)
-                }
-              >
-                {formData.tag === tag ? '✓ ' : ''}
-                {tag}
-              </button>
-            ))}
+          <div className="create-post-game-field">
+            <label className="create-field-label" htmlFor="post-game">
+              Game <span>(optional)</span>
+            </label>
+            <GameSelect
+              id="post-game"
+              value={formData.game}
+              invalid={Boolean(errors.game)}
+              onChange={(game) => updateField('game', game)}
+            />
+            {errors.game && (
+              <div className="field-error" role="alert">{errors.game}</div>
+            )}
           </div>
-
-          <small>
-            Tags remain in your local draft; the
-            backend doesn't store categories yet.
-          </small>
         </div>
 
-        <div className="create-form-group">
+        <div className="create-form-group create-post-content-group">
           <label
             className="create-field-label"
             htmlFor="post-content"
@@ -307,7 +204,7 @@ function CreatePost() {
             className="create-post-content-input"
             id="post-content"
             maxLength={5000}
-            placeholder="Share the details with the community..."
+            placeholder="Write your post..."
             value={formData.content}
             aria-invalid={Boolean(errors.content)}
             onChange={(event) =>
@@ -322,63 +219,24 @@ function CreatePost() {
           )}
         </div>
 
-        <div className="create-form-group inline-group">
-          <span className="create-label">
-            Set Visibility:
-          </span>
-
-          <div
-            className="tag-row"
-            aria-label="Set Visibility"
-          >
-            {visibilityOptions.map((visibility) => (
-              <button
-                className={`mini-chip ${
-                  formData.visibility === visibility
-                    ? 'mini-chip-dark'
-                    : ''
-                }`}
-                key={visibility}
-                type="button"
-                aria-pressed={
-                  formData.visibility === visibility
-                }
-                disabled={visibility !== 'Public'}
-                title={
-                  visibility !== 'Public'
-                    ? 'Backend access controls for private posts are not implemented yet'
-                    : ''
-                }
-                onClick={() =>
-                  updateField('visibility', visibility)
-                }
-              >
-                {formData.visibility === visibility
-                  ? '✓ '
-                  : ''}
-                {visibility}
-              </button>
-            ))}
-          </div>
-
-          <small>
-            Only public posts can be published until
-            private-post authorization is implemented.
-          </small>
-        </div>
-
         <div className="create-actions create-post-actions">
-          <Link className="footer-action editor-drafts-link" to="/my-content?tab=drafts">
-            <FilePenLine size={18} aria-hidden="true" />
-            My Drafts
-          </Link>
+          {hasSavedDraft && (
+            <button
+              className="footer-action footer-delete"
+              type="button"
+              onClick={handleDelete}
+              disabled={isPublishing}
+            >
+              Delete draft
+            </button>
+          )}
           <button
             className="footer-action footer-save"
             type="button"
             onClick={handleSave}
             disabled={isPublishing || blocked}
           >
-            Save
+            Save Draft
           </button>
 
           <button
@@ -391,14 +249,6 @@ function CreatePost() {
               : 'Publish'}
           </button>
 
-          <button
-            className="footer-action footer-delete"
-            type="button"
-            onClick={handleDelete}
-            disabled={isPublishing}
-          >
-            Delete
-          </button>
         </div>
 
         <div

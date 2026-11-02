@@ -127,5 +127,6 @@ export function useDraftEditor(type, isPublishing) {
   }
 
   return { formData, setFormData, statusMessage, setStatusMessage, blocked,
+    hasSavedDraft: id !== null,
     save: () => persist(), discard, completePublish, navigationBlocker }
 }

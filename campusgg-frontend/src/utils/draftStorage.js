@@ -3,10 +3,10 @@ const PREFIX = 'campusgg-draft:v1:'
 export const draftDefaults = {
   lobby: {
     lobbyName: '', subtitle: '', administratorInput: '', administrators: [],
-    tags: ['All Categories'], details: '', participantLimit: 'unlimited', visibility: 'public',
+    tags: ['All Categories'], game: '', details: '', participantLimit: 'unlimited', visibility: 'public',
   },
   post: {
-    title: '', subtitle: '', tag: 'All Categories', game: '', content: '', visibility: 'Public',
+    title: '', tag: 'All Categories', game: '', content: '', visibility: 'Public',
   },
 }
 
@@ -18,9 +18,17 @@ const isDate = (value) => typeof value === 'string' && Number.isFinite(Date.pars
 // Only known form fields cross the persistence boundary; never copy auth/session data.
 function sanitizeForm(type, data) {
   if (!Object.hasOwn(draftDefaults, type) || !isObject(data)) throw new Error('Invalid draft data.')
+  // Older post drafts stored a separate subtitle. Keep that text by moving it
+  // to the beginning of the content now that the editor uses one content field.
+  const lobbyCompatibleData = type === 'lobby' && data.game === undefined
+    ? { ...data, game: '' }
+    : data
+  const source = type === 'post' && typeof data.subtitle === 'string' && data.subtitle.trim()
+    ? { ...data, content: [data.subtitle.trim(), data.content].filter(Boolean).join('\n\n') }
+    : lobbyCompatibleData
   const result = {}
   for (const [field, defaultValue] of Object.entries(draftDefaults[type])) {
-    const value = data[field]
+    const value = source[field]
     if (field === 'participantLimit') {
       if (!['unlimited', 20, 50, 100].includes(value)) throw new Error('Invalid participant limit.')
     } else if (Array.isArray(defaultValue)) {

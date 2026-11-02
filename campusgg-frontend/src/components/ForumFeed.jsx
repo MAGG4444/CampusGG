@@ -87,6 +87,14 @@ async function fetchReplyCount(postId, signal) {
 // CONVERT DATABASE POSTS INTO FRONTEND POST OBJECTS
 // ============================================================
 
+function createPostPreview(content, maxLength = 240) {
+  const text = typeof content === 'string'
+    ? content.trim().replace(/\s+/g, ' ')
+    : ''
+  if (text.length <= maxLength) return text
+  return `${text.slice(0, maxLength - 1).trimEnd()}…`
+}
+
 function normalizePost(post, replyCount) {
   return {
     id: post.id,
@@ -106,7 +114,7 @@ function normalizePost(post, replyCount) {
     category: post.category || post.game || 'General',
     filterCategory: post.category || null,
 
-    summary: post.content || '',
+    summary: createPostPreview(post.content),
 
     likes: Number(post.likeCount) || 0,
     replyCount: replyCount ?? '—',
