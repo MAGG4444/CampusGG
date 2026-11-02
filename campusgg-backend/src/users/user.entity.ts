@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -22,6 +23,21 @@ export class User {
 
   @Column({ name: 'edu_verified', default: false })
   eduVerified!: boolean;
+
+  @Index()
+  @Column({
+    name: 'verification_token',
+    type: 'varchar',
+    nullable: true,
+    select: false,
+  })
+  verificationToken!: string | null;
+
+  @Column({ name: 'token_expires_at', type: 'timestamptz', nullable: true })
+  tokenExpiresAt!: Date | null;
+
+  @Column({ nullable: true, select: false })
+  password?: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
