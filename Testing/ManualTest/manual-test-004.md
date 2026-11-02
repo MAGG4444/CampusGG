@@ -34,6 +34,7 @@
 
 ### Evidence & Notes
 
-* **Screenshots/Logs:** 
+* **Screenshots/Logs:** <img width="942" height="647" alt="image" src="https://github.com/user-attachments/assets/46c8e10e-4e9c-4195-90f7-1a4d6053ef20" />
+
 * **Defects Raised:** None (Issue #122 resolved)
 * **Additional Notes:** Custom subdomain (`noreply@notifications.campusgg.net`) bypassed university spam filters and removed Resend sandbox recipient limits.
