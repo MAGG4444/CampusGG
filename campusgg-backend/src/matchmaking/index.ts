@@ -11,6 +11,12 @@
  */
 
 // ── 23.1: Schema — types and interfaces (engine interface contract) ─────────
+export {
+  SUPPORTED_GAMES,
+  CS2_ROLES,
+  ACTIVE_SCHEDULES,
+  UNIVERSITY_DOMAINS,
+} from './schemas/player-matchmaking.schema.js';
 export type {
   SupportedGame,
   CS2Role,
@@ -29,6 +35,7 @@ export type { MatchGroup } from './schemas/match-group.schema.js';
 export type { GameTier } from './engine/game-tiers.config.js';
 export {
   GAME_TIER_MAP,
+  GAME_ROLES,
   TIER_GROUP_SIZE,
   getTier,
   getGroupSize,
@@ -45,6 +52,21 @@ export { MatchmakingEngine } from './engine/matchmaking-engine.js';
 
 // ── Matchmaking service (lobby handoff bridge) ────────────────────────
 export { MatchmakingService } from './matchmaking.service.js';
+export {
+  EnqueueOutcome,
+  MatchmakingConcurrencyError,
+  MatchmakingRepository,
+} from './matchmaking.repository.js';
+export type {
+  MatchmakingStatusResult,
+  MatchmakingTickMatch,
+  MatchmakingTickResult,
+  PersistedMatchmakingEntry,
+} from './matchmaking.repository.js';
+export {
+  MatchmakingEntry,
+  MatchmakingStatus,
+} from './entities/matchmaking-entry.entity.js';
 
 // ── 23.3: Scoring — config, strategies, factory ────────────────────────────
 export {
@@ -71,6 +93,7 @@ export {
   INITIAL_THRESHOLD,
   MINIMUM_THRESHOLD_FLOOR,
   MAX_WAIT_REFERENCE,
+  TAIL_BLEND_START,
   DECAY_RATE_K,
 } from './engine/time-decay.config.js';
 

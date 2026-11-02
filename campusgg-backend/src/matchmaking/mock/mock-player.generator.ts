@@ -40,6 +40,12 @@ import type {
   UniversityDomain,
 } from '../schemas/player-matchmaking.schema.js';
 
+/**
+ * Mock fixtures include a simulated queueTime so the runner can back-date
+ * enqueue timestamps. Production payloads never carry this field.
+ */
+type MockPlayer = PlayerMatchmakingInput & { queueTime: number };
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Configuration constants — tweak here, nowhere else
 // ─────────────────────────────────────────────────────────────────────────────
@@ -303,7 +309,7 @@ function generatePreferences(): PlayerPreferences {
  * Generates a single mock player conforming to PlayerMatchmakingInput.
  * All fields are independently sampled from their respective distributions.
  */
-function generateMockPlayer(): PlayerMatchmakingInput {
+function generateMockPlayer(): MockPlayer {
   return {
     userId: generateUserId(),
     game: 'CS2',
@@ -326,7 +332,7 @@ function generateMockPlayer(): PlayerMatchmakingInput {
  * Generates an array of `count` mock players.
  *
  * @param count - Number of players to generate (defaults to PLAYER_COUNT).
- * @returns     - Readonly array of PlayerMatchmakingInput objects.
+ * @returns     - Readonly array of mock players (input + simulated queueTime).
  *
  * @example
  * import { generateMockPlayers } from './mock/mock-player.generator';
@@ -334,7 +340,7 @@ function generateMockPlayer(): PlayerMatchmakingInput {
  */
 export function generateMockPlayers(
   count: number = PLAYER_COUNT,
-): ReadonlyArray<PlayerMatchmakingInput> {
+): ReadonlyArray<MockPlayer> {
   return Array.from({ length: count }, generateMockPlayer);
 }
 

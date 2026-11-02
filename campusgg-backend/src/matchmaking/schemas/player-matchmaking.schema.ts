@@ -7,67 +7,88 @@
  * framework decorators so it can be imported by:
  *   - The matchmaking engine (algorithm layer)
  *   - The mock data generator (dev/testing layer)
- *   - Future DTO validators (NestJS / class-validator layer)
+ *   - The DTO validators (NestJS / class-validator layer)
  *
  * Design principles followed:
  *   - Single Responsibility  : each interface owns exactly one concern
- *   - Open/Closed            : add new games by extending GameStats union
+ *   - Open/Closed            : add new games by extending SUPPORTED_GAMES
  *   - Interface Segregation  : profile, stats, and preferences are split
  *   - Liskov Substitution    : game-specific stat types are substitutable
+ *
+ * The runtime arrays (SUPPORTED_GAMES, ACTIVE_SCHEDULES, ...) are the source
+ * of truth for both TypeScript types and runtime validation. This prevents the
+ * validation layer from drifting away from the type definitions.
  */
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Enums — all categorical options as literal-safe string union types
+// Enums — runtime arrays are the single source of truth
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * Supported games on the platform.
- * Extend this union as new titles are onboarded.
+ * Extend this array as new titles are onboarded.
  */
-export type SupportedGame =
-  | 'CS2'
-  | 'Valorant'
-  | 'Rocket League'
-  | 'League of Legends'
-  | 'Dota'
-  | 'OW2'
-  | 'It Takes Two';
+export const SUPPORTED_GAMES = [
+  'CS2',
+  'Valorant',
+  'Rocket League',
+  'League of Legends',
+  'Dota',
+  'OW2',
+  'It Takes Two',
+] as const;
+
+export type SupportedGame = (typeof SUPPORTED_GAMES)[number];
 
 /**
  * CS2-specific in-game roles.
- * Used for role-based matchmaking and team composition logic.
+ * Other games define their own role lists in the game configuration.
  */
-export type CS2Role = 'IGL' | 'Entry' | 'AWPer' | 'Lurker' | 'Support';
+export const CS2_ROLES = [
+  'IGL',
+  'Entry',
+  'AWPer',
+  'Lurker',
+  'Support',
+] as const;
+
+export type CS2Role = (typeof CS2_ROLES)[number];
 
 /**
  * Broad availability buckets that map to recurring weekly time slots.
  * These are coarse-grained on purpose — fine-grained scheduling is
  * handled by the calendar integration layer (future work).
  */
-export type ActiveSchedule =
-  | 'Weekday Morning' // Mon–Fri, ~7 AM – 12 PM
-  | 'Weekday Afternoon' // Mon–Fri, ~12 PM – 6 PM
-  | 'Weekday Evening' // Mon–Fri, ~6 PM – 11 PM
-  | 'Weekend Morning' // Sat–Sun, ~7 AM – 12 PM
-  | 'Weekend Afternoon' // Sat–Sun, ~12 PM – 6 PM
-  | 'Friday Night' // Fri, ~9 PM – 2 AM (prime collegiate slot)
-  | 'Late Night'; // Any day, ~11 PM – 3 AM
+export const ACTIVE_SCHEDULES = [
+  'Weekday Morning', // Mon–Fri, ~7 AM – 12 PM
+  'Weekday Afternoon', // Mon–Fri, ~12 PM – 6 PM
+  'Weekday Evening', // Mon–Fri, ~6 PM – 11 PM
+  'Weekend Morning', // Sat–Sun, ~7 AM – 12 PM
+  'Weekend Afternoon', // Sat–Sun, ~12 PM – 6 PM
+  'Friday Night', // Fri, ~9 PM – 2 AM (prime collegiate slot)
+  'Late Night', // Any day, ~11 PM – 3 AM
+] as const;
+
+export type ActiveSchedule = (typeof ACTIVE_SCHEDULES)[number];
 
 /**
  * Verified university email domains supported by CampusGG.
  * Populated with Big Ten / large-enrollment schools for the mock pool.
  */
-export type UniversityDomain =
-  | 'purdue.edu'
-  | 'illinois.edu'
-  | 'indiana.edu'
-  | 'msu.edu'
-  | 'umich.edu'
-  | 'osu.edu'
-  | 'wisc.edu'
-  | 'umn.edu'
-  | 'northwestern.edu'
-  | 'psu.edu';
+export const UNIVERSITY_DOMAINS = [
+  'purdue.edu',
+  'illinois.edu',
+  'indiana.edu',
+  'msu.edu',
+  'umich.edu',
+  'osu.edu',
+  'wisc.edu',
+  'umn.edu',
+  'northwestern.edu',
+  'psu.edu',
+] as const;
+
+export type UniversityDomain = (typeof UNIVERSITY_DOMAINS)[number];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-interfaces — each represents a logical grouping of player data
@@ -89,56 +110,51 @@ export interface PlayerProfile {
 
   /**
    * Self-reported coarse time slot when the player is most available.
-   * Used for schedule-overlap scoring in the matchmaking weights.
+   * Reserved for schedule-overlap scoring in a future scoring revision.
    */
   readonly activeSchedule: ActiveSchedule;
 }
 
 /**
- * CS2-specific ranked statistics.
- * Follows the CS2 Premier rating system (0 – 35,000, typical play 10k–25k).
+ * Generic ranked statistics for a supported game.
+ *
+ * `rating` is a game-specific skill metric normalised to the same 0–35,000
+ * range used by CS2 Premier for the MVP. A future revision can replace this
+ * with a per-game percentile once each title has its own stat schema.
  */
-export interface CS2Stats {
-  readonly game: 'CS2';
+export interface GameStats {
+  readonly game: SupportedGame;
 
   /**
-   * CS2 Premier rating.
-   * Range: 10,000 – 25,000 (hard-capped to active competitive range).
-   * Used as the primary skill-distance metric in the engine.
+   * Skill rating used as the primary skill-distance metric.
+   * Range: 0 – 35,000 (typical active range: 10,000 – 25,000).
    */
   readonly rating: number;
 }
 
-/**
- * Discriminated union of all supported game stat blocks.
- * The engine switches on `game` to extract the correct numeric skill metric.
- *
- * @example
- * function getSkillRating(stats: GameStats): number {
- *   switch (stats.game) {
- *     case 'CS2': return stats.rating;
- *     // future cases here
- *   }
- * }
- */
-export type GameStats = CS2Stats; // Extend: | ValorantStats | RLStats
+/** CS2-specific alias retained for documentation and mock generation. */
+export type CS2Stats = GameStats & { readonly game: 'CS2' };
 
 /**
  * Player's expressed in-game preferences for team composition matching.
  * These are self-reported; future versions will validate against match history.
+ *
+ * Role values are intentionally strings rather than a fixed union: each game
+ * has its own role vocabulary, validated at the API boundary against
+ * GAME_ROLES in game-tiers.config.ts.
  */
 export interface PlayerPreferences {
   /**
    * The role the player most prefers to play.
    * Weighted highest in the role-compatibility scoring pass.
    */
-  readonly primaryRole: CS2Role;
+  readonly primaryRole: string;
 
   /**
    * Fallback role the player is willing to fill.
    * Weighted lower but prevents hard mismatches in 5-stack composition.
    */
-  readonly secondaryRole: CS2Role;
+  readonly secondaryRole: string;
 
   /**
    * Whether the player uses a microphone.
@@ -161,6 +177,11 @@ export interface PlayerPreferences {
  *
  * All fields are `readonly` to enforce immutability once enqueued.
  * The engine must not mutate player data; it only produces match results.
+ *
+ * Queue wait time is deliberately NOT part of this contract. The engine
+ * records `enqueuedAt` on the server when the player enters the queue and
+ * derives elapsed time from its own clock. Client-supplied wait times are
+ * therefore impossible to spoof.
  */
 export interface PlayerMatchmakingInput {
   /**
@@ -199,12 +220,4 @@ export interface PlayerMatchmakingInput {
    * mismatched expectations (e.g., pairing a 0.1 with a 0.9).
    */
   readonly intensity: number;
-
-  /**
-   * Elapsed seconds the player has been waiting in the queue.
-   * Consumed by the time-decay logic to progressively relax match criteria
-   * and prevent players from waiting indefinitely.
-   * Starts at 0 when the player first enters the queue.
-   */
-  readonly queueTime: number;
 }

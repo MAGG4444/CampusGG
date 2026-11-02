@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import './Matchmaking.css'
@@ -38,6 +38,33 @@ const initialForm = {
   intensity: 0.5,
 }
 
+/**
+ * Returns a form whose role selections are valid for the selected game.
+ * Used both by the game picker and when resuming a queue after reload.
+ */
+function withGame(prev, game) {
+  const roles = GAME_ROLES[game] ?? []
+
+  if (roles.length === 0) {
+    return { ...prev, game, primaryRole: '', secondaryRole: '' }
+  }
+
+  const validPrimary = roles.includes(prev.primaryRole)
+  const validSecondary = roles.includes(prev.secondaryRole)
+
+  return {
+    ...prev,
+    game,
+    primaryRole: validPrimary ? prev.primaryRole : roles[0],
+    secondaryRole:
+      validSecondary && prev.secondaryRole !== prev.primaryRole
+        ? prev.secondaryRole
+        : roles.length > 1
+          ? roles[1]
+          : roles[0],
+  }
+}
+
 function Matchmaking() {
   const navigate = useNavigate()
   const { user, token } = useAuth()
@@ -63,28 +90,7 @@ function Matchmaking() {
   // Handle game selection change: switch game and validate/reset role
   // selections in the same event, avoiding a setState-in-effect pattern.
   function handleGameChange(game) {
-    const roles = GAME_ROLES[game] ?? []
-
-    setForm((prev) => {
-      if (roles.length === 0) {
-        return { ...prev, game, primaryRole: '', secondaryRole: '' }
-      }
-
-      const validPrimary = roles.includes(prev.primaryRole)
-      const validSecondary = roles.includes(prev.secondaryRole)
-
-      return {
-        ...prev,
-        game,
-        primaryRole: validPrimary ? prev.primaryRole : roles[0],
-        secondaryRole:
-          validSecondary && prev.secondaryRole !== prev.primaryRole
-            ? prev.secondaryRole
-            : roles.length > 1
-              ? roles[1]
-              : roles[0],
-      }
-    })
+    setForm((prev) => withGame(prev, game))
     setFeedback('')
   }
 
@@ -92,6 +98,110 @@ function Matchmaking() {
     setForm((prev) => ({ ...prev, [field]: value }))
     setFeedback('')
   }
+
+  const stopPolling = useCallback(() => {
+    if (pollInterval.current) {
+      clearInterval(pollInterval.current)
+      pollInterval.current = null
+    }
+  }, [])
+
+  const checkMatchStatus = useCallback(async () => {
+    if (!token) return
+
+    try {
+      const response = await fetch(`${API_URL}/matchmaking/match-status`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        return
+      }
+
+      const data = await response.json()
+
+      if (data.matched && data.lobbyId) {
+        stopPolling()
+        setStatus('matched')
+        navigate(`/lobby/${data.lobbyId}`)
+        return
+      }
+
+      if (data.queued) {
+        setStatus('queuing')
+        return
+      }
+
+      // The server no longer has an active queue entry for this session.
+      // Stop polling instead of hammering an endpoint that will never match.
+      if (pollInterval.current) {
+        stopPolling()
+        setStatus('idle')
+        setFeedback('Your queue entry expired. Please join again.')
+      }
+    } catch {
+      // Silently ignore poll errors; the next interval will retry.
+    }
+  }, [token, navigate, stopPolling])
+
+  const startPolling = useCallback(() => {
+    stopPolling()
+    if (!token) return
+
+    pollInterval.current = setInterval(() => {
+      void checkMatchStatus()
+    }, 3000)
+    void checkMatchStatus()
+  }, [checkMatchStatus, stopPolling, token])
+
+  // Resume a queued or matched session after a reload, new login, or a
+  // request that raced with a server-side match.
+  useEffect(() => {
+    if (!token) return undefined
+
+    let cancelled = false
+
+    async function resume() {
+      try {
+        const response = await fetch(`${API_URL}/matchmaking/match-status`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok || cancelled) return
+
+        const data = await response.json()
+
+        if (cancelled) return
+
+        if (data.matched && data.lobbyId) {
+          setStatus('matched')
+          navigate(`/lobby/${data.lobbyId}`)
+          return
+        }
+
+        if (data.queued) {
+          if (data.game && GAMES.includes(data.game)) {
+            setForm((prev) => withGame(prev, data.game))
+          }
+          setStatus('queuing')
+          startPolling()
+        }
+      } catch {
+        // A failed resume leaves the page idle; polling starts on enqueue.
+      }
+    }
+
+    void resume()
+
+    return () => {
+      cancelled = true
+      stopPolling()
+    }
+  }, [token, navigate, startPolling, stopPolling])
 
   async function handleJoinQueue(event) {
     event.preventDefault()
@@ -101,9 +211,9 @@ function Matchmaking() {
     setFeedback('')
     setStatus('queuing')
 
-    // Build the PlayerMatchmakingInput payload the backend expects.
+    // Build the enqueue payload. The backend derives userId from the JWT
+    // and records the queue timestamp server-side.
     const player = {
-      userId: user.id,
       game: form.game,
       profile: {
         universityDomain: 'purdue.edu',
@@ -120,7 +230,6 @@ function Matchmaking() {
         micEnabled: form.micEnabled,
       },
       intensity: form.intensity,
-      queueTime: 0,
     }
 
     try {
@@ -143,11 +252,8 @@ function Matchmaking() {
         throw new Error(message)
       }
 
-      // Begin polling for a match result.
-      pollInterval.current = setInterval(() => {
-        checkMatchStatus(user.id)
-      }, 3000)
-      checkMatchStatus(user.id)
+      // The match-status poll doubles as the server heartbeat.
+      startPolling()
     } catch (error) {
       setStatus('idle')
       setFeedback(
@@ -158,43 +264,8 @@ function Matchmaking() {
     }
   }
 
-  async function checkMatchStatus(userId) {
-    try {
-      const response = await fetch(
-        `${API_URL}/matchmaking/match-status?userId=${encodeURIComponent(
-          userId,
-        )}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      )
-
-      if (!response.ok) {
-        return
-      }
-
-      const data = await response.json()
-
-      if (data.matched && data.lobbyId) {
-        if (pollInterval.current) {
-          clearInterval(pollInterval.current)
-          pollInterval.current = null
-        }
-        setStatus('matched')
-        navigate(`/lobby/${data.lobbyId}`)
-      }
-    } catch {
-      // Silently ignore poll errors; the next interval will retry.
-    }
-  }
-
   async function handleCancel() {
-    if (pollInterval.current) {
-      clearInterval(pollInterval.current)
-      pollInterval.current = null
-    }
+    stopPolling()
 
     // Remove the player from the backend queue.
     if (token) {
@@ -202,10 +273,8 @@ function Matchmaking() {
         await fetch(`${API_URL}/matchmaking/dequeue`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ userId: user.id }),
         })
       } catch {
         // Ignore errors — the frontend state is already reset.
@@ -215,15 +284,6 @@ function Matchmaking() {
     setStatus('idle')
     setFeedback('Queue cancelled.')
   }
-
-  // Clean up the poll interval on unmount.
-  useEffect(() => {
-    return () => {
-      if (pollInterval.current) {
-        clearInterval(pollInterval.current)
-      }
-    }
-  }, [])
 
   const isQueuing = status === 'queuing'
 

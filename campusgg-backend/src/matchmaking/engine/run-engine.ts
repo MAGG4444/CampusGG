@@ -2,215 +2,158 @@
  * @file run-engine.ts
  * @description Sub-issue 24.2 — Dynamic Time Decay Integration
  *
- * Loads mock_players.json, enqueues players into the matchmaking engine,
- * evaluates candidate groups of 5 players using CompetitiveScoringStrategy,
- * and dynamically calculates the acceptance threshold based on queue wait time
- * using the time-decay model (resolveGroupThreshold).
+ * Loads mock_players.json, enqueues players with simulated wait times, and
+ * runs the real MatchmakingEngine (including its best-of-window search and
+ * dynamic threshold) end-to-end.
  *
  * Run:
- *   npx ts-node src/matchmaking/engine/run-engine.ts
- *
- * Or with Python runner fallback (see run-engine-fallback.py)
+ *   npm run build && node dist/matchmaking/engine/run-engine.js
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
-import * as crypto from 'crypto';
 
 import type {
   PlayerMatchmakingInput,
   SupportedGame,
 } from '../schemas/player-matchmaking.schema.js';
 import type { MatchGroup } from '../schemas/match-group.schema.js';
+import { MatchmakingEngine } from './matchmaking-engine.js';
 import { getScoringStrategy } from './strategy-registry.js';
 import { getGroupSize, getTier } from './game-tiers.config.js';
-import { resolveGroupThreshold } from './time-decay-model.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. Load mock data
+// Mock data
 // ─────────────────────────────────────────────────────────────────────────────
+
+/** The JSON fixtures include a simulated queueTime for each player. */
+type MockPlayer = PlayerMatchmakingInput & { queueTime?: number };
 
 const MOCK_DATA_PATH = path.resolve(
   __dirname,
   '../../../../mock-data/mock_players.json',
 );
-const rawJson = fs.readFileSync(MOCK_DATA_PATH, 'utf-8');
-const mockPlayers = JSON.parse(rawJson) as unknown as PlayerMatchmakingInput[];
 
-console.log('');
-console.log(
-  '╔══════════════════════════════════════════════════════════════════╗',
-);
-console.log(
-  '║  CampusGG — Matchmaking Engine + Time Decay (Sub-issue 24.2)    ║',
-);
-console.log(
-  '╚══════════════════════════════════════════════════════════════════╝',
-);
-console.log(`  Loaded ${mockPlayers.length} players from mock_players.json`);
-console.log('');
+const mockPlayers = JSON.parse(
+  fs.readFileSync(MOCK_DATA_PATH, 'utf-8'),
+) as MockPlayer[];
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Determine strategy from the mock data's game field
+// Runner
 // ─────────────────────────────────────────────────────────────────────────────
 
-const primaryGame: SupportedGame = mockPlayers[0]?.game ?? 'CS2';
-const strategy = getScoringStrategy(primaryGame);
-
-console.log(
-  `  Strategy resolved: ${strategy.constructor.name} (for ${primaryGame})`,
-);
-console.log('');
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. onMatchFound Callback
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Tracks groups formed for the summary. */
-let totalGroupsFormed = 0;
-
-/**
- * Mock `onMatchFound` callback — simulates what the Lobby service would do.
- * In production, this would emit an event / call the Lobby microservice.
- */
-function onMatchFound(group: MatchGroup): void {
-  totalGroupsFormed++;
-
-  const playerList = group.userIds
-    .map((id) => id.slice(0, 16) + '...') // truncate UUIDs for readability
-    .join(', ');
-
-  console.log(
-    `  [MATCH #${String(totalGroupsFormed).padStart(2, '0')}] ` +
-      `${group.game} (${group.tier}, ${group.userIds.length}p) | ` +
-      `score: ${group.score.toFixed(4)} | ` +
-      `group: ${group.groupId.slice(0, 16)}...`,
-  );
-  console.log(`            players: [${playerList}]`);
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. Enqueue all players (Partition by game)
-// ─────────────────────────────────────────────────────────────────────────────
-
-const queue: Map<SupportedGame, PlayerMatchmakingInput[]> = new Map();
-
-for (const player of mockPlayers) {
-  if (!queue.has(player.game)) {
-    queue.set(player.game, []);
-  }
-  const gameQueue = queue.get(player.game)!;
-  if (!gameQueue.some((p) => p.userId === player.userId)) {
-    gameQueue.push(player);
-  }
-}
-
-console.log('── Queue state before processing ──────────────────────────────');
-let totalQueued = 0;
-for (const players of queue.values()) {
-  totalQueued += players.length;
-}
-console.log(`  Total players queued: ${totalQueued}`);
-for (const [game, players] of queue.entries()) {
-  console.log(
-    `    ${game}: ${players.length} players (tier: ${getTier(game)}, group size: ${getGroupSize(game)})`,
-  );
-}
-console.log('');
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. Core Matchmaking Loop (Dynamic Time Decay Threshold)
-// ─────────────────────────────────────────────────────────────────────────────
-
-console.log('── Processing queue (CompetitiveScoringStrategy + Time Decay) ─');
-const formedGroups: MatchGroup[] = [];
-
-for (const [game, players] of queue.entries()) {
-  const groupSize = getGroupSize(game);
-  const tier = getTier(game);
-
-  while (players.length >= groupSize) {
-    // Step 2: When the engine groups 5 candidate players for evaluation
-    const candidateGroup = players.slice(0, groupSize);
-
-    // Extract an array of their current wait times
-    const waitTimes = candidateGroup.map((p) => p.queueTime);
-
-    // Step 3: Pass wait times to resolveGroupThreshold() to calculate groupDynamicThreshold.
-    const groupDynamicThreshold = resolveGroupThreshold(waitTimes);
-
-    // Step 4: Calculate actual group match score using our existing scoring strategy
-    const actualMatchScore = strategy.scoreGroup(candidateGroup);
-
-    // Step 5: Compare actualMatchScore against groupDynamicThreshold
-    if (actualMatchScore >= groupDynamicThreshold) {
-      // Step 6: If score >= dynamic threshold, trigger onMatchFound callback
-      const matchGroup: MatchGroup = {
-        groupId: `grp_${crypto.randomUUID()}`,
-        game,
-        tier,
-        userIds: candidateGroup.map((p) => p.userId),
-        score: actualMatchScore,
-        matchedAt: new Date().toISOString(),
-      };
-
-      // Remove matched players from queue
-      players.splice(0, groupSize);
-
-      onMatchFound(matchGroup);
-      formedGroups.push(matchGroup);
-    } else {
-      console.log(
-        `  [Engine] Group for ${game} scored ${actualMatchScore.toFixed(4)} — ` +
-          `below dynamic threshold ${groupDynamicThreshold.toFixed(4)} ` +
-          `(max wait: ${Math.max(...waitTimes)}s). Skipping.`,
-      );
-      break;
-    }
-  }
-}
-console.log('');
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. Summary with scoring analytics
-// ─────────────────────────────────────────────────────────────────────────────
-
-console.log('── Summary ────────────────────────────────────────────────────');
-console.log(`  Total groups formed   : ${formedGroups.length}`);
-console.log(
-  `  Total players matched : ${formedGroups.reduce((sum, g) => sum + g.userIds.length, 0)}`,
-);
-
-let totalRemaining = 0;
-for (const players of queue.values()) {
-  totalRemaining += players.length;
-}
-console.log(`  Remaining in queue    : ${totalRemaining}`);
-
-if (formedGroups.length > 0) {
-  const scores = formedGroups.map((g) => g.score);
-  const avgScore = scores.reduce((a, b) => a + b, 0) / scores.length;
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
-
+async function main(): Promise<void> {
   console.log('');
   console.log(
-    '── Score Distribution ─────────────────────────────────────────',
+    '╔══════════════════════════════════════════════════════════════════╗',
   );
-  console.log(`  Average score : ${avgScore.toFixed(4)}`);
-  console.log(`  Min score     : ${minScore.toFixed(4)}`);
-  console.log(`  Max score     : ${maxScore.toFixed(4)}`);
-  console.log(`  Spread        : ${(maxScore - minScore).toFixed(4)}`);
-}
+  console.log(
+    '║  CampusGG — Matchmaking Engine + Time Decay (Sub-issue 24.2)    ║',
+  );
+  console.log(
+    '╚══════════════════════════════════════════════════════════════════╝',
+  );
+  console.log(`  Loaded ${mockPlayers.length} players from mock_players.json`);
+  console.log('');
 
-for (const [game, count] of queue.entries()) {
-  if (count.length > 0) {
+  let totalGroupsFormed = 0;
+
+  const engine = new MatchmakingEngine({
+    strategyResolver: getScoringStrategy,
+    onMatchFound: (group: MatchGroup) => {
+      totalGroupsFormed++;
+
+      const playerList = group.userIds
+        .map((id) => id.slice(0, 16) + '...')
+        .join(', ');
+
+      console.log(
+        `  [MATCH #${String(totalGroupsFormed).padStart(2, '0')}] ` +
+          `${group.game} (${group.tier}, ${group.userIds.length}p) | ` +
+          `score: ${group.score.toFixed(4)} | ` +
+          `group: ${group.groupId.slice(0, 16)}...`,
+      );
+      console.log(`            players: [${playerList}]`);
+    },
+  });
+
+  // Simulate each player's wait time by back-dating their enqueue timestamp.
+  const now = Date.now();
+  for (const player of mockPlayers) {
+    const { queueTime = 0, ...input } = player;
+    engine.enqueue(input, now - queueTime * 1000);
+  }
+
+  console.log(
+    '── Queue state before processing ──────────────────────────────',
+  );
+  console.log(`  Total players queued: ${engine.getTotalQueueSize()}`);
+  const snapshot = engine.getQueueSnapshot();
+  for (const [game, count] of Object.entries(snapshot) as [
+    SupportedGame,
+    number,
+  ][]) {
     console.log(
-      `    ${game}: ${count.length} leftover (not enough for a full group)`,
+      `    ${game}: ${count} players (tier: ${getTier(game)}, group size: ${getGroupSize(game)})`,
     );
   }
+  console.log('');
+
+  console.log(
+    '── Processing queue (best-of-window + time decay) ─────────────',
+  );
+  const formedGroups = await engine.processQueue(now);
+  console.log('');
+
+  // ── Summary ────────────────────────────────────────────────────────────
+  console.log(
+    '── Summary ────────────────────────────────────────────────────',
+  );
+  console.log(`  Total groups formed   : ${formedGroups.length}`);
+  console.log(
+    `  Total players matched : ${formedGroups.reduce(
+      (sum, group) => sum + group.userIds.length,
+      0,
+    )}`,
+  );
+  console.log(`  Remaining in queue    : ${engine.getTotalQueueSize()}`);
+
+  if (formedGroups.length > 0) {
+    const scores = formedGroups.map((group) => group.score);
+    const averageScore =
+      scores.reduce((sum, score) => sum + score, 0) / scores.length;
+
+    console.log('');
+    console.log(
+      '── Score Distribution ─────────────────────────────────────────',
+    );
+    console.log(`  Average score : ${averageScore.toFixed(4)}`);
+    console.log(`  Min score     : ${Math.min(...scores).toFixed(4)}`);
+    console.log(`  Max score     : ${Math.max(...scores).toFixed(4)}`);
+    console.log(
+      `  Spread        : ${(Math.max(...scores) - Math.min(...scores)).toFixed(4)}`,
+    );
+  }
+
+  for (const [game, count] of Object.entries(engine.getQueueSnapshot()) as [
+    SupportedGame,
+    number,
+  ][]) {
+    if (count === 0) {
+      continue;
+    }
+
+    const reason =
+      count < getGroupSize(game)
+        ? 'not enough for a full group'
+        : 'no acceptable group at current wait times';
+
+    console.log(`    ${game}: ${count} leftover (${reason})`);
+  }
+
+  console.log('');
+  console.log('  ✓ Engine + time decay run complete.');
+  console.log('');
 }
 
-console.log('');
-console.log('  ✓ Real dynamic time decay scoring verified end-to-end.');
-console.log('');
+void main();

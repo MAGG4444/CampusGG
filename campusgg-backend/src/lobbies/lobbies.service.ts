@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+import type { EntityManager } from 'typeorm';
 
+import { User } from '../users/user.entity';
 import { UsersService } from '../users/users.service';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
 import { SearchLobbiesDto } from './dto/search-lobbies.dto';
@@ -65,12 +67,49 @@ export class LobbiesService {
     createLobbyDto: CreateLobbyDto,
     hostUserId: string,
   ): Promise<Lobby> {
-    // Verify that the hosting user exists
-    const host = await this.usersService.findOne(hostUserId);
+    return this.createWithMembers(createLobbyDto, hostUserId, []);
+  }
 
-    // Create lobby and host membership in one transaction
-    return this.lobbiesRepository.manager.transaction(async (manager) => {
-      // Construct the lobby entity
+  /**
+   * Create a lobby and enroll its host plus an initial set of members in a
+   * single transaction. Used by matchmaking so a partial failure cannot
+   * leave a half-populated lobby behind.
+   *
+   * When `transactionManager` is supplied, the caller owns the transaction.
+   * Matchmaking passes its tick manager so lobby creation and the queue
+   * transition commit or roll back together.
+   *
+   * @param createLobbyDto     - Lobby metadata.
+   * @param hostUserId         - User who owns the lobby.
+   * @param memberUserIds      - Additional users to enroll as members.
+   * @param transactionManager - Optional caller-owned transaction.
+   */
+  async createWithMembers(
+    createLobbyDto: CreateLobbyDto,
+    hostUserId: string,
+    memberUserIds: ReadonlyArray<string> = [],
+    transactionManager?: EntityManager,
+  ): Promise<Lobby> {
+    const uniqueMemberIds = [...new Set(memberUserIds)].filter(
+      (userId) => userId !== hostUserId,
+    );
+    const allUserIds = [hostUserId, ...uniqueMemberIds];
+
+    const createLobby = async (manager: EntityManager): Promise<Lobby> => {
+      // One query instead of one lookup per participant. The host is part of
+      // the same set, so a missing participant aborts the whole transaction.
+      const users = await manager.getRepository(User).find({
+        where: { id: In(allUserIds) },
+      });
+      const usersById = new Map(users.map((user) => [user.id, user]));
+      const missingUserId = allUserIds.find((userId) => !usersById.has(userId));
+
+      if (missingUserId) {
+        throw new NotFoundException(`User ${missingUserId} not found`);
+      }
+
+      const host = usersById.get(hostUserId)!;
+
       const lobby = manager.create(Lobby, {
         lobbyName: createLobbyDto.lobbyName,
         subtitle: createLobbyDto.subtitle ?? null,
@@ -83,21 +122,33 @@ export class LobbiesService {
         host,
       });
 
-      // Save the lobby to PostgreSQL
       const savedLobby = await manager.save(Lobby, lobby);
 
-      // Automatically register the host as a participant
-      const hostMembership = manager.create(LobbyMember, {
-        lobby: savedLobby,
-        user: host,
-        role: LobbyMemberRole.HOST,
-      });
+      const memberships = [
+        manager.create(LobbyMember, {
+          lobby: savedLobby,
+          user: host,
+          role: LobbyMemberRole.HOST,
+        }),
+        ...uniqueMemberIds.map((userId) =>
+          manager.create(LobbyMember, {
+            lobby: savedLobby,
+            user: usersById.get(userId)!,
+            role: LobbyMemberRole.MEMBER,
+          }),
+        ),
+      ];
 
-      // Save the host membership
-      await manager.save(LobbyMember, hostMembership);
+      await manager.save(LobbyMember, memberships);
 
       return savedLobby;
-    });
+    };
+
+    if (transactionManager) {
+      return createLobby(transactionManager);
+    }
+
+    return this.lobbiesRepository.manager.transaction(createLobby);
   }
 
   // ============================================================

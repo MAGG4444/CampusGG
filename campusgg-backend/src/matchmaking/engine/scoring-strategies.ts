@@ -126,7 +126,7 @@ function countMatchingPairs(values: ReadonlyArray<string>): number {
  * @param group - Candidate group of players.
  * @returns Skill cohesion sub-score in [SKILL_FLOOR, 1.0].
  */
-function scoreSkillCohesion(
+export function scoreSkillCohesion(
   group: ReadonlyArray<PlayerMatchmakingInput>,
 ): number {
   const ratings = group.map(extractRating);
@@ -159,7 +159,7 @@ function scoreSkillCohesion(
  * @param group - Candidate group of players.
  * @returns Intensity alignment sub-score in [0.0, 1.0].
  */
-function scoreIntensityAlignment(
+export function scoreIntensityAlignment(
   group: ReadonlyArray<PlayerMatchmakingInput>,
 ): number {
   const intensities = group.map((p) => p.intensity);
@@ -194,7 +194,7 @@ function scoreIntensityAlignment(
  * @param group - Candidate group of players.
  * @returns Profile affinity sub-score in [0.0, 1.0].
  */
-function scoreProfileAffinity(
+export function scoreProfileAffinity(
   group: ReadonlyArray<PlayerMatchmakingInput>,
 ): number {
   const groupSize = group.length;
@@ -236,7 +236,7 @@ function scoreProfileAffinity(
  * @param group - Candidate group of players.
  * @returns A multiplier in [1.0, MAX_ROLE_SYNERGY_MULTIPLIER].
  */
-function computeRoleSynergyMultiplier(
+export function computeRoleSynergyMultiplier(
   group: ReadonlyArray<PlayerMatchmakingInput>,
 ): number {
   const uniqueRoles = new Set(group.map((p) => p.preferences.primaryRole));

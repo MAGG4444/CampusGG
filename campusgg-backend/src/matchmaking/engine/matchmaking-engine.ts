@@ -6,11 +6,12 @@
  *   1. Accepts players via `enqueue()`
  *   2. Hard-partitions the queue by game
  *   3. Dynamically determines group size from the game's tier
- *   4. Delegates scoring to an injected MatchStrategy
- *   5. Emits MatchGroup payloads via the `onMatchFound` callback
+ *   4. Searches a bounded window for the best-scoring candidate group
+ *   5. Delegates scoring to the strategy for that specific game
+ *   6. Emits MatchGroup payloads via the `onMatchFound` callback
  *
  * Boundary responsibilities (what this class does NOT do):
- *   - Does NOT implement scoring math (deferred to 23.3 via Strategy Pattern)
+ *   - Does NOT implement scoring math (deferred to MatchStrategy)
  *   - Does NOT manage lobby state (owned by the Lobby service)
  *   - Does NOT persist data (stateless in-memory queue)
  *
@@ -19,6 +20,9 @@
  *   - Open/Closed           : new games/tiers require zero engine changes
  *   - Dependency Inversion  : depends on MatchStrategy interface, not impl
  *   - Interface Segregation : one callback, one strategy method
+ *
+ * Wait time is recorded server-side at enqueue time. The engine never trusts
+ * a client-supplied queue duration.
  */
 
 import * as crypto from 'crypto';
@@ -37,10 +41,43 @@ import { resolveGroupThreshold } from './time-decay-model.js';
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Default minimum score a candidate group must achieve to be accepted.
- * Can be overridden per-engine instance via the constructor.
+ * Default number of players considered when searching for a group.
+ *
+ * With 5-player groups, a window of 15 means at most C(15, 5) = 3003
+ * candidate groups per match. This is small enough to run every few
+ * seconds while still letting the engine find a good group instead of
+ * being blocked by the first five players in the queue.
  */
-const DEFAULT_SCORE_THRESHOLD = 0.7;
+const DEFAULT_SEARCH_WINDOW = 15;
+
+/** Upper bound to keep the combinatorial search predictable. */
+const MAX_SEARCH_WINDOW = 20;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Internal queue entry
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * A player plus the server-side timestamp at which they entered the queue.
+ * The timestamp is the only source of truth for elapsed wait time.
+ *
+ * Exported so the persistence layer can hand a snapshot of queued players to
+ * the pure `planGroups()` planner without owning any engine state.
+ */
+export interface QueueEntry {
+  readonly player: PlayerMatchmakingInput;
+  readonly enqueuedAt: number;
+}
+
+/** A candidate group that passed the dynamic threshold. */
+interface CandidateGroup {
+  /** Indices into the window array, in ascending order. */
+  readonly indices: ReadonlyArray<number>;
+  readonly entries: ReadonlyArray<QueueEntry>;
+  readonly score: number;
+  readonly threshold: number;
+  readonly maxWait: number;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Callback type
@@ -48,10 +85,15 @@ const DEFAULT_SCORE_THRESHOLD = 0.7;
 
 /**
  * Signature for the match-found callback.
- * The engine calls this with an immutable MatchGroup whenever a group passes
- * the score threshold. The Lobby service (or any consumer) hooks into this.
+ *
+ * The callback may be asynchronous. The engine awaits it and only removes
+ * the players from the queue after it resolves successfully. If it rejects,
+ * the players stay queued so a transient lobby-creation failure cannot
+ * strand them.
  */
-export type OnMatchFoundCallback = (matchGroup: MatchGroup) => void;
+export type OnMatchFoundCallback = (
+  matchGroup: MatchGroup,
+) => void | Promise<void>;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Engine options
@@ -59,15 +101,14 @@ export type OnMatchFoundCallback = (matchGroup: MatchGroup) => void;
 
 /**
  * Constructor options for the MatchmakingEngine.
- * All fields are optional — sensible defaults are provided.
  */
 export interface MatchmakingEngineOptions {
   /**
-   * The scoring strategy to use when evaluating candidate groups.
-   * Injected via constructor — enables swapping DummyStrategy for the real
-   * scorer without touching engine code.
+   * Resolves the scoring strategy for a specific game. This is called once
+   * per partition per tick, so switching between competitive and casual
+   * games is handled without the engine knowing about tiers or game names.
    */
-  readonly strategy: MatchStrategy;
+  readonly strategyResolver: (game: SupportedGame) => MatchStrategy;
 
   /**
    * Callback fired whenever a match group is successfully formed.
@@ -76,11 +117,15 @@ export interface MatchmakingEngineOptions {
   readonly onMatchFound?: OnMatchFoundCallback;
 
   /**
-   * Minimum acceptable score from the strategy.
-   * Groups scoring below this are rejected and their players stay in queue.
-   * Defaults to DEFAULT_SCORE_THRESHOLD (0.70).
+   * Optional clock injection for deterministic tests. Defaults to Date.now.
    */
-  readonly scoreThreshold?: number;
+  readonly now?: () => number;
+
+  /**
+   * Number of players to consider when searching for the best group.
+   * Defaults to DEFAULT_SEARCH_WINDOW (15), clamped to MAX_SEARCH_WINDOW.
+   */
+  readonly searchWindow?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -98,24 +143,30 @@ export class MatchmakingEngine {
    * Each game gets its own isolated sub-queue (hard partitioning).
    * Using a Map preserves insertion order within each partition.
    */
-  private readonly queue: Map<SupportedGame, PlayerMatchmakingInput[]> =
-    new Map();
+  private readonly queue: Map<SupportedGame, QueueEntry[]> = new Map();
 
-  /** Injected scoring strategy (DummyStrategy for 23.2, real scorer for 23.3). */
-  private readonly strategy: MatchStrategy;
+  /** Resolves the scoring strategy for each game partition. */
+  private readonly strategyResolver: (game: SupportedGame) => MatchStrategy;
 
   /** Callback invoked for every accepted match group. */
   private readonly onMatchFound: OnMatchFoundCallback;
 
-  /** Minimum score for a group to be accepted. */
-  private readonly scoreThreshold: number;
+  /** Clock used for enqueue timestamps and elapsed-time calculations. */
+  private readonly now: () => number;
+
+  /** Number of players considered in the best-group search. */
+  private readonly searchWindow: number;
 
   // ── Constructor ─────────────────────────────────────────────────────────
 
   constructor(options: MatchmakingEngineOptions) {
-    this.strategy = options.strategy;
+    this.strategyResolver = options.strategyResolver;
     this.onMatchFound = options.onMatchFound ?? (() => {});
-    this.scoreThreshold = options.scoreThreshold ?? DEFAULT_SCORE_THRESHOLD;
+    this.now = options.now ?? Date.now;
+    this.searchWindow = Math.min(
+      Math.max(1, options.searchWindow ?? DEFAULT_SEARCH_WINDOW),
+      MAX_SEARCH_WINDOW,
+    );
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -123,110 +174,253 @@ export class MatchmakingEngine {
   /**
    * Add a player to the matchmaking queue.
    *
-   * The player is routed to the sub-queue for their `game` field.
-   * Duplicate user IDs within the same game partition are silently rejected
-   * to prevent double-queuing.
+   * The player is routed to the sub-queue for their `game` field. A user may
+   * only be queued once at a time: duplicates are rejected across all game
+   * partitions to prevent a user being matched into multiple lobbies.
    *
-   * @param player - A validated PlayerMatchmakingInput payload.
+   * @param player     - A validated PlayerMatchmakingInput payload.
+   * @param enqueuedAt - Optional server timestamp override (used by the mock
+   *                     runner to simulate already-waiting players).
+   * @returns true if the player was added, false if they were already queued.
    */
-  enqueue(player: PlayerMatchmakingInput): void {
-    const { game, userId } = player;
+  enqueue(player: PlayerMatchmakingInput, enqueuedAt = this.now()): boolean {
+    // Validate the game up front so an unknown title cannot poison the queue.
+    getTier(player.game);
+
+    // Guard: one active queue entry per user across all games.
+    for (const entries of this.queue.values()) {
+      if (entries.some((entry) => entry.player.userId === player.userId)) {
+        console.warn(
+          `[Engine] Duplicate enqueue rejected: ${player.userId} is already queued.`,
+        );
+        return false;
+      }
+    }
 
     // Initialise the sub-queue for this game if it doesn't exist yet
-    if (!this.queue.has(game)) {
-      this.queue.set(game, []);
+    if (!this.queue.has(player.game)) {
+      this.queue.set(player.game, []);
     }
 
-    const gameQueue = this.queue.get(game)!;
-
-    // Guard: prevent duplicate enqueue
-    if (gameQueue.some((p) => p.userId === userId)) {
-      console.warn(
-        `[Engine] Duplicate enqueue rejected: ${userId} already in ${game} queue.`,
-      );
-      return;
-    }
-
-    gameQueue.push(player);
+    const timestamp = Number.isFinite(enqueuedAt) ? enqueuedAt : this.now();
+    this.queue.get(player.game)!.push({ player, enqueuedAt: timestamp });
+    return true;
   }
 
   /**
    * Remove a player from the matchmaking queue by user ID.
-   * Searches all game partitions and removes the first matching player.
+   * Searches all game partitions and removes every matching entry.
    *
    * @param userId - The ID of the player to remove.
-   * @returns true if the player was found and removed, false otherwise.
+   * @returns true if at least one entry was found and removed.
    */
   dequeue(userId: string): boolean {
-    for (const players of this.queue.values()) {
-      const index = players.findIndex((p) => p.userId === userId);
-      if (index !== -1) {
-        players.splice(index, 1);
-        return true;
+    let removed = false;
+
+    for (const entries of this.queue.values()) {
+      for (let index = entries.length - 1; index >= 0; index--) {
+        if (entries[index].player.userId === userId) {
+          entries.splice(index, 1);
+          removed = true;
+        }
       }
     }
-    return false;
+
+    return removed;
   }
 
   /**
    * Process the entire queue once.
    *
+   * For each game partition, repeatedly finds the best-scoring group within
+   * a bounded search window. The callback is awaited before matched players
+   * are removed, so a failed lobby creation leaves them in the queue.
+   *
+   * @param now - Optional timestamp override for deterministic tests.
    * @returns Array of MatchGroup payloads that were handed off.
    */
-  processQueue(): MatchGroup[] {
+  async processQueue(now = this.now()): Promise<MatchGroup[]> {
     const formedGroups: MatchGroup[] = [];
 
     // Iterate over every game partition independently (hard partitioning)
     for (const [game, players] of this.queue.entries()) {
-      const groupSize = getGroupSize(game);
-      const tier = getTier(game);
+      try {
+        const plannedGroups = this.planPartition(game, players, now);
 
-      // Keep forming groups while we have enough players
-      while (players.length >= groupSize) {
-        // Take the first `groupSize` players (FIFO — respects queue order)
-        const candidateGroup = players.slice(0, groupSize);
-
-        // Extract wait times
-        const waitTimes = candidateGroup.map((p) => p.queueTime);
-
-        // The longest-waiting player dictates the group's passing score to ensure queue liquidity
-        const groupDynamicThreshold = resolveGroupThreshold(waitTimes);
-
-        // Delegate scoring to the injected strategy
-        const actualMatchScore = this.strategy.scoreGroup(candidateGroup);
-
-        if (actualMatchScore >= groupDynamicThreshold) {
-          // ── Match accepted ────────────────────────────────────────────
-          const matchGroup: MatchGroup = {
-            groupId: `grp_${crypto.randomUUID()}`,
-            game,
-            tier,
-            userIds: candidateGroup.map((p) => p.userId),
-            score: actualMatchScore,
-            matchedAt: new Date().toISOString(),
-          };
-
-          // Remove matched players from the front of the queue
-          players.splice(0, groupSize);
-
-          // Fire the handoff callback (Lobby service hook point)
-          this.onMatchFound(matchGroup);
-
-          // Track for return value
+        for (const matchGroup of plannedGroups) {
+          // Await the handoff BEFORE removing players. If lobby creation
+          // fails, the players remain queued and can be retried next tick.
+          await this.onMatchFound(matchGroup);
+          this.removeUsers(players, matchGroup.userIds);
           formedGroups.push(matchGroup);
-        } else {
-          // ── Match rejected ────────────────────────────────────────────
-          console.log(
-            `[Engine] Group for ${game} scored ${actualMatchScore.toFixed(4)} — ` +
-              `below dynamic threshold ${groupDynamicThreshold.toFixed(4)} ` +
-              `(max wait: ${Math.max(...waitTimes)}s). Skipping.`,
-          );
-          break;
         }
+      } catch (error) {
+        // One bad partition (or a failed lobby handoff) must not stop the
+        // other games from being processed on this tick.
+        console.error(
+          `[Engine] Failed to process ${game} partition:`,
+          error instanceof Error ? error.message : String(error),
+        );
       }
     }
 
     return formedGroups;
+  }
+
+  /**
+   * Pure planner used by the PostgreSQL-backed queue.
+   *
+   * The caller supplies the queue snapshot (loaded inside a transaction) and
+   * this method returns every group that can be formed at `now`. It does not
+   * mutate the input, call the handoff callback, or touch internal state.
+   *
+   * Grouping is still hard-partitioned by game and uses the same best-of-
+   * window search and dynamic wait-time threshold as `processQueue()`.
+   */
+  planGroups(
+    entries: ReadonlyArray<QueueEntry>,
+    now = this.now(),
+  ): MatchGroup[] {
+    const partitions = new Map<SupportedGame, QueueEntry[]>();
+
+    for (const entry of entries) {
+      const game = entry.player.game;
+
+      if (!partitions.has(game)) {
+        partitions.set(game, []);
+      }
+
+      partitions.get(game)!.push({
+        player: entry.player,
+        enqueuedAt: entry.enqueuedAt,
+      });
+    }
+
+    const plannedGroups: MatchGroup[] = [];
+
+    for (const [game, players] of partitions.entries()) {
+      plannedGroups.push(...this.planPartition(game, players, now));
+    }
+
+    return plannedGroups;
+  }
+
+  // ── Internal: partition processing ──────────────────────────────────────
+
+  /**
+   * Plans as many groups as possible for a single game partition without
+   * mutating the supplied array.
+   */
+  private planPartition(
+    game: SupportedGame,
+    players: ReadonlyArray<QueueEntry>,
+    now: number,
+  ): MatchGroup[] {
+    const groupSize = getGroupSize(game);
+    const tier = getTier(game);
+    const plannedGroups: MatchGroup[] = [];
+    const remaining = [...players];
+
+    while (remaining.length >= groupSize) {
+      const candidate = this.findBestGroup(game, remaining, groupSize, now);
+
+      // No acceptable group in the search window — wait for the threshold
+      // to decay or for more players to arrive.
+      if (!candidate) {
+        break;
+      }
+
+      plannedGroups.push({
+        groupId: `grp_${crypto.randomUUID()}`,
+        game,
+        tier,
+        userIds: candidate.entries.map((entry) => entry.player.userId),
+        score: candidate.score,
+        matchedAt: new Date(now).toISOString(),
+      });
+
+      // Descending order keeps earlier indices valid while splicing.
+      const indices = [...candidate.indices].sort((a, b) => b - a);
+      for (const index of indices) {
+        remaining.splice(index, 1);
+      }
+    }
+
+    return plannedGroups;
+  }
+
+  /** Removes every matching user from a mutable partition. */
+  private removeUsers(
+    players: QueueEntry[],
+    userIds: ReadonlyArray<string>,
+  ): void {
+    const matched = new Set(userIds);
+
+    for (let index = players.length - 1; index >= 0; index--) {
+      if (matched.has(players[index].player.userId)) {
+        players.splice(index, 1);
+      }
+    }
+  }
+
+  /**
+   * Finds the best-scoring candidate group within the search window.
+   *
+   * Every combination of `groupSize` players from the first
+   * `searchWindow` players is scored. A group is eligible only if its score
+   * meets the dynamic threshold derived from its own wait times. Among
+   * eligible groups, the highest score wins; ties are broken in favour of
+   * the group whose longest waiter has waited longer.
+   *
+   * @returns The best eligible group, or null if none passes.
+   */
+  private findBestGroup(
+    game: SupportedGame,
+    players: ReadonlyArray<QueueEntry>,
+    groupSize: number,
+    now: number,
+  ): CandidateGroup | null {
+    const windowSize = Math.min(
+      players.length,
+      Math.max(this.searchWindow, groupSize),
+    );
+
+    if (windowSize < groupSize) {
+      return null;
+    }
+
+    const window = players.slice(0, windowSize);
+    const strategy = this.strategyResolver(game);
+
+    let best: CandidateGroup | null = null;
+
+    for (const indices of combinations(windowSize, groupSize)) {
+      const entries = indices.map((index) => window[index]);
+
+      const waitTimes = entries.map((entry) =>
+        Math.max(0, (now - entry.enqueuedAt) / 1000),
+      );
+      const maxWait = Math.max(...waitTimes);
+      const threshold = resolveGroupThreshold(waitTimes);
+
+      const score = strategy.scoreGroup(entries.map((entry) => entry.player));
+
+      // Defensive: malformed data must not produce a "match" with NaN.
+      if (!Number.isFinite(score) || score < threshold) {
+        continue;
+      }
+
+      const isBetter =
+        best === null ||
+        score > best.score ||
+        (score === best.score && maxWait > best.maxWait);
+
+      if (isBetter) {
+        best = { indices, entries, score, threshold, maxWait };
+      }
+    }
+
+    return best;
   }
 
   // ── Observability helpers ────────────────────────────────────────────────
@@ -237,8 +431,8 @@ export class MatchmakingEngine {
    */
   getQueueSnapshot(): Partial<Record<SupportedGame, number>> {
     const snapshot: Partial<Record<SupportedGame, number>> = {};
-    for (const [game, players] of this.queue.entries()) {
-      snapshot[game] = players.length;
+    for (const [game, entries] of this.queue.entries()) {
+      snapshot[game] = entries.length;
     }
     return snapshot;
   }
@@ -248,9 +442,45 @@ export class MatchmakingEngine {
    */
   getTotalQueueSize(): number {
     let total = 0;
-    for (const players of this.queue.values()) {
-      total += players.length;
+    for (const entries of this.queue.values()) {
+      total += entries.length;
     }
     return total;
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Combination generator
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Yields every k-element combination of the integers [0, n) in lexicographic
+ * order. Implemented as a generator so the engine does not allocate an array
+ * of every combination at once.
+ *
+ * @example
+ * [...combinations(4, 2)] // [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]]
+ */
+function* combinations(n: number, k: number): Generator<number[]> {
+  if (k <= 0 || k > n) {
+    return;
+  }
+
+  const current: number[] = [];
+
+  function* recurse(start: number): Generator<number[]> {
+    if (current.length === k) {
+      yield current.slice();
+      return;
+    }
+
+    const remaining = k - current.length;
+    for (let index = start; index <= n - remaining; index++) {
+      current.push(index);
+      yield* recurse(index + 1);
+      current.pop();
+    }
+  }
+
+  yield* recurse(0);
 }

@@ -11,7 +11,8 @@
  *
  * Expected output:
  *   A table showing the threshold dropping from 0.850 (at 0s)
- *   through ~0.600 (at 180s) to 0.300 (at 300s+).
+ *   through ~0.600 (at 180s) to 0.300 (at 300s+). The 270s–300s rows
+ *   show the smooth tail blend reaching the floor continuously.
  */
 
 import {
@@ -46,15 +47,17 @@ console.log(`    Decay Rate (k)        : ${DECAY_RATE_K}`);
 console.log(
   `    Decayable Range       : ${(INITIAL_THRESHOLD - MINIMUM_THRESHOLD_FLOOR).toFixed(2)}`,
 );
-console.log(`    Formula               : floor + range * e^(-k * t)`);
+console.log(
+  `    Formula               : floor + range * e^(-k * t), smoothstep tail 270-300s`,
+);
 console.log('');
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. Threshold table (0–350s in 30s steps)
+// 2. Threshold table (0–330s in 15s steps)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STEP = 30;
-const MAX_T = 350;
+const STEP = 15;
+const MAX_T = 330;
 
 /** Render a simple ASCII bar chart for visual verification. */
 function renderBar(value: number, maxValue: number, barWidth: number): string {
@@ -82,6 +85,7 @@ for (let t = 0; t <= MAX_T; t += STEP) {
   let marker = '';
   if (t === 0) marker = ' <-- initial';
   if (t === 180) marker = ' <-- 3min target (~0.60)';
+  if (t === 270) marker = ' <-- tail blend starts';
   if (t === 300) marker = ' <-- floor (5min)';
 
   console.log(`  | ${timeStr} |  ${threshStr}  | ${bar} |${marker}`);

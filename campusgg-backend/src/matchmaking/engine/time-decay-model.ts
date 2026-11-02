@@ -27,6 +27,7 @@ import {
   INITIAL_THRESHOLD,
   MINIMUM_THRESHOLD_FLOOR,
   MAX_WAIT_REFERENCE,
+  TAIL_BLEND_START,
   DECAY_RATE_K,
 } from './time-decay.config.js';
 
@@ -40,11 +41,20 @@ import {
  *
  * ## Mathematical Model
  *
- * Uses shifted exponential decay with a hard floor:
+ * The curve has two pieces:
+ *
+ * 1. Exponential decay from INITIAL down toward FLOOR:
  *
  * ```
  *   threshold(t) = FLOOR + (INITIAL - FLOOR) * e^(-k * t)
  * ```
+ *
+ * 2. A smoothstep tail blend over the final TAIL_BLEND_SECONDS
+ *    (TAIL_BLEND_START → MAX_WAIT_REFERENCE) that lands exactly on FLOOR.
+ *
+ * The tail blend removes the discontinuity that a hard clamp at 300s would
+ * create. At 270s the exponential value is ~0.522; over the next 30s it is
+ * blended smoothly to 0.300 instead of jumping there instantly.
  *
  * ### Intuition
  *
@@ -53,38 +63,17 @@ import {
  * monotonically approaches 0.0 as t grows. So the threshold smoothly
  * slides from INITIAL down toward FLOOR.
  *
- * ### Decay Rate Derivation
- *
- * The rate constant k = 0.003367 was derived from the design constraint:
- *
- * ```
- *   threshold(180s) = 0.60
- *   0.30 + 0.55 * e^(-k * 180) = 0.60
- *   e^(-k * 180) = (0.60 - 0.30) / 0.55 = 0.5454...
- *   -k * 180 = ln(0.5454) = -0.6061
- *   k = 0.6061 / 180 = 0.003367
- * ```
- *
- * ### Hard Floor Clamp
- *
- * For queue times at or beyond MAX_WAIT_REFERENCE (300s), the threshold
- * is hard-clamped to MINIMUM_THRESHOLD_FLOOR (0.30). This prevents the
- * exponential tail from dragging the threshold below the safety floor.
- *
  * ### Reference Curve
  *
  * ```
  *   t =   0s  ->  0.850  (fresh — maximum strictness)
- *   t =  30s  ->  0.797  (barely relaxed)
  *   t =  60s  ->  0.749  (mild relaxation)
- *   t =  90s  ->  0.704  (noticeable)
- *   t = 120s  ->  0.663  (meaningful relaxation)
- *   t = 150s  ->  0.626  (past 2 min — getting flexible)
+ *   t = 120s  ->  0.667  (meaningful relaxation)
  *   t = 180s  ->  0.600  (design target: 3 min checkpoint)
- *   t = 210s  ->  0.566
- *   t = 240s  ->  0.541
- *   t = 270s  ->  0.519
- *   t = 300s  ->  0.300  (hard clamp — floor reached)
+ *   t = 240s  ->  0.545
+ *   t = 270s  ->  0.522  (tail blend starts)
+ *   t = 285s  ->  0.411  (mid-blend)
+ *   t = 300s  ->  0.300  (floor reached continuously)
  * ```
  *
  * @param queueTime - Elapsed seconds the player has been waiting (>= 0).
@@ -100,18 +89,39 @@ export function getAcceptableThreshold(queueTime: number): number {
   // Guard: negative queue times are treated as 0 (just entered)
   const t = Math.max(0, queueTime);
 
-  // Hard clamp: at or beyond the reference time, snap to floor
+  // At or beyond the reference time, the floor is the final answer
   if (t >= MAX_WAIT_REFERENCE) {
     return MINIMUM_THRESHOLD_FLOOR;
   }
 
-  // Exponential decay: FLOOR + decayableRange * e^(-k * t)
   const decayableRange = INITIAL_THRESHOLD - MINIMUM_THRESHOLD_FLOOR;
-  const decay = Math.exp(-DECAY_RATE_K * t);
-  const threshold = MINIMUM_THRESHOLD_FLOOR + decayableRange * decay;
 
-  // Defensive clamp (should never be needed with valid config, but safe)
-  return Math.max(MINIMUM_THRESHOLD_FLOOR, threshold);
+  // Exponential decay: FLOOR + decayableRange * e^(-k * t).
+  // The clamp keeps t=0 exactly at INITIAL_THRESHOLD: 0.30 + 0.55 evaluates
+  // to 0.8500000000000001 in IEEE-754, which would reject a score of 0.85.
+  const exponential = Math.min(
+    INITIAL_THRESHOLD,
+    MINIMUM_THRESHOLD_FLOOR + decayableRange * Math.exp(-DECAY_RATE_K * t),
+  );
+
+  // Before the blend window, use the exponential curve directly
+  if (t <= TAIL_BLEND_START) {
+    return Math.max(MINIMUM_THRESHOLD_FLOOR, exponential);
+  }
+
+  // Smoothstep tail blend from the exponential value at TAIL_BLEND_START
+  // down to the floor at MAX_WAIT_REFERENCE.
+  const blendStartValue =
+    MINIMUM_THRESHOLD_FLOOR +
+    decayableRange * Math.exp(-DECAY_RATE_K * TAIL_BLEND_START);
+  const progress =
+    (t - TAIL_BLEND_START) / (MAX_WAIT_REFERENCE - TAIL_BLEND_START);
+  const smoothProgress = progress * progress * (3 - 2 * progress);
+
+  return (
+    blendStartValue +
+    (MINIMUM_THRESHOLD_FLOOR - blendStartValue) * smoothProgress
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -53,6 +53,21 @@ export const GAME_TIER_MAP: Readonly<Record<SupportedGame, GameTier>> = {
   'It Takes Two': 'Casual',
 } as const;
 
+/**
+ * Per-game role vocabularies used by the API validation layer.
+ * Games without fixed roles use an empty array; clients must send empty
+ * role strings for those titles.
+ */
+export const GAME_ROLES: Readonly<Record<SupportedGame, readonly string[]>> = {
+  CS2: ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support'],
+  Valorant: ['Controller', 'Duelist', 'Initiator', 'Sentinel'],
+  'League of Legends': ['Top', 'Jungle', 'Mid', 'ADC', 'Support'],
+  Dota: ['Carry', 'Mid', 'Offlane', 'Soft Support', 'Hard Support'],
+  OW2: ['Tank', 'Damage', 'Support'],
+  'Rocket League': [],
+  'It Takes Two': [],
+} as const;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Derived helpers
 // ─────────────────────────────────────────────────────────────────────────────

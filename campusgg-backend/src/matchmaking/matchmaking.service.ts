@@ -1,89 +1,85 @@
 /**
  * @file matchmaking.service.ts
- * @description Matchmaking service — bridge between the MatchmakingEngine
- *              and the Lobbies service.
+ * @description Matchmaking orchestration on top of the PostgreSQL queue.
  *
- * Owns a singleton MatchmakingEngine instance. On every processQueue tick,
- * when the engine forms a MatchGroup, the onMatchFound callback creates a
- * real Lobby via LobbiesService and records the lobbyId so the frontend can
- * poll and redirect the matched players to /lobby/:lobbyId.
- *
- * Boundary responsibilities:
- *   - Does NOT implement scoring math (delegated to MatchStrategy)
- *   - Does NOT persist lobby state (owned by LobbiesService)
- *   - Does NOT manage WebSocket/push (polling endpoint used instead)
+ * The service owns the engine (pure group planning) and the lobby handoff.
+ * All queue state, heartbeats, match results, and the tick transaction live
+ * in MatchmakingRepository, so two API instances can share the same queue
+ * without an in-memory replica.
  */
 
 import {
+  ConflictException,
   Injectable,
   Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { EntityManager } from 'typeorm';
 
 import type { MatchGroup } from './schemas/match-group.schema.js';
 import type { PlayerMatchmakingInput } from './schemas/player-matchmaking.schema.js';
-import {
-  MatchmakingEngine,
-  OnMatchFoundCallback,
-} from './engine/matchmaking-engine.js';
+import { MatchmakingEngine } from './engine/matchmaking-engine.js';
 import { getScoringStrategy } from './engine/strategy-registry.js';
+import {
+  DEFAULT_SEARCH_WINDOW,
+  DEFAULT_TICK_INTERVAL_MS,
+  readPositiveInteger,
+} from './matchmaking.config.js';
+import {
+  EnqueueOutcome,
+  MatchmakingRepository,
+  type MatchmakingStatusResult,
+} from './matchmaking.repository.js';
 
 import { LobbiesService } from '../lobbies/lobbies.service.js';
 import { LobbyVisibility } from '../lobbies/lobby.entity.js';
-import { UsersService } from '../users/users.service.js';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Matchmaking service
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MatchmakingService.name);
 
-  /** The singleton engine instance (created in onModuleInit). */
-  private engine: MatchmakingEngine;
+  /** Pure planner; no queue state lives inside the engine. */
+  private readonly engine: MatchmakingEngine;
 
-  /** Poll interval handle for processQueue. */
+  /** Poll interval handle for the in-process scheduler. */
   private intervalId: NodeJS.Timeout | null = null;
 
-  /**
-   * userId -> { lobbyId, game } for matched players waiting to be picked up
-   * by the frontend via GET /matchmaking/match-status.
-   */
-  private readonly matchResults = new Map<
-    string,
-    { lobbyId: string; game: string }
-  >();
+  /** Prevents overlapping ticks inside this process. */
+  private isProcessing = false;
+
+  private readonly tickIntervalMs: number;
 
   constructor(
+    private readonly repository: MatchmakingRepository,
     private readonly lobbiesService: LobbiesService,
-    private readonly usersService: UsersService,
-  ) {}
+    configService: ConfigService,
+  ) {
+    this.engine = new MatchmakingEngine({
+      strategyResolver: getScoringStrategy,
+      searchWindow: readPositiveInteger(
+        configService.get('MATCHMAKING_SEARCH_WINDOW'),
+        DEFAULT_SEARCH_WINDOW,
+      ),
+    });
+
+    this.tickIntervalMs = readPositiveInteger(
+      configService.get('MATCHMAKING_TICK_INTERVAL_MS'),
+      DEFAULT_TICK_INTERVAL_MS,
+    );
+  }
 
   // ── NestJS lifecycle ──────────────────────────────────────────────────
 
   onModuleInit(): void {
-    // One engine instance, shared across all enqueue/processQueue calls.
-    // The engine partitions internally by game; one scoring strategy is used
-    // for all partitions (CS2's CompetitiveScoringStrategy covers the
-    // competitive titles; CasualScoringStrategy covers It Takes Two).
-    this.engine = new MatchmakingEngine({
-      strategy: getScoringStrategy('CS2'),
-      onMatchFound: this.handleMatchFound.bind(this) as OnMatchFoundCallback,
-    });
-
-    // Run the queue loop every 3 seconds so matches form without a
-    // dedicated worker process. Adjust interval as needed for production.
     this.intervalId = setInterval(() => {
-      try {
-        this.engine.processQueue();
-      } catch (error) {
-        this.logger.error('processQueue tick failed', error);
-      }
-    }, 3000);
+      void this.tick();
+    }, this.tickIntervalMs);
 
-    this.logger.log('Matchmaking service initialized');
+    this.logger.log(
+      `Matchmaking service initialized (tick every ${this.tickIntervalMs}ms)`,
+    );
   }
 
   onModuleDestroy(): void {
@@ -91,6 +87,7 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
+
     this.logger.log('Matchmaking service destroyed');
   }
 
@@ -98,92 +95,133 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Add a player to the matchmaking queue.
-   * Duplicate user IDs within the same game are rejected by the engine.
+   *
+   * @throws ConflictException if the player already has a pending match.
+   * @returns true if the player was added, false if already queued.
    */
-  enqueue(player: PlayerMatchmakingInput): void {
-    this.engine.enqueue(player);
+  async enqueue(player: PlayerMatchmakingInput): Promise<boolean> {
+    const outcome = await this.repository.enqueue(player);
+
+    if (outcome === EnqueueOutcome.PENDING_MATCH) {
+      throw new ConflictException(
+        'You already have a pending match. Open your lobby first.',
+      );
+    }
+
+    return outcome === EnqueueOutcome.QUEUED;
   }
 
   /**
-   * Manually trigger a queue processing tick.
-   * Useful for testing or on-demand matching.
+   * Manually trigger one tick. The endpoint is disabled in production, but
+   * the method stays available for tests and simulations.
    */
-  processQueue(): void {
-    this.engine.processQueue();
+  async processQueue(): Promise<void> {
+    if (this.isProcessing) {
+      return;
+    }
+
+    this.isProcessing = true;
+
+    try {
+      const result = await this.repository.runTick(
+        (entries, now) =>
+          this.engine.planGroups(
+            entries.map((entry) => ({
+              player: entry.player,
+              enqueuedAt: entry.enqueuedAt.getTime(),
+            })),
+            now,
+          ),
+        (group, manager) => this.handleMatchFound(group, manager),
+      );
+
+      if (!result.processed) {
+        this.logger.debug(
+          'Skipped tick because another instance holds the advisory lock',
+        );
+        return;
+      }
+
+      for (const match of result.matches) {
+        this.logger.log(
+          `Match ${match.group.groupId} → lobby ${match.lobbyId} ` +
+            `(${match.group.userIds.length} players, score ${match.group.score.toFixed(2)})`,
+        );
+      }
+    } finally {
+      this.isProcessing = false;
+    }
   }
 
-  /**
-   * Remove a player from the matchmaking queue by user ID.
-   */
-  dequeue(userId: string): boolean {
-    return this.engine.dequeue(userId);
+  /** Remove a player from the matchmaking queue by user ID. */
+  async dequeue(userId: string): Promise<boolean> {
+    return this.repository.dequeue(userId);
   }
 
   /**
    * Check whether a user has been matched and, if so, return the lobby ID.
-   * Consumes the result so the frontend only receives it once.
+   * Queued users receive a heartbeat from this call.
    */
-  getMatchStatus(userId: string): {
-    matched: boolean;
-    lobbyId?: string;
-  } {
-    const result = this.matchResults.get(userId);
-    if (result) {
-      this.matchResults.delete(userId);
-      return { matched: true, lobbyId: result.lobbyId };
+  async getMatchStatus(userId: string): Promise<MatchmakingStatusResult> {
+    return this.repository.getMatchStatus(userId);
+  }
+
+  /** Observability helpers used by tests and health checks. */
+  async getQueueSnapshot() {
+    return this.repository.getQueueSnapshot();
+  }
+
+  async getTotalQueueSize(): Promise<number> {
+    return this.repository.getTotalQueueSize();
+  }
+
+  // ── Internal: polling loop ────────────────────────────────────────────
+
+  private async tick(): Promise<void> {
+    try {
+      await this.processQueue();
+    } catch (error) {
+      this.logger.error(
+        'processQueue tick failed',
+        error instanceof Error ? error.stack : String(error),
+      );
     }
-    return { matched: false };
   }
 
   // ── Internal: match found → lobby creation ────────────────────────────
 
   /**
-   * Callback fired by the engine whenever a MatchGroup passes the threshold.
-   * Creates a lobby, enrolls all matched players as members, and records the
-   * lobbyId for each user so the frontend can redirect them.
+   * Creates the lobby inside the tick transaction and returns its ID.
+   * Any failure propagates, rolling back the whole tick so players stay
+   * queued and can be retried.
    */
-  private async handleMatchFound(matchGroup: MatchGroup): Promise<void> {
-    try {
-      const hostUserId = matchGroup.userIds[0];
+  private async handleMatchFound(
+    matchGroup: MatchGroup,
+    manager: EntityManager,
+  ): Promise<string> {
+    const [hostUserId, ...memberUserIds] = matchGroup.userIds;
 
-      const lobby = await this.lobbiesService.create(
-        {
-          lobbyName: `${matchGroup.game} Squad`,
-          subtitle: `Matched via CampusGG`,
-          details: `Auto-matched group · compatibility ${(
-            matchGroup.score * 100
-          ).toFixed(0)}% · ${matchGroup.userIds.length} players`,
-          game: matchGroup.game,
-          participantLimit: matchGroup.userIds.length,
-          visibility: LobbyVisibility.PRIVATE,
-          tags: ['matchmaking'],
-        },
-        hostUserId,
-      );
-
-      // Enroll the remaining matched players as members.
-      const remaining = matchGroup.userIds.slice(1);
-      if (remaining.length > 0) {
-        await this.lobbiesService.addMembers(lobby.id, remaining);
-      }
-
-      // Record the result for every player in the group.
-      for (const userId of matchGroup.userIds) {
-        this.matchResults.set(userId, {
-          lobbyId: lobby.id,
-          game: matchGroup.game,
-        });
-      }
-
-      this.logger.log(
-        `Match ${matchGroup.groupId} → lobby ${lobby.id} ` +
-          `(${matchGroup.userIds.length} players, score ${matchGroup.score.toFixed(2)})`,
-      );
-    } catch (error) {
-      this.logger.error(
-        'Failed to create lobby from match group',
-        error instanceof Error ? error.stack : String(error),
-      );
+    if (!hostUserId) {
+      throw new Error(`Match ${matchGroup.groupId} has no players.`);
     }
+
+    const lobby = await this.lobbiesService.createWithMembers(
+      {
+        lobbyName: `${matchGroup.game} Squad`,
+        subtitle: `Matched via CampusGG`,
+        details: `Auto-matched group · compatibility ${(
+          matchGroup.score * 100
+        ).toFixed(0)}% · ${matchGroup.userIds.length} players`,
+        game: matchGroup.game,
+        participantLimit: matchGroup.userIds.length,
+        visibility: LobbyVisibility.PRIVATE,
+        tags: ['matchmaking'],
+      },
+      hostUserId,
+      memberUserIds,
+      manager,
+    );
+
+    return lobby.id;
   }
 }
