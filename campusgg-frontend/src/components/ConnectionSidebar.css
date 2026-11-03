@@ -15,12 +15,19 @@
 .app-main { min-width: 0; }
 
 .connection-sidebar {
+  position: fixed;
+  z-index: 25;
+  top: var(--connection-sidebar-top, 77px);
+  right: 0;
+  bottom: 0;
+  width: var(--connection-sidebar-active-width);
   min-width: 0;
-  overflow: hidden;
+  min-height: 0;
+  overflow: clip;
   border-left: 1px solid transparent;
   background: linear-gradient(180deg, rgba(18, 36, 59, 0.98), rgba(8, 21, 37, 0.99));
   visibility: hidden;
-  transition: border-color var(--transition), visibility 0s linear var(--transition);
+  transition: width var(--transition), border-color var(--transition), visibility 0s linear var(--transition);
 }
 
 .app-workspace-sidebar-open .connection-sidebar {
@@ -31,13 +38,16 @@
 
 .connection-sidebar-header {
   min-width: 240px;
-  min-height: 70px;
-  padding: 0 22px;
+  min-height: 56px;
+  padding: 0 18px;
   display: flex;
   align-items: center;
+  gap: 10px;
   border-bottom: 1px solid var(--border);
   background: rgba(13, 27, 47, 0.76);
 }
+
+.connection-sidebar-header svg { flex: 0 0 auto; color: var(--gold-bright); }
 
 .connection-sidebar-header h2 {
   margin: 0;
@@ -46,8 +56,29 @@
   font-size: 1.1rem;
 }
 
+.connection-chat {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.connection-chat .chat-mobile-back { display: grid; }
+.connection-chat .active-chat-header { min-height: 70px; padding: 10px; gap: 8px; }
+.connection-chat .chat-avatar-large { width: 40px; height: 40px; }
+.connection-chat .chat-history { padding: 16px 12px; }
+.connection-chat .chat-message { max-width: 95%; }
+.connection-chat .chat-message-author { overflow-wrap: anywhere; }
+.connection-chat .chat-composer { padding: 10px; }
+.connection-chat .chat-composer button { min-width: 48px; padding: 0 12px; }
+.connection-chat .chat-composer button span { display: none; }
+.connection-chat .conversation-list { flex: 1; }
+.connection-chat :is(.conversation-list, .chat-history) { overscroll-behavior: contain; }
+.connection-chat :is(.connection-sidebar-header, .chat-search, .active-chat-header, .chat-composer) { flex-shrink: 0; }
+.connection-chat:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: -3px; }
+
 .connection-sidebar-toggle {
-  position: absolute;
+  position: fixed;
   z-index: 30;
   top: 50%;
   right: var(--connection-sidebar-active-width);
@@ -71,23 +102,49 @@
   color: var(--ink);
 }
 
+.connection-toggle-badge {
+  position: absolute;
+  top: -9px;
+  left: -9px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--surface-strong);
+  border-radius: var(--radius-pill);
+  background: var(--gold-bright);
+  color: var(--ink);
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 @media (max-width: 700px) {
   .app-workspace {
     --connection-sidebar-active-height: 0px;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, auto) var(--connection-sidebar-active-height);
-    transition: grid-template-rows var(--transition);
+    grid-template-rows: minmax(0, auto);
+    transition: none;
   }
 
   .app-workspace-sidebar-open {
     --connection-sidebar-active-width: 0px;
-    --connection-sidebar-active-height: 180px;
+    --connection-sidebar-active-height: min(70dvh, 600px);
   }
 
   .connection-sidebar {
-    grid-row: 2;
+    position: fixed;
+    z-index: 25;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    height: var(--connection-sidebar-active-height);
     border-top: 1px solid transparent;
     border-left: 0;
+    transition: height var(--transition), visibility 0s linear var(--transition);
   }
 
   .app-workspace-sidebar-open .connection-sidebar {
@@ -99,14 +156,8 @@
     right: 0;
   }
 
-  .app-workspace-sidebar-open .connection-sidebar-toggle {
-    top: auto;
-    right: 0;
-    bottom: var(--connection-sidebar-active-height);
-    transform: none;
-  }
-
   .connection-sidebar-header { min-width: 0; }
+  .connection-chat { position: static; height: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

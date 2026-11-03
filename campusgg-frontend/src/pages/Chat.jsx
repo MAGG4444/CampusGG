@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Clock3, MessageCircle, Send, UserCheck, UserRoundPlus } from 'lucide-react'
+import { Clock3, MessageCircle, UserCheck, UserRoundPlus } from 'lucide-react'
 import ChatComposer from '../components/chat/ChatComposer.jsx'
 import ChatDetailsPanel from '../components/chat/ChatDetailsPanel.jsx'
 import ChatEmptyState from '../components/chat/ChatEmptyState.jsx'
@@ -8,15 +8,15 @@ import ChatMessage from '../components/chat/ChatMessage.jsx'
 import ConversationList from '../components/chat/ConversationList.jsx'
 import ConversationSearch from '../components/chat/ConversationSearch.jsx'
 import { useNotifications } from '../components/notifications/useNotifications.js'
-import { conversations as initialConversations, CURRENT_USER_ID } from '../data/chatData.js'
+import { CURRENT_USER_ID } from '../data/chatData.js'
+import { useChat } from '../context/chatContext.js'
 import './Chat.css'
 
 function Chat() {
   const { addNotification } = useNotifications()
-  const [chatConversations, setChatConversations] = useState(initialConversations)
-  const [selectedConversationId, setSelectedConversationId] = useState(null)
+  const { chatConversations, selectedConversationId, selectedConversation, messageDraft,
+    setMessageDraft, selectConversation, sendMessage } = useChat()
   const [searchQuery, setSearchQuery] = useState('')
-  const [messageDraft, setMessageDraft] = useState('')
   const [detailsOpen, setDetailsOpen] = useState(false)
   const activePanelRef = useRef(null)
   const chatHistoryRef = useRef(null)
@@ -24,7 +24,6 @@ function Chat() {
   const detailsPanelRef = useRef(null)
   const previousConversationIdRef = useRef(null)
   const searchInputRef = useRef(null)
-  const notifiedConversationIdsRef = useRef(new Set())
 
   const filteredConversations = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase()
@@ -36,16 +35,7 @@ function Chat() {
     )
   }, [chatConversations, searchQuery])
 
-  const selectedConversation = chatConversations.find(
-    (conversation) => conversation.id === selectedConversationId,
-  )
   const selectedMessageCount = selectedConversation?.messages.length ?? 0
-
-  useEffect(() => {
-    if (selectedConversationId) {
-      activePanelRef.current?.focus({ preventScroll: true })
-    }
-  }, [selectedConversationId])
 
   useEffect(() => {
     if (!selectedConversationId || !chatHistoryRef.current) return
@@ -63,76 +53,19 @@ function Chat() {
   }, [detailsOpen])
 
   function handleSelectConversation(conversationId) {
-    const conversation = chatConversations.find((item) => item.id === conversationId)
-
-    if (
-      conversation?.unreadCount > 0
-      && !notifiedConversationIdsRef.current.has(conversationId)
-    ) {
-      notifiedConversationIdsRef.current.add(conversationId)
-      addNotification({
-        type: 'info',
-        title: `New messages from ${conversation.username}`,
-        message: conversation.lastMessage,
-        icon: MessageCircle,
-        duration: 5000,
-      })
-    }
-
     setDetailsOpen(false)
-    setMessageDraft('')
-    setSelectedConversationId(conversationId)
+    selectConversation(conversationId)
   }
 
   function handleBackToConversations() {
     setDetailsOpen(false)
-    setMessageDraft('')
-    setSelectedConversationId(null)
+    selectConversation(null)
     requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
   }
 
   function handleCloseDetails() {
     setDetailsOpen(false)
     requestAnimationFrame(() => detailsButtonRef.current?.focus({ preventScroll: true }))
-  }
-
-  function handleSendMessage(messageText) {
-    const trimmedMessage = messageText.trim()
-
-    if (!selectedConversationId || !trimmedMessage) return false
-
-    const timestamp = new Intl.DateTimeFormat([], {
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(new Date())
-    const newMessage = {
-      id: `${selectedConversationId}-${Date.now()}`,
-      senderId: CURRENT_USER_ID,
-      text: trimmedMessage,
-      timestamp,
-    }
-
-    setChatConversations((currentConversations) =>
-      currentConversations.map((conversation) =>
-        conversation.id === selectedConversationId
-          ? {
-              ...conversation,
-              lastMessage: trimmedMessage,
-              timestamp: 'Now',
-              messages: [...conversation.messages, newMessage],
-            }
-          : conversation,
-      ),
-    )
-    setMessageDraft('')
-    addNotification({
-      type: 'success',
-      title: 'Message sent',
-      message: `Your message to ${selectedConversation.username} was added to this conversation.`,
-      icon: Send,
-      duration: 4000,
-    })
-    return true
   }
 
   function handleConnectionFeedback(conversation) {
@@ -242,7 +175,7 @@ function Chat() {
               <ChatComposer
                 value={messageDraft}
                 onChange={setMessageDraft}
-                onSend={handleSendMessage}
+                onSend={sendMessage}
                 recipientName={selectedConversation.username}
               />
             </>
