@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import NotificationContainer from './NotificationContainer.jsx'
 import { NotificationContext } from './notificationContext.js'
+import { enqueueNotification, MAX_VISIBLE_NOTIFICATIONS } from './notificationQueue.js'
 import './Notifications.css'
 
 const defaultDurations = {
@@ -26,10 +27,9 @@ function NotificationProvider({ children }) {
     const id = notification.id || `notification-${Date.now()}-${++notificationSequence}`
     const duration = notification.duration ?? defaultDurations[type] ?? defaultDurations.info
 
-    setNotifications((currentNotifications) => [
-      ...currentNotifications,
-      { ...notification, id, type, duration },
-    ])
+    setNotifications((currentNotifications) => enqueueNotification(
+      currentNotifications, { ...notification, id, type, duration },
+    ))
 
     return id
   }, [])
@@ -43,7 +43,7 @@ function NotificationProvider({ children }) {
     <NotificationContext.Provider value={value}>
       {children}
       <NotificationContainer
-        notifications={notifications}
+        notifications={notifications.slice(0, MAX_VISIBLE_NOTIFICATIONS)}
         onDismiss={dismissNotification}
       />
     </NotificationContext.Provider>

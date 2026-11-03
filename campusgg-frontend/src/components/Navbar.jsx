@@ -1,5 +1,5 @@
 import { Link, NavLink } from 'react-router-dom'
-import { Gamepad2, LogIn, MessageSquareText, UserRound, UsersRound } from 'lucide-react'
+import { Gamepad2, LogIn, MessageCircle, MessageSquareText, UserRound, UsersRound } from 'lucide-react'
 import { useAuth } from '../context/useAuth.js'
 import './Navbar.css'
 
@@ -7,16 +7,17 @@ const navItems = [
   { to: '/matchmaking', label: 'Matchmaking', icon: Gamepad2 },
   { to: '/lobby', label: 'Lobby', icon: UsersRound },
   { to: '/forum', label: 'Forum', icon: MessageSquareText },
+  { to: '/chat', label: 'Connection', icon: MessageCircle },
 ]
 
-function Navbar() {
+function Navbar({ headerRef }) {
   const { isAuthenticated } = useAuth()
   const authItem = isAuthenticated
     ? { to: '/profile', label: 'Profile', variant: 'login', icon: UserRound }
     : { to: '/signin', label: 'Sign In', variant: 'login', icon: LogIn }
 
   return (
-    <header className="topbar">
+    <header className="topbar" ref={headerRef}>
       <div className="topbar-inner">
         <Link className="brand" to="/" aria-label="CampusGG home">
           <span className="brand-mark" aria-hidden="true"><Gamepad2 size={21} strokeWidth={2.2} /></span>

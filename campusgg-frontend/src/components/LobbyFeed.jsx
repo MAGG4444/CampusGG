@@ -1,6 +1,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import logo from '../assets/LOGO.png'
 import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
 import GameFilter from './GameFilter.jsx'
@@ -291,10 +291,6 @@ function LobbyFeed() {
         className="lobby-bottom-controls"
         aria-label="Lobby bottom controls"
       >
-        <Link className="connection-panel" to="/chat">
-          Connection
-        </Link>
-
         <Pagination
           currentPage={currentPage}
           totalPages={totalPages}

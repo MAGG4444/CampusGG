@@ -1,8 +1,9 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useId, useLayoutEffect, useRef } from 'react'
 import { Send } from 'lucide-react'
 
 function ChatComposer({ value, onChange, onSend, recipientName }) {
   const textareaRef = useRef(null)
+  const textareaId = useId()
   const canSend = value.trim().length > 0
 
   useLayoutEffect(() => {
@@ -31,9 +32,9 @@ function ChatComposer({ value, onChange, onSend, recipientName }) {
 
   return (
     <form className="chat-composer" aria-label={`Message ${recipientName}`} onSubmit={handleSubmit}>
-      <label className="sr-only" htmlFor="chat-message-draft">Message {recipientName}</label>
+      <label className="sr-only" htmlFor={textareaId}>Message {recipientName}</label>
       <textarea
-        id="chat-message-draft"
+        id={textareaId}
         ref={textareaRef}
         rows={1}
         placeholder={`Message ${recipientName}`}
