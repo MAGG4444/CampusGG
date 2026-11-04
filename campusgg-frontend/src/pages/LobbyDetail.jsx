@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Crown, X } from 'lucide-react'
+import { ArrowLeft, Crown, Trash2, X } from 'lucide-react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
 import { myContentReturnTo } from '../utils/myContentNavigation.js'
 import LobbyChat from '../components/LobbyChat.jsx'
+import ConfirmationModal from '../components/ConfirmationModal.jsx'
+import { useNotifications } from '../components/notifications/useNotifications.js'
 import './LobbyDetail.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
@@ -21,17 +23,23 @@ function LobbyDetail() {
   const returnLabel = returnTo === '/lobby' ? 'Lobby Feed' : 'My Content'
   const { lobbyId } = useParams()
   const { user, token } = useAuth()
-  const { joinLobby, leaveLobby, refreshLobbyMembers } = useJoinedLobbies()
+  const { joinLobby, leaveLobby, deleteLobby, refreshLobbyMembers } = useJoinedLobbies()
+  const { addNotification } = useNotifications()
   const [lobby, setLobby] = useState(null)
   const [participants, setParticipants] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [feedback, setFeedback] = useState('')
+  const [confirmation, setConfirmation] = useState(null)
+  const [confirmationError, setConfirmationError] = useState('')
+  const requestRef = useRef(false)
   const [expanded, setExpanded] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
   const memberSectionRef = useRef(null)
   const avatarRefs = useRef(new Map())
+  const currentRoleRef = useRef(null)
+  const leavingRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -53,6 +61,36 @@ function LobbyDetail() {
     loadLobby()
     return () => { cancelled = true }
   }, [lobbyId, token, refreshLobbyMembers])
+
+  useEffect(() => {
+    if (!token || isLoading || loadError || !lobby) return undefined
+    let active = true
+    let timer
+    currentRoleRef.current = participants.find((member) => member.id === user?.id)?.role ?? null
+    async function sync() {
+      try {
+        const members = await refreshLobbyMembers(lobbyId)
+        if (!active || leavingRef.current) return
+        const role = members.find((member) => member.id === user?.id)?.role ?? null
+        if (currentRoleRef.current === 'member' && role === 'host') {
+          addNotification({ type: 'info', title: 'You are now the lobby host', message: 'The previous host left the lobby.' })
+        }
+        currentRoleRef.current = role
+        setParticipants(members)
+      } catch (error) {
+        if (active && !leavingRef.current && error.status === 404) {
+          addNotification({ type: 'warning', title: 'Lobby closed', message: 'This lobby is no longer available.' })
+          navigate('/lobby', { replace: true })
+          return
+        }
+      }
+      if (active) timer = window.setTimeout(sync, 10000)
+    }
+    timer = window.setTimeout(sync, 10000)
+    return () => { active = false; window.clearTimeout(timer) }
+  // Initial participant state establishes the baseline; polling maintains it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lobbyId, token, user?.id, isLoading, loadError, lobby, refreshLobbyMembers, navigate, addNotification])
 
   useEffect(() => {
     if (!selectedId) return undefined
@@ -94,15 +132,40 @@ function LobbyDetail() {
   }
 
   async function handleLeave() {
-    if (!window.confirm('Leave this lobby?')) return
+    if (requestRef.current) return
+    requestRef.current = true
     setIsSubmitting(true)
+    leavingRef.current = true
     setFeedback('')
     try {
       await leaveLobby(lobby.id)
+      addNotification({ type: 'success', title: 'Left lobby', message: 'You have left the lobby.' })
       navigate(returnTo)
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : 'Unable to leave lobby.')
-    } finally { setIsSubmitting(false) }
+      leavingRef.current = false
+      setConfirmationError(error instanceof Error ? error.message : 'Unable to leave lobby.')
+    } finally { requestRef.current = false; setIsSubmitting(false) }
+  }
+
+  async function handleDelete() {
+    if (requestRef.current) return
+    requestRef.current = true
+    setIsSubmitting(true)
+    leavingRef.current = true
+    setFeedback('')
+    try {
+      await deleteLobby(lobby.id)
+      addNotification({ type: 'success', title: 'Lobby deleted', message: 'The lobby has been deleted.' })
+      navigate('/lobby', { replace: true })
+    } catch (error) {
+      leavingRef.current = false
+      setConfirmationError(error instanceof Error ? error.message : 'Unable to delete lobby.')
+    } finally { requestRef.current = false; setIsSubmitting(false) }
+  }
+
+  function openConfirmation(action) {
+    setConfirmationError('')
+    setConfirmation(action)
   }
 
   if (isLoading) return <div className="lobby-detail-wrapper"><p role="status">Loading lobby...</p></div>
@@ -116,8 +179,9 @@ function LobbyDetail() {
       <ArrowLeft size={24} aria-hidden="true" />
     </button>
     <header className="lobby-detail-header">
-      <div className="lobby-title-row"><div><p className="lobby-detail-eyebrow">Lobby room</p><h1>{lobby.lobbyName}</h1></div>
-        {isJoined ? <span className="lobby-status-badge">{isHost ? 'Host' : 'Joined'}</span> :
+      <div className="lobby-title-row"><div><h1>{lobby.lobbyName}</h1></div>
+        {isJoined ? <div className="lobby-header-actions"><span className="lobby-status-badge">{isHost ? 'Host' : 'Joined'}</span>
+          <button type="button" className="lobby-leave-toggle" onClick={() => openConfirmation('leave')} disabled={isSubmitting}>{isSubmitting ? 'Processing...' : 'Leave Lobby'}</button></div> :
           <button className="lobby-join-toggle" type="button" onClick={handleJoin}
             disabled={isSubmitting || (token && (isFull || lobby.visibility !== 'public'))}>
             {isSubmitting ? 'Joining...' : !token ? 'Sign In to Join' : lobby.visibility !== 'public' ? 'Invite Only' : isFull ? 'Lobby Full' : 'Join Lobby'}
@@ -129,6 +193,7 @@ function LobbyDetail() {
       {lobby.tags?.length > 0 && <div className="lobby-detail-tags" aria-label="Lobby tags">{lobby.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>}
     </header>
     {feedback && <p className="lobby-detail-feedback" role="alert">{feedback}</p>}
+    <div className="lobby-detail-content">
     <section className="lobby-members" aria-labelledby="lobby-members-title" ref={memberSectionRef}>
       <h2 id="lobby-members-title">Members {token && <span>({participants.length})</span>}</h2>
       {!token ? <p className="lobby-muted">Sign in to view lobby members.</p> : participants.length === 0 ? <p className="lobby-muted">No members found.</p> :
@@ -151,7 +216,14 @@ function LobbyDetail() {
       </div>}
     </section>
     <LobbyChat key={`${lobbyId}:${user?.id ?? 'guest'}:${isJoined}`} lobbyId={lobbyId} token={token} isMember={isJoined} userId={user?.id} />
-    {isJoined && !isHost && <div className="lobby-detail-actions"><button type="button" className="lobby-leave-toggle" onClick={handleLeave} disabled={isSubmitting}>{isSubmitting ? 'Leaving...' : 'Leave Lobby'}</button></div>}
+    </div>
+    {isHost && <div className="lobby-detail-actions"><button type="button" className="lobby-delete-button" onClick={() => openConfirmation('delete')} disabled={isSubmitting}><Trash2 size={17} aria-hidden="true" /> Delete Lobby</button></div>}
+    {confirmation && <ConfirmationModal
+      title={confirmation === 'delete' ? 'Delete Lobby?' : !isHost ? 'Leave Lobby?' : participants.length > 1 ? 'Transfer Host & Leave?' : 'Leave & Delete Lobby?'}
+      message={confirmation === 'delete' ? 'This will permanently delete the lobby and its chat history for all members.' : !isHost ? 'You can join another lobby after leaving.' : participants.length > 1 ? 'Host ownership will transfer to the next eligible member.' : "You're the last member. Leaving will delete this lobby and its chat history."}
+      confirmLabel={confirmation === 'delete' ? 'Delete Lobby' : !isHost ? 'Leave Lobby' : participants.length > 1 ? 'Transfer & Leave' : 'Leave & Delete'}
+      destructive={confirmation === 'delete' || (isHost && participants.length <= 1)} busy={isSubmitting} error={confirmationError}
+      onCancel={() => setConfirmation(null)} onConfirm={confirmation === 'delete' ? handleDelete : handleLeave} />}
   </div>
 }
 

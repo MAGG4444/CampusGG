@@ -18,6 +18,7 @@ import { CreateLobbyDto } from './dto/create-lobby.dto';
 import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 import { Lobby, LobbyVisibility } from './lobby.entity';
 import { LobbyMember, LobbyMemberRole } from './lobby-member.entity';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class LobbiesService {
@@ -101,6 +102,17 @@ export class LobbiesService {
 
     // Create lobby and host membership in one transaction
     return this.lobbiesRepository.manager.transaction(async (manager) => {
+      await manager.findOneOrFail(User, {
+        where: { id: hostUserId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (
+        await manager.findOne(LobbyMember, {
+          where: { user: { id: hostUserId } },
+        })
+      ) {
+        throw new ConflictException('You already belong to an active lobby.');
+      }
       // Construct the lobby entity
       const lobby = manager.create(Lobby, {
         lobbyName: createLobbyDto.lobbyName,
@@ -142,6 +154,10 @@ export class LobbiesService {
 
     // Use a transaction to prevent concurrent join issues
     await this.lobbiesRepository.manager.transaction(async (manager) => {
+      await manager.findOneOrFail(User, {
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
       // Lock the lobby row while checking membership and capacity
       const lobby = await manager.findOne(Lobby, {
         where: { id: lobbyId },
@@ -161,13 +177,12 @@ export class LobbiesService {
       // Check if the user is already a member
       const existingMembership = await manager.findOne(LobbyMember, {
         where: {
-          lobby: { id: lobbyId },
           user: { id: userId },
         },
       });
 
       if (existingMembership) {
-        throw new ConflictException('User is already a member of this lobby');
+        throw new ConflictException('You already belong to an active lobby.');
       }
 
       // Count all existing participants, including the host
@@ -226,15 +241,46 @@ export class LobbiesService {
         throw new NotFoundException('User is not a member of this lobby');
       }
 
-      // Prevent the host from leaving their own lobby
       if (membership.role === LobbyMemberRole.HOST) {
-        throw new ForbiddenException(
-          'Lobby host cannot leave without transferring ownership or closing the lobby',
-        );
+        const next = await manager.findOne(LobbyMember, {
+          where: { lobby: { id: lobbyId }, role: LobbyMemberRole.MEMBER },
+          relations: { user: true },
+          order: { joinedAt: 'ASC', id: 'ASC' },
+        });
+        if (!next) {
+          await manager.remove(Lobby, lobby);
+          return;
+        }
+        next.role = LobbyMemberRole.HOST;
+        lobby.host = next.user;
+        await manager.save(LobbyMember, next);
+        await manager.save(Lobby, lobby);
       }
 
       // Remove the user's membership from PostgreSQL
       await manager.remove(LobbyMember, membership);
+    });
+  }
+
+  async deleteLobby(lobbyId: string, userId: string): Promise<void> {
+    await this.lobbiesRepository.manager.transaction(async (manager) => {
+      const lobby = await manager.findOne(Lobby, {
+        where: { id: lobbyId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!lobby) throw new NotFoundException('Lobby not found');
+      const membership = await manager.findOne(LobbyMember, {
+        where: {
+          lobby: { id: lobbyId },
+          user: { id: userId },
+          role: LobbyMemberRole.HOST,
+        },
+      });
+      if (!membership)
+        throw new ForbiddenException(
+          'Only the current host can delete this lobby',
+        );
+      await manager.remove(Lobby, lobby);
     });
   }
 
@@ -246,8 +292,15 @@ export class LobbiesService {
 
   async addMembers(lobbyId: string, userIds: string[]): Promise<void> {
     return this.lobbiesRepository.manager.transaction(async (manager) => {
+      for (const userId of [...new Set(userIds)].sort()) {
+        await manager.findOneOrFail(User, {
+          where: { id: userId },
+          lock: { mode: 'pessimistic_write' },
+        });
+      }
       const lobby = await manager.findOne(Lobby, {
         where: { id: lobbyId },
+        lock: { mode: 'pessimistic_write' },
       });
 
       if (!lobby) {
@@ -266,6 +319,16 @@ export class LobbiesService {
 
         if (existing) {
           continue;
+        }
+
+        if (
+          await manager.findOne(LobbyMember, {
+            where: { user: { id: userId } },
+          })
+        ) {
+          throw new ConflictException(
+            'A player already belongs to an active lobby.',
+          );
         }
 
         const membership = manager.create(LobbyMember, {

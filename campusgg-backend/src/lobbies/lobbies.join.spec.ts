@@ -57,6 +57,7 @@ describe('LobbiesService - Join Lobby', () => {
 
     const manager = {
       findOne,
+      findOneOrFail: jest.fn().mockResolvedValue(testUser),
       count,
       create,
       save,

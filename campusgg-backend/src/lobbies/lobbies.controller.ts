@@ -2,6 +2,7 @@ import { MyContentQueryDto } from '../common/dto/my-content.dto';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -178,6 +179,19 @@ export class LobbiesController {
   @UseGuards(JwtAuthGuard)
   async getLobbyMembers(@Param('id', ParseUUIDPipe) lobbyId: string) {
     return this.lobbiesService.findMembers(lobbyId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteLobby(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    await this.lobbiesService.deleteLobby(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+    );
   }
 
   @Get(':id/messages')

@@ -18,6 +18,7 @@ export enum LobbyMemberRole {
 
 @Entity('lobby_members')
 @Unique('UQ_lobby_members_lobby_user', ['lobby', 'user'])
+@Unique('UQ_lobby_members_user', ['user'])
 export class LobbyMember {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

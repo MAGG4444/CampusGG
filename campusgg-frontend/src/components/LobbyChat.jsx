@@ -68,7 +68,9 @@ export default function LobbyChat({ lobbyId, token, isMember, userId }) {
   }
 
   return <section className="lobby-chat" aria-labelledby="lobby-chat-title">
-    <header><MessagesSquare size={20} aria-hidden="true" /><h2 id="lobby-chat-title">Lobby Chat</h2></header>
+    <header><div className="lobby-chat-heading"><MessagesSquare size={20} aria-hidden="true" /><h2 id="lobby-chat-title">Lobby Chat</h2></div>
+      <span className="lobby-invite-wrap"><button type="button" className="lobby-invite-button" disabled aria-describedby="lobby-invite-unavailable">Invite Friends</button>
+        <span id="lobby-invite-unavailable">Coming soon</span></span></header>
     {!isMember ? <div className="lobby-chat-empty" role="status"><strong>Join this lobby to use Lobby Chat.</strong></div> : <>
       <div className="lobby-chat-history" ref={historyRef} role="log" aria-label="Lobby messages" aria-live="polite">
         {loading ? <p role="status">Loading messages...</p> : messages.length === 0 ? <p>No messages yet.</p> : messages.map((message) =>

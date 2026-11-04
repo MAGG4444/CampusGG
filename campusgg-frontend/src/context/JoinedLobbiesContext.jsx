@@ -131,6 +131,12 @@ export function JoinedLobbiesProvider({ children }) {
     [token, updateMembership],
   )
 
+  const deleteLobby = useCallback(async (lobbyId) => {
+    const id = String(lobbyId)
+    await authenticatedRequest(`/lobbies/${encodeURIComponent(id)}`, token, { method: 'DELETE' })
+    updateMembership(id, false)
+  }, [token, updateMembership])
+
   const value = useMemo(
     () => ({
       joinedLobbyIds,
@@ -139,12 +145,14 @@ export function JoinedLobbiesProvider({ children }) {
       },
       joinLobby,
       leaveLobby,
+      deleteLobby,
       refreshLobbyMembers,
     }),
     [
       joinedLobbyIds,
       joinLobby,
       leaveLobby,
+      deleteLobby,
       refreshLobbyMembers,
     ],
   )
