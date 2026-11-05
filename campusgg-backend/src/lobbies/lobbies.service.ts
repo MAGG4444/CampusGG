@@ -143,6 +143,65 @@ export class LobbiesService {
     });
   }
 
+  /** Create a matched lobby and every required membership in one transaction. */
+  async createMatchedLobby(
+    dto: CreateLobbyDto,
+    userIds: readonly string[],
+  ): Promise<Lobby> {
+    if (!userIds.length || new Set(userIds).size !== userIds.length) {
+      throw new ConflictException('A match must contain distinct players.');
+    }
+
+    return this.lobbiesRepository.manager.transaction(async (manager) => {
+      const users = new Map<string, User>();
+      // Match the lock order used by batch enrollment to avoid deadlocks.
+      for (const id of [...userIds].sort()) {
+        const user = await manager.findOneOrFail(User, {
+          where: { id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        users.set(id, user);
+      }
+      for (const id of userIds) {
+        if (await manager.findOne(LobbyMember, { where: { user: { id } } })) {
+          throw new ConflictException(
+            'A player already belongs to an active lobby.',
+          );
+        }
+      }
+
+      const lobby = manager.create(Lobby, {
+        lobbyName: dto.lobbyName,
+        subtitle: dto.subtitle ?? null,
+        details: dto.details,
+        tags: dto.tags ?? [],
+        game: dto.game ?? null,
+        skillLevel: dto.skillLevel ?? null,
+        participantLimit: dto.participantLimit ?? null,
+        visibility: dto.visibility ?? LobbyVisibility.PUBLIC,
+        host: users.get(userIds[0])!,
+      });
+      const savedLobby = await manager.save(Lobby, lobby);
+      for (const [index, id] of userIds.entries()) {
+        await manager.save(
+          LobbyMember,
+          manager.create(LobbyMember, {
+            lobby: savedLobby,
+            user: users.get(id)!,
+            role: index === 0 ? LobbyMemberRole.HOST : LobbyMemberRole.MEMBER,
+          }),
+        );
+      }
+      return savedLobby;
+    });
+  }
+
+  async isMember(lobbyId: string, userId: string): Promise<boolean> {
+    return !!(await this.lobbiesRepository.manager.findOne(LobbyMember, {
+      where: { lobby: { id: lobbyId }, user: { id: userId } },
+    }));
+  }
+
   // ============================================================
   // JOIN LOBBY
   // Add a user to an existing public lobby

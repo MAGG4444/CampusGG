@@ -7,24 +7,30 @@
  *   POST /matchmaking/process   — manual processQueue tick (testing)
  */
 
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
 
 import { MatchmakingService } from './matchmaking.service.js';
 import type { PlayerMatchmakingInput } from './schemas/player-matchmaking.schema.js';
 
 @Controller('matchmaking')
+@UseGuards(JwtAuthGuard)
 export class MatchmakingController {
   constructor(private readonly matchmakingService: MatchmakingService) {}
 
   @Post('enqueue')
-  enqueue(@Body() player: PlayerMatchmakingInput) {
-    this.matchmakingService.enqueue(player);
+  enqueue(
+    @Body() player: PlayerMatchmakingInput,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    this.matchmakingService.enqueue({ ...player, userId: request.user!.id });
     return { ok: true };
   }
 
   @Get('match-status')
-  getMatchStatus(@Query('userId') userId: string) {
-    return this.matchmakingService.getMatchStatus(userId);
+  getMatchStatus(@Req() request: AuthenticatedRequest) {
+    return this.matchmakingService.getMatchStatus(request.user!.id);
   }
 
   @Post('process')
@@ -34,8 +40,7 @@ export class MatchmakingController {
   }
 
   @Post('dequeue')
-  dequeue(@Body('userId') userId: string) {
-    const removed = this.matchmakingService.dequeue(userId);
-    return { ok: true, removed };
+  dequeue(@Req() request: AuthenticatedRequest) {
+    return this.matchmakingService.dequeue(request.user!.id);
   }
 }
