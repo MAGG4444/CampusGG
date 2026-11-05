@@ -61,6 +61,48 @@ export class LobbyChatService {
     });
   }
 
+  async readState(lobbyId: string, userId: string) {
+    return this.withMembership(lobbyId, userId, async (manager) => {
+      const member = await manager.findOneOrFail(LobbyMember, {
+        where: { lobby: { id: lobbyId }, user: { id: userId } },
+      });
+      const schema = manager.connection.driver.escape(
+        (manager.connection.options as { schema?: string }).schema || 'public',
+      );
+      const unread = await manager.query<Array<{ id: string }>>(
+        `SELECT message.id FROM ${schema}."lobby_messages" message
+        JOIN ${schema}."lobby_members" member ON member.id = $3
+        WHERE message.lobby_id = $1 AND message.sender_id != $2
+          AND (message.created_at, message.id) > (COALESCE(member.last_read_at, member.joined_at), COALESCE(member.last_read_message_id, '00000000-0000-0000-0000-000000000000'::uuid))
+        ORDER BY message.created_at ASC, message.id ASC`,
+        [lobbyId, userId, member.id],
+      );
+      return { unreadMessageIds: unread.map((item) => item.id) };
+    });
+  }
+
+  async markRead(lobbyId: string, userId: string, messageId: string) {
+    return this.withMembership(lobbyId, userId, async (manager) => {
+      const target = await manager.findOne(LobbyMessage, {
+        where: { id: messageId, lobby: { id: lobbyId } },
+      });
+      if (!target) throw new NotFoundException('Message not found');
+      const schema = manager.connection.driver.escape(
+        (manager.connection.options as { schema?: string }).schema || 'public',
+      );
+      await manager.query(
+        `UPDATE ${schema}."lobby_members" member SET last_read_message_id = $1,
+          last_read_at = (SELECT candidate.created_at FROM ${schema}."lobby_messages" candidate WHERE candidate.id = $1 AND candidate.lobby_id = $2)
+        WHERE member.lobby_id = $2 AND member.user_id = $3
+          AND (SELECT ROW(candidate.created_at, candidate.id) FROM ${schema}."lobby_messages" candidate WHERE candidate.id = $1 AND candidate.lobby_id = $2)
+            > ROW(COALESCE(member.last_read_at, member.joined_at),
+              COALESCE(member.last_read_message_id, '00000000-0000-0000-0000-000000000000'::uuid))`,
+        [messageId, lobbyId, userId],
+      );
+      return { success: true };
+    });
+  }
+
   private toResponse(message: LobbyMessage) {
     return {
       id: message.id,

@@ -216,4 +216,30 @@ export class LobbiesController {
       dto.content,
     );
   }
+
+  @Get(':id/messages/read-state')
+  @UseGuards(JwtAuthGuard)
+  getReadState(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.lobbyChat.readState(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+    );
+  }
+
+  @Post(':id/messages/:messageId/read')
+  @UseGuards(JwtAuthGuard)
+  markRead(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.lobbyChat.markRead(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+      messageId,
+    );
+  }
 }

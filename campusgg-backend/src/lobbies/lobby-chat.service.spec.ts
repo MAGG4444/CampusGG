@@ -14,6 +14,11 @@ describe('LobbyChatService', () => {
     save: jest.fn(),
     findOneOrFail: jest.fn(),
     transaction: jest.fn(),
+    query: jest.fn(),
+    connection: {
+      options: { schema: 'public' },
+      driver: { escape: (value: string) => `"${value}"` },
+    },
   };
   const service = new LobbyChatService({
     manager,
@@ -69,6 +74,62 @@ describe('LobbyChatService', () => {
       service.send('lobby-a', 'outsider', 'hello'),
     ).rejects.toBeInstanceOf(ForbiddenException);
     expect(manager.save).not.toHaveBeenCalled();
+  });
+
+  it('rejects read-state access for a non-member', async () => {
+    manager.findOne
+      .mockReset()
+      .mockResolvedValueOnce({ id: 'lobby-a' })
+      .mockResolvedValueOnce(null);
+    await expect(
+      service.readState('lobby-a', 'outsider'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(manager.query).not.toHaveBeenCalled();
+    manager.findOne
+      .mockReset()
+      .mockResolvedValueOnce({ id: 'lobby-a' })
+      .mockResolvedValueOnce(null);
+    await expect(
+      service.markRead('lobby-a', 'outsider', 'message-a'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(manager.query).not.toHaveBeenCalled();
+  });
+
+  it('rejects a read cursor for a message outside the lobby', async () => {
+    manager.findOne.mockResolvedValueOnce(null);
+    await expect(
+      service.markRead('lobby-a', 'user-a', 'other-message'),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    expect(manager.query).not.toHaveBeenCalled();
+  });
+
+  it('queries unread IDs for the current member and excludes their own messages', async () => {
+    manager.findOneOrFail.mockResolvedValue({ id: 'member-a' });
+    manager.query.mockResolvedValue([{ id: 'one' }, { id: 'two' }]);
+    await expect(service.readState('lobby-a', 'user-a')).resolves.toEqual({
+      unreadMessageIds: ['one', 'two'],
+    });
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining('message.sender_id != $2'),
+      ['lobby-a', 'user-a', 'member-a'],
+    );
+  });
+
+  it('uses a monotonic cursor scoped to the member and lobby', async () => {
+    manager.findOne.mockResolvedValueOnce({ id: 'message-a' });
+    manager.query.mockResolvedValue([]);
+    await service.markRead('lobby-a', 'user-a', 'message-a');
+    expect(manager.findOne).toHaveBeenCalledWith(LobbyMessage, {
+      where: { id: 'message-a', lobby: { id: 'lobby-a' } },
+    });
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining('member.lobby_id = $2 AND member.user_id = $3'),
+      ['message-a', 'lobby-a', 'user-a'],
+    );
+    expect(manager.query).toHaveBeenCalledWith(
+      expect.stringContaining('> ROW('),
+      ['message-a', 'lobby-a', 'user-a'],
+    );
   });
 
   it('isolates retrieval by lobby and orders chronologically with a stable tie-breaker', async () => {

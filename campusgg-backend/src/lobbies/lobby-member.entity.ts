@@ -46,4 +46,10 @@ export class LobbyMember {
 
   @CreateDateColumn({ name: 'joined_at' })
   joinedAt!: Date;
+
+  @Column({ name: 'last_read_message_id', type: 'uuid', nullable: true })
+  lastReadMessageId!: string | null;
+
+  @Column({ name: 'last_read_at', type: 'timestamptz', nullable: true })
+  lastReadAt!: Date | null;
 }
