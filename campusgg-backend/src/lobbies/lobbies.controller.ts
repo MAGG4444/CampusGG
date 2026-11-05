@@ -2,6 +2,7 @@ import { MyContentQueryDto } from '../common/dto/my-content.dto';
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -20,10 +21,15 @@ import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
 import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 import { LobbiesService } from './lobbies.service';
+import { LobbyChatService } from './lobby-chat.service';
+import { CreateLobbyMessageDto } from './dto/create-lobby-message.dto';
 
 @Controller('lobbies')
 export class LobbiesController {
-  constructor(private readonly lobbiesService: LobbiesService) {}
+  constructor(
+    private readonly lobbiesService: LobbiesService,
+    private readonly lobbyChat: LobbyChatService,
+  ) {}
 
   // ============================================================
   // GET ALL MOCK LOBBIES
@@ -173,5 +179,67 @@ export class LobbiesController {
   @UseGuards(JwtAuthGuard)
   async getLobbyMembers(@Param('id', ParseUUIDPipe) lobbyId: string) {
     return this.lobbiesService.findMembers(lobbyId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async deleteLobby(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    await this.lobbiesService.deleteLobby(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+    );
+  }
+
+  @Get(':id/messages')
+  @UseGuards(JwtAuthGuard)
+  getMessages(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.lobbyChat.list(lobbyId, this.getAuthenticatedUserId(request));
+  }
+
+  @Post(':id/messages')
+  @UseGuards(JwtAuthGuard)
+  sendMessage(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Req() request: AuthenticatedRequest,
+    @Body() dto: CreateLobbyMessageDto,
+  ) {
+    return this.lobbyChat.send(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+      dto.content,
+    );
+  }
+
+  @Get(':id/messages/read-state')
+  @UseGuards(JwtAuthGuard)
+  getReadState(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.lobbyChat.readState(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+    );
+  }
+
+  @Post(':id/messages/:messageId/read')
+  @UseGuards(JwtAuthGuard)
+  markRead(
+    @Param('id', ParseUUIDPipe) lobbyId: string,
+    @Param('messageId', ParseUUIDPipe) messageId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.lobbyChat.markRead(
+      lobbyId,
+      this.getAuthenticatedUserId(request),
+      messageId,
+    );
   }
 }

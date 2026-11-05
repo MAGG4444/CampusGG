@@ -1,4 +1,5 @@
 import { Repository } from 'typeorm';
+import { ConflictException } from '@nestjs/common';
 
 import { LobbiesService } from './lobbies.service';
 import { Lobby } from './lobby.entity';
@@ -32,6 +33,28 @@ describe('LobbiesService', () => {
     });
 
     expect(result).toEqual([]);
+  });
+
+  it('rejects creation when the host already belongs to a lobby', async () => {
+    const manager = {
+      findOneOrFail: jest.fn().mockResolvedValue({ id: 'user' }),
+      findOne: jest.fn().mockResolvedValue({ id: 'membership' }),
+      create: jest.fn(),
+      transaction: jest.fn(),
+    };
+    manager.transaction.mockImplementation(
+      (work: (value: unknown) => unknown) => work(manager),
+    );
+    const service = new LobbiesService(
+      { manager } as unknown as Repository<Lobby>,
+      {
+        findOne: jest.fn().mockResolvedValue({ id: 'user' }),
+      } as unknown as UsersService,
+    );
+    await expect(
+      service.create({ lobbyName: 'Test', details: 'Test' }, 'user'),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(manager.create).not.toHaveBeenCalled();
   });
 
   it('should filter lobbies by game and skill level', async () => {

@@ -15,6 +15,7 @@
  */
 
 import {
+  ConflictException,
   Injectable,
   Logger,
   OnModuleDestroy,
@@ -31,7 +32,6 @@ import { getScoringStrategy } from './engine/strategy-registry.js';
 
 import { LobbiesService } from '../lobbies/lobbies.service.js';
 import { LobbyVisibility } from '../lobbies/lobby.entity.js';
-import { UsersService } from '../users/users.service.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Matchmaking service
@@ -47,19 +47,19 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
   /** Poll interval handle for processQueue. */
   private intervalId: NodeJS.Timeout | null = null;
 
+  private readonly queuedUsers = new Set<string>();
+  private readonly pendingUsers = new Set<string>();
+
   /**
    * userId -> { lobbyId, game } for matched players waiting to be picked up
    * by the frontend via GET /matchmaking/match-status.
    */
   private readonly matchResults = new Map<
     string,
-    { lobbyId: string; game: string }
+    { lobbyId: string } | { error: string }
   >();
 
-  constructor(
-    private readonly lobbiesService: LobbiesService,
-    private readonly usersService: UsersService,
-  ) {}
+  constructor(private readonly lobbiesService: LobbiesService) {}
 
   // ── NestJS lifecycle ──────────────────────────────────────────────────
 
@@ -101,7 +101,17 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
    * Duplicate user IDs within the same game are rejected by the engine.
    */
   enqueue(player: PlayerMatchmakingInput): void {
+    if (
+      this.queuedUsers.has(player.userId) ||
+      this.pendingUsers.has(player.userId) ||
+      (this.matchResults.has(player.userId) &&
+        !('error' in this.matchResults.get(player.userId)!))
+    ) {
+      throw new ConflictException('You are already queued or matched.');
+    }
+    this.matchResults.delete(player.userId);
     this.engine.enqueue(player);
+    this.queuedUsers.add(player.userId);
   }
 
   /**
@@ -115,24 +125,44 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
   /**
    * Remove a player from the matchmaking queue by user ID.
    */
-  dequeue(userId: string): boolean {
-    return this.engine.dequeue(userId);
+  async dequeue(userId: string) {
+    const removed = this.engine.dequeue(userId);
+    if (removed) {
+      this.queuedUsers.delete(userId);
+      return { status: 'cancelled' as const };
+    }
+    if (this.pendingUsers.has(userId)) return { status: 'processing' as const };
+    const result = await this.getMatchStatus(userId);
+    if (result.matched)
+      return { status: 'matched' as const, lobbyId: result.lobbyId };
+    if (result.error) return { status: 'failed' as const, error: result.error };
+    return { status: 'idle' as const };
   }
 
   /**
    * Check whether a user has been matched and, if so, return the lobby ID.
    * Consumes the result so the frontend only receives it once.
    */
-  getMatchStatus(userId: string): {
+  async getMatchStatus(userId: string): Promise<{
     matched: boolean;
     lobbyId?: string;
-  } {
+    error?: string;
+    processing?: boolean;
+    queued?: boolean;
+  }> {
     const result = this.matchResults.get(userId);
     if (result) {
+      if ('error' in result) return { matched: false, error: result.error };
+      if (await this.lobbiesService.isMember(result.lobbyId, userId)) {
+        return { matched: true, lobbyId: result.lobbyId };
+      }
       this.matchResults.delete(userId);
-      return { matched: true, lobbyId: result.lobbyId };
     }
-    return { matched: false };
+    return {
+      matched: false,
+      processing: this.pendingUsers.has(userId),
+      queued: this.queuedUsers.has(userId),
+    };
   }
 
   // ── Internal: match found → lobby creation ────────────────────────────
@@ -143,10 +173,12 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
    * lobbyId for each user so the frontend can redirect them.
    */
   private async handleMatchFound(matchGroup: MatchGroup): Promise<void> {
+    for (const userId of matchGroup.userIds) {
+      this.queuedUsers.delete(userId);
+      this.pendingUsers.add(userId);
+    }
     try {
-      const hostUserId = matchGroup.userIds[0];
-
-      const lobby = await this.lobbiesService.create(
+      const lobby = await this.lobbiesService.createMatchedLobby(
         {
           lobbyName: `${matchGroup.game} Squad`,
           subtitle: `Matched via CampusGG`,
@@ -158,20 +190,13 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
           visibility: LobbyVisibility.PRIVATE,
           tags: ['matchmaking'],
         },
-        hostUserId,
+        matchGroup.userIds,
       );
-
-      // Enroll the remaining matched players as members.
-      const remaining = matchGroup.userIds.slice(1);
-      if (remaining.length > 0) {
-        await this.lobbiesService.addMembers(lobby.id, remaining);
-      }
 
       // Record the result for every player in the group.
       for (const userId of matchGroup.userIds) {
         this.matchResults.set(userId, {
           lobbyId: lobby.id,
-          game: matchGroup.game,
         });
       }
 
@@ -180,10 +205,18 @@ export class MatchmakingService implements OnModuleInit, OnModuleDestroy {
           `(${matchGroup.userIds.length} players, score ${matchGroup.score.toFixed(2)})`,
       );
     } catch (error) {
+      for (const userId of matchGroup.userIds) {
+        this.matchResults.set(userId, {
+          error:
+            'Could not create the match. A player may already belong to a lobby. Check your lobby membership and try matchmaking again.',
+        });
+      }
       this.logger.error(
         'Failed to create lobby from match group',
         error instanceof Error ? error.stack : String(error),
       );
+    } finally {
+      for (const userId of matchGroup.userIds) this.pendingUsers.delete(userId);
     }
   }
 }

@@ -10,12 +10,13 @@ import { Module } from '@nestjs/common';
 
 import { LobbiesModule } from '../lobbies/lobbies.module.js';
 import { UsersModule } from '../users/users.module.js';
+import { AuthModule } from '../auth/auth.module.js';
 
 import { MatchmakingService } from './matchmaking.service.js';
 import { MatchmakingController } from './matchmaking.controller.js';
 
 @Module({
-  imports: [LobbiesModule, UsersModule],
+  imports: [LobbiesModule, UsersModule, AuthModule],
   providers: [MatchmakingService],
   controllers: [MatchmakingController],
   exports: [MatchmakingService],
