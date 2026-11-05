@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Crown, Trash2, X } from 'lucide-react'
+import { ArrowLeft, Crown, Trash2, UserPlus, X } from 'lucide-react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
@@ -93,7 +93,7 @@ function LobbyDetail() {
   }, [lobbyId, token, user?.id, isLoading, loadError, lobby, refreshLobbyMembers, navigate, addNotification])
 
   useEffect(() => {
-    if (!selectedId) return undefined
+    if (!selectedId || confirmation) return undefined
     function handlePointer(event) {
       if (!memberSectionRef.current?.contains(event.target)) setSelectedId(null)
     }
@@ -109,7 +109,7 @@ function LobbyDetail() {
       document.removeEventListener('pointerdown', handlePointer)
       document.removeEventListener('keydown', handleKey)
     }
-  }, [selectedId])
+  }, [selectedId, confirmation])
 
   const currentMembership = participants.find((member) => member.id === user?.id)
   const isJoined = Boolean(currentMembership)
@@ -195,7 +195,11 @@ function LobbyDetail() {
     {feedback && <p className="lobby-detail-feedback" role="alert">{feedback}</p>}
     <div className="lobby-detail-content">
     <section className="lobby-members" aria-labelledby="lobby-members-title" ref={memberSectionRef}>
-      <h2 id="lobby-members-title">Members {token && <span>({participants.length})</span>}</h2>
+      <div className="lobby-members-heading">
+        <h2 id="lobby-members-title">Members {token && <span>({participants.length})</span>}</h2>
+        <span className="lobby-invite-wrap"><button type="button" className="lobby-invite-button" disabled aria-describedby="lobby-invite-unavailable"><UserPlus size={15} aria-hidden="true" /> Invite Friends</button>
+          <span id="lobby-invite-unavailable">Coming soon</span></span>
+      </div>
       {!token ? <p className="lobby-muted">Sign in to view lobby members.</p> : participants.length === 0 ? <p className="lobby-muted">No members found.</p> :
         <div className="lobby-avatar-row">{visibleMembers.map((member) => <button
           key={member.id} ref={(element) => { if (element) avatarRefs.current.set(member.id, element); else avatarRefs.current.delete(member.id) }}
