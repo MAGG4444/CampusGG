@@ -28,7 +28,7 @@ export function startLobbyFeedSync({ load, onError, document, window, interval =
   document.addEventListener('visibilitychange', visibility)
   window.addEventListener('focus', refresh)
   refresh()
-  return () => {
+  const stop = () => {
     active = false
     clearTimer()
     request?.abort()
@@ -36,6 +36,8 @@ export function startLobbyFeedSync({ load, onError, document, window, interval =
     document.removeEventListener('visibilitychange', visibility)
     window.removeEventListener('focus', refresh)
   }
+  stop.refresh = refresh
+  return stop
 }
 
 export function filterLobbyFeed(lobbies, searchValue, selectedGame, selectedSkill) {

@@ -12,21 +12,26 @@ export async function checkCurrentLobby(refreshMemberships, lobbies = [], signal
   const roles = await refreshMemberships(signal)
   if (signal?.aborted) throw new DOMException('Request cancelled', 'AbortError')
   if (!roles) throw new Error('Unable to verify your current lobby. Please try again.')
-  const id = Object.keys(roles)[0]
-  if (!id) return null
-  const known = lobbies.find(lobby => String(lobby.id) === id)
-  if (known) return { ...known, role: roles[id] }
-  const response = await fetch(`${API_URL}/lobbies/${encodeURIComponent(id)}`, { signal })
-  if (!response.ok) {
-    if (response.status === 404) {
-      const latest = await refreshMemberships(signal)
-      if (latest && !latest[id]) return null
+  let currentRoles = roles
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const id = Object.keys(currentRoles)[0]
+    if (!id) return null
+    const known = lobbies.find(lobby => String(lobby.id) === id)
+    if (known) return { ...known, role: currentRoles[id] }
+    const response = await fetch(`${API_URL}/lobbies/${encodeURIComponent(id)}`, { signal })
+    if (!response.ok) {
+      if (response.status === 404 && attempt === 0) {
+        const latest = await refreshMemberships(signal)
+        if (signal?.aborted) throw new DOMException('Request cancelled', 'AbortError')
+        if (latest && !latest[id]) { currentRoles = latest; continue }
+      }
+      throw new Error('Unable to load your current lobby. Please try again.')
     }
-    throw new Error('Unable to load your current lobby. Please try again.')
+    const lobby = await response.json()
+    if (signal?.aborted) throw new DOMException('Request cancelled', 'AbortError')
+    return { ...lobby, role: currentRoles[id] }
   }
-  const lobby = await response.json()
-  if (signal?.aborted) throw new DOMException('Request cancelled', 'AbortError')
-  return { ...lobby, role: roles[id] }
+  throw new Error('Unable to load your current lobby. Please try again.')
 }
 
 export async function attemptLobbyJoin({ lobby, lobbies, refreshMemberships, joinLobby, signal }) {

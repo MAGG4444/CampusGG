@@ -38,6 +38,7 @@ function LobbyFeed() {
   const [joinError, setJoinError] = useState('')
   const [joiningLobbyId, setJoiningLobbyId] = useState(null)
   const joinRequestRef = useRef(null)
+  const syncRef = useRef(null)
   useEffect(() => () => joinRequestRef.current?.abort(), [])
   const [conflictLobby, setConflictLobby] = useState(null)
   const currentLobby = currentLobbyFromFeed(joinedLobbyIds, getLobbyRole, lobbies)
@@ -75,12 +76,11 @@ function LobbyFeed() {
         if (signal.aborted) return
         setLobbies((current) => JSON.stringify(current) === JSON.stringify(formattedLobbies) ? current : formattedLobbies)
         setError(membershipResult.status === 'rejected' ? 'Unable to refresh lobby membership.' : null)
-      } catch (err) {
+      } catch {
         if (signal.aborted) {
           return
         }
 
-        console.error('Failed to fetch lobbies:', err)
         setError('Unable to load lobbies from the server.')
       } finally {
         if (!signal.aborted) {
@@ -89,7 +89,9 @@ function LobbyFeed() {
       }
     }
 
-    return startLobbyFeedSync({ load: fetchLobbies, onError: () => {}, document, window })
+    const stop = startLobbyFeedSync({ load: fetchLobbies, onError: () => {}, document, window })
+    syncRef.current = stop
+    return () => { syncRef.current = null; stop() }
   }, [token, refreshMemberships])
 
   // ============================================================
@@ -241,14 +243,14 @@ function LobbyFeed() {
         </div>
       ) : null}
 
-      {error && lobbies.length > 0 ? <div className="feed-state-message" role="alert">{error}</div> : null}
+      {error && lobbies.length > 0 ? <div className="lobby-sync-error" role="status">{error} <button type="button" onClick={() => syncRef.current?.refresh()}>Retry</button></div> : null}
       {isLoading ? (
         <div className="feed-state-message">
           Loading lobbies...
         </div>
       ) : error && lobbies.length === 0 ? (
         <div className="feed-state-message" role="alert">
-          {error}
+          {error} <button type="button" onClick={() => syncRef.current?.refresh()}>Retry</button>
         </div>
       ) : visibleLobbies.length === 0 ? (
         <div className="feed-state-message">

@@ -25,12 +25,13 @@ function LobbyDetail() {
   const returnLabel = returnTo === '/lobby' ? 'Lobby Feed' : 'My Content'
   const { lobbyId } = useParams()
   const { user, token } = useAuth()
-  const { joinLobby, leaveLobby, deleteLobby, refreshLobbyMembers, refreshMemberships } = useJoinedLobbies()
+  const { joinLobby, leaveLobby, deleteLobby, refreshLobbyMembers, refreshMemberships, forgetLobby } = useJoinedLobbies()
   const { addNotification } = useNotifications()
   const [lobby, setLobby] = useState(null)
   const [participants, setParticipants] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const [missing, setMissing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [confirmation, setConfirmation] = useState(null)
@@ -48,33 +49,45 @@ function LobbyDetail() {
 
   useEffect(() => {
     let cancelled = false
+    const controller = new AbortController()
     async function loadLobby() {
       setIsLoading(true)
       setLoadError('')
+      setMissing(false)
       try {
-        const response = await fetch(`${API_URL}/lobbies/${encodeURIComponent(lobbyId)}`)
-        if (!response.ok) throw new Error(response.status === 404 ? 'Lobby not found.' : 'Unable to load lobby.')
+        const response = await fetch(`${API_URL}/lobbies/${encodeURIComponent(lobbyId)}`, { signal: controller.signal })
+        if (!response.ok) {
+          if (response.status === 404 && !cancelled) {
+            forgetLobby(lobbyId)
+            setMissing(true)
+          }
+          throw new Error(response.status === 404 ? 'This lobby no longer exists.' : 'Unable to load lobby.')
+        }
         const lobbyData = await response.json()
-        const members = token ? await refreshLobbyMembers(lobbyId) : []
+        const members = token ? await refreshLobbyMembers(lobbyId, controller.signal) : []
         if (!cancelled) { setLobby(lobbyData); setParticipants(members) }
       } catch (error) {
-        if (!cancelled) setLoadError(error instanceof Error ? error.message : 'Unable to load lobby.')
+        if (!cancelled) {
+          if (error.status === 404) setMissing(true)
+          setLoadError(error.status === 404 ? 'This lobby no longer exists.' : error instanceof Error ? error.message : 'Unable to load lobby.')
+        }
       } finally {
         if (!cancelled) setIsLoading(false)
       }
     }
     loadLobby()
-    return () => { cancelled = true }
-  }, [lobbyId, token, refreshLobbyMembers])
+    return () => { cancelled = true; controller.abort() }
+  }, [lobbyId, token, refreshLobbyMembers, forgetLobby])
 
   useEffect(() => {
     if (!token || isLoading || loadError || !lobby) return undefined
     let active = true
     let timer
+    const controller = new AbortController()
     currentRoleRef.current = participants.find((member) => member.id === user?.id)?.role ?? null
     async function sync() {
       try {
-        const members = await refreshLobbyMembers(lobbyId)
+        const members = await refreshLobbyMembers(lobbyId, controller.signal)
         if (!active || leavingRef.current) return
         const role = members.find((member) => member.id === user?.id)?.role ?? null
         if (currentRoleRef.current === 'member' && role === 'host') {
@@ -92,7 +105,7 @@ function LobbyDetail() {
       if (active) timer = window.setTimeout(sync, 10000)
     }
     timer = window.setTimeout(sync, 10000)
-    return () => { active = false; window.clearTimeout(timer) }
+    return () => { active = false; controller.abort(); window.clearTimeout(timer) }
   // Initial participant state establishes the baseline; polling maintains it.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lobbyId, token, user?.id, isLoading, loadError, lobby, refreshLobbyMembers, navigate, addNotification])
@@ -192,7 +205,7 @@ function LobbyDetail() {
   if (isLoading) return <div className="lobby-detail-wrapper"><p role="status">Loading lobby...</p></div>
   if (loadError || !lobby) return <div className="lobby-detail-wrapper"><section className="lobby-not-found">
     <h1>{loadError || 'Lobby not found.'}</h1>
-    <button className="lobby-return-button" type="button" onClick={() => navigate(returnTo)}>Return to {returnLabel}</button>
+    <button className="lobby-return-button" type="button" onClick={() => navigate(missing ? '/lobby' : returnTo)}>Return to {missing ? 'Lobby Feed' : returnLabel}</button>
   </section></div>
 
   return <div className="lobby-detail-wrapper page-enter">

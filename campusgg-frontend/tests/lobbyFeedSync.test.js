@@ -89,3 +89,40 @@ test('separate visible sessions discover creation and deletion on the next poll'
   assert.deepEqual(sessions.map(session => session.lobbies), [[], []])
   sessions.forEach(session => session.stop())
 })
+
+test('returning to the feed refreshes immediately and retry recovers without parallel requests', async () => {
+  const document = { ...target(), visibilityState: 'visible' }
+  const window = { ...target(), setTimeout: fn => { window.timer = fn; return 1 }, clearTimeout: () => { window.timer = null } }
+  let server = { id: 'lobby', role: 'member' }
+  let state
+  let failing = false
+  let errors = 0
+  let calls = 0
+  const load = async () => {
+    calls += 1
+    if (failing) throw new Error('offline')
+    state = server
+  }
+  const open = () => startLobbyFeedSync({ load, onError: () => { errors += 1 }, document, window })
+  let stop = open()
+  await flush()
+  assert.equal(state.role, 'member')
+  stop()
+  server = { id: 'lobby', role: 'host' }
+  stop = open()
+  await flush()
+  assert.equal(state.role, 'host')
+  failing = true
+  window.timer()
+  await flush()
+  assert.equal(errors, 1)
+  assert.equal(state.role, 'host')
+  failing = false
+  server = null
+  stop.refresh()
+  stop.refresh()
+  await flush()
+  assert.equal(state, null)
+  assert.equal(calls, 4)
+  stop()
+})

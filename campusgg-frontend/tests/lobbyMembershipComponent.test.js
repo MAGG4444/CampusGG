@@ -14,13 +14,19 @@ test('server membership roles drive host, joined, transfer and stale-response ha
   let memberships = [{ lobbyId: 'lobby', role: 'host' }]
   let resolveOld
   let holdNext = false
+  let failMembership = false
+  let membersStatus = 200
   globalThis.fetch = async (url) => {
     if (url.endsWith('/memberships/me')) {
+      if (failMembership) throw new Error('offline')
       if (holdNext) {
         holdNext = false
         return new Promise(resolve => { resolveOld = resolve })
       }
       return { ok: true, json: async () => memberships }
+    }
+    if (url.endsWith('/members')) {
+      return { ok: membersStatus === 200, status: membersStatus, json: async () => [] }
     }
     return { ok: true, json: async () => ({}) }
   }
@@ -45,10 +51,24 @@ test('server membership roles drive host, joined, transfer and stale-response ha
     await act(async () => { await value.refreshMemberships() })
     assert.equal(value.getLobbyRole('lobby'), 'host')
     assert.equal(value.isLobbyJoined('lobby'), true)
+    failMembership = true
+    await act(async () => { await assert.rejects(value.refreshMemberships(), /offline/) })
+    assert.equal(value.getLobbyRole('lobby'), 'host')
+    failMembership = false
     memberships = [{ lobbyId: 'lobby', role: 'member' }]
     await act(async () => { await value.refreshMemberships() })
     assert.equal(value.getLobbyRole('lobby'), 'member')
     memberships = [{ lobbyId: 'lobby', role: 'host' }]
+    await act(async () => { await value.refreshMemberships() })
+    assert.equal(value.getLobbyRole('lobby'), 'host')
+
+    membersStatus = 503
+    await act(async () => { await assert.rejects(value.refreshLobbyMembers('lobby')) })
+    assert.equal(value.getLobbyRole('lobby'), 'host')
+    membersStatus = 404
+    await act(async () => { await assert.rejects(value.refreshLobbyMembers('lobby')) })
+    assert.equal(value.isLobbyJoined('lobby'), false)
+    membersStatus = 200
     await act(async () => { await value.refreshMemberships() })
     assert.equal(value.getLobbyRole('lobby'), 'host')
 

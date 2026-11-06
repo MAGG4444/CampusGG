@@ -30,6 +30,20 @@ test('direct detail join loads a missing lobby and handles deletion or failed re
   } finally { globalThis.fetch = previous }
 })
 
+test('a deleted old lobby does not hide a newer membership during join checks', async () => {
+  const previous = globalThis.fetch
+  let checks = 0
+  try {
+    globalThis.fetch = async () => ({ ok: false, status: 404 })
+    const result = await checkCurrentLobby(
+      async () => ++checks === 1 ? { old: 'member' } : { new: 'host' },
+      [{ id: 'new', lobbyName: 'New lobby' }],
+    )
+    assert.equal(result.id, 'new')
+    assert.equal(result.role, 'host')
+  } finally { globalThis.fetch = previous }
+})
+
 test('cancelled join checks do not return another account’s lobby', async () => {
   const controller = new AbortController()
   controller.abort()

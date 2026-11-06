@@ -91,11 +91,19 @@ function MembershipProvider({ children, userId, token }) {
       const id = String(lobbyId)
       const revision = ++revisionRef.current
 
-      const members = await authenticatedRequest(
-        `/lobbies/${encodeURIComponent(id)}/members`,
-        token,
-        { signal },
-      )
+      let members
+      try {
+        members = await authenticatedRequest(
+          `/lobbies/${encodeURIComponent(id)}/members`,
+          token,
+          { signal },
+        )
+      } catch (error) {
+        if (error.status === 404 && !signal?.aborted && currentUserRef.current === userId && revision === revisionRef.current) {
+          updateMembership(id, null)
+        }
+        throw error
+      }
 
       if (!Array.isArray(members)) {
         throw new Error('Invalid membership data received.')
@@ -112,16 +120,8 @@ function MembershipProvider({ children, userId, token }) {
   const refreshMemberships = useCallback(async (signal) => {
     if (!token || !userId) return
     const revision = ++revisionRef.current
-    let memberships
-    try {
-      memberships = await authenticatedRequest('/lobbies/memberships/me', token, { signal })
-      if (!Array.isArray(memberships)) throw new Error('Invalid membership data received.')
-    } catch (error) {
-      if (!signal?.aborted && currentUserRef.current === userId && revision === revisionRef.current) {
-        setMembershipState({ userId, roles: {} })
-      }
-      throw error
-    }
+    const memberships = await authenticatedRequest('/lobbies/memberships/me', token, { signal })
+    if (!Array.isArray(memberships)) throw new Error('Invalid membership data received.')
     if (signal?.aborted || currentUserRef.current !== userId || revision !== revisionRef.current) return
     const roles = Object.fromEntries(memberships.map(({ lobbyId, role }) => [String(lobbyId), role]))
     setMembershipState((current) => {
@@ -167,6 +167,8 @@ function MembershipProvider({ children, userId, token }) {
     updateMembership(id, null)
   }, [token, updateMembership])
 
+  const forgetLobby = useCallback((lobbyId) => updateMembership(lobbyId, null), [updateMembership])
+
   const value = useMemo(
     () => ({
       joinedLobbyIds,
@@ -177,6 +179,7 @@ function MembershipProvider({ children, userId, token }) {
         return roles[String(lobbyId)] ?? null
       },
       refreshMemberships,
+      forgetLobby,
       joinLobby,
       leaveLobby,
       deleteLobby,
@@ -186,6 +189,7 @@ function MembershipProvider({ children, userId, token }) {
       joinedLobbyIds,
       roles,
       refreshMemberships,
+      forgetLobby,
       joinLobby,
       leaveLobby,
       deleteLobby,
