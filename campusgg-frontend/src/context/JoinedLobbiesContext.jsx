@@ -1,5 +1,5 @@
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from './useAuth.js'
 import { JoinedLobbiesContext } from './joinedLobbiesContext.js'
 
@@ -41,35 +41,37 @@ async function authenticatedRequest(path, token, options = {}) {
 export function JoinedLobbiesProvider({ children }) {
   const { user, token } = useAuth()
   const userId = user?.id ?? null
+  const currentUserRef = useRef(userId)
+  useLayoutEffect(() => { currentUserRef.current = userId }, [userId])
+  const revisionRef = useRef(0)
 
   const [membershipState, setMembershipState] = useState({
     userId: null,
-    ids: [],
+    roles: {},
   })
 
   // Keep memberships separate when different users sign in.
-  const joinedLobbyIds =
-    membershipState.userId === userId
-      ? membershipState.ids
-      : []
+  const roles = useMemo(
+    () => membershipState.userId === userId ? membershipState.roles : {},
+    [membershipState, userId],
+  )
+  const joinedLobbyIds = useMemo(() => Object.keys(roles), [roles])
 
   const updateMembership = useCallback(
-    (lobbyId, joined) => {
-      if (!userId) return
+    (lobbyId, role) => {
+      if (!userId || currentUserRef.current !== userId) return
+      revisionRef.current += 1
 
       const id = String(lobbyId)
 
       setMembershipState((current) => {
-        const previousIds =
-          current.userId === userId ? current.ids : []
-
-        const ids = joined
-          ? [...new Set([...previousIds, id])]
-          : previousIds.filter((existingId) => existingId !== id)
+        const roles = { ...(current.userId === userId ? current.roles : {}) }
+        if (role) roles[id] = role
+        else delete roles[id]
 
         return {
           userId,
-          ids,
+          roles,
         }
       })
     },
@@ -80,6 +82,7 @@ export function JoinedLobbiesProvider({ children }) {
   const refreshLobbyMembers = useCallback(
     async (lobbyId) => {
       const id = String(lobbyId)
+      const revision = ++revisionRef.current
 
       const members = await authenticatedRequest(
         `/lobbies/${encodeURIComponent(id)}/members`,
@@ -90,16 +93,34 @@ export function JoinedLobbiesProvider({ children }) {
         throw new Error('Invalid membership data received.')
       }
 
-      const isMember = members.some(
-        (member) => member.id === userId,
-      )
-
-      updateMembership(id, isMember)
+      const membership = members.find((member) => member.id === userId)
+      if (currentUserRef.current === userId && revision === revisionRef.current) updateMembership(id, membership?.role ?? null)
 
       return members
     },
     [token, userId, updateMembership],
   )
+
+  const refreshMemberships = useCallback(async (signal) => {
+    if (!token || !userId) return
+    const revision = ++revisionRef.current
+    let memberships
+    try {
+      memberships = await authenticatedRequest('/lobbies/memberships/me', token, { signal })
+      if (!Array.isArray(memberships)) throw new Error('Invalid membership data received.')
+    } catch (error) {
+      if (!signal?.aborted && currentUserRef.current === userId && revision === revisionRef.current) {
+        setMembershipState({ userId, roles: {} })
+      }
+      throw error
+    }
+    if (signal?.aborted || currentUserRef.current !== userId || revision !== revisionRef.current) return
+    const roles = Object.fromEntries(memberships.map(({ lobbyId, role }) => [String(lobbyId), role]))
+    setMembershipState((current) => {
+      if (current.userId === userId && JSON.stringify(current.roles) === JSON.stringify(roles)) return current
+      return { userId, roles }
+    })
+  }, [token, userId])
 
   const joinLobby = useCallback(
     async (lobbyId) => {
@@ -111,7 +132,7 @@ export function JoinedLobbiesProvider({ children }) {
         { method: 'POST' },
       )
 
-      updateMembership(id, true)
+      updateMembership(id, 'member')
     },
     [token, updateMembership],
   )
@@ -126,7 +147,7 @@ export function JoinedLobbiesProvider({ children }) {
         { method: 'POST' },
       )
 
-      updateMembership(id, false)
+      updateMembership(id, null)
     },
     [token, updateMembership],
   )
@@ -134,7 +155,7 @@ export function JoinedLobbiesProvider({ children }) {
   const deleteLobby = useCallback(async (lobbyId) => {
     const id = String(lobbyId)
     await authenticatedRequest(`/lobbies/${encodeURIComponent(id)}`, token, { method: 'DELETE' })
-    updateMembership(id, false)
+    updateMembership(id, null)
   }, [token, updateMembership])
 
   const value = useMemo(
@@ -143,6 +164,10 @@ export function JoinedLobbiesProvider({ children }) {
       isLobbyJoined(lobbyId) {
         return joinedLobbyIds.includes(String(lobbyId))
       },
+      getLobbyRole(lobbyId) {
+        return roles[String(lobbyId)] ?? null
+      },
+      refreshMemberships,
       joinLobby,
       leaveLobby,
       deleteLobby,
@@ -150,6 +175,8 @@ export function JoinedLobbiesProvider({ children }) {
     }),
     [
       joinedLobbyIds,
+      roles,
+      refreshMemberships,
       joinLobby,
       leaveLobby,
       deleteLobby,

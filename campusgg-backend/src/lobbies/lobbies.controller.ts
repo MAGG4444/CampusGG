@@ -99,6 +99,14 @@ export class LobbiesController {
     return this.lobbiesService.findMine(request.user.id, query);
   }
 
+  @Get('memberships/me')
+  @UseGuards(JwtAuthGuard)
+  findMyMemberships(@Req() request: AuthenticatedRequest) {
+    return this.lobbiesService.findMyMemberships(
+      this.getAuthenticatedUserId(request),
+    );
+  }
+
   @Get(':id')
   async getLobbyById(@Param('id', ParseUUIDPipe) id: string) {
     return this.lobbiesService.findOne(id);

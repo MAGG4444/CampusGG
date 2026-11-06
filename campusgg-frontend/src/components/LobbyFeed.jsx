@@ -10,13 +10,14 @@ import Pagination from './Pagination.jsx'
 import SearchBar from './SearchBar.jsx'
 import SkillFilter from './SkillFilter.jsx'
 import { useAuth } from '../context/useAuth.js'
+import { filterLobbyFeed, lobbyFeedPage, startLobbyFeedSync } from '../utils/lobbyFeedSync.js'
 
 const LOBBIES_PER_PAGE = 6
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 function LobbyFeed() {
   const navigate = useNavigate()
-  const { isLobbyJoined, joinLobby } = useJoinedLobbies()
+  const { isLobbyJoined, getLobbyRole, joinLobby, refreshMemberships } = useJoinedLobbies()
 
   // Real lobby data from PostgreSQL
   const [lobbies, setLobbies] = useState([])
@@ -30,7 +31,7 @@ function LobbyFeed() {
   const [isHomepage, setIsHomepage] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
 
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
   const [joinError, setJoinError] = useState('')
   const [joiningLobbyId, setJoiningLobbyId] = useState(null)
 
@@ -39,13 +40,14 @@ function LobbyFeed() {
   // ============================================================
 
   useEffect(() => {
-    const controller = new AbortController()
-
-    async function fetchLobbies() {
+    async function fetchLobbies(signal) {
       try {
-        const response = await fetch(`${API_URL}/lobbies/db`, {
-          signal: controller.signal,
-        })
+        const [feedResult, membershipResult] = await Promise.allSettled([
+          fetch(`${API_URL}/lobbies/db`, { signal }),
+          token ? refreshMemberships(signal) : Promise.resolve(),
+        ])
+        if (feedResult.status === 'rejected') throw feedResult.reason
+        const response = feedResult.value
 
         if (!response.ok) {
           throw new Error('Unable to load lobbies')
@@ -63,55 +65,32 @@ function LobbyFeed() {
           userName: lobby.host?.username ?? 'Unknown host',
         }))
 
-        setLobbies(formattedLobbies)
-        setError(null)
+        if (signal.aborted) return
+        setLobbies((current) => JSON.stringify(current) === JSON.stringify(formattedLobbies) ? current : formattedLobbies)
+        setError(membershipResult.status === 'rejected' ? 'Unable to refresh lobby membership.' : null)
       } catch (err) {
-        if (controller.signal.aborted) {
+        if (signal.aborted) {
           return
         }
 
         console.error('Failed to fetch lobbies:', err)
         setError('Unable to load lobbies from the server.')
       } finally {
-        if (!controller.signal.aborted) {
+        if (!signal.aborted) {
           setIsLoading(false)
         }
       }
     }
 
-    fetchLobbies()
-
-    return () => controller.abort()
-  }, [])
+    return startLobbyFeedSync({ load: fetchLobbies, onError: () => {}, document, window })
+  }, [token, refreshMemberships])
 
   // ============================================================
   // FILTER LOBBIES
   // ============================================================
 
   const filteredLobbies = useMemo(() => {
-    const normalizedSearch = searchValue.trim().toLowerCase()
-
-    return lobbies.filter((lobby) => {
-      const matchesGame =
-        selectedGame === 'All Games' ||
-        lobby.game === selectedGame
-
-      const matchesSkill =
-        selectedSkill === 'Most Popular' ||
-        lobby.skillLevel === selectedSkill
-
-      const searchableText = `
-        ${lobby.lobbyName ?? ''}
-        ${lobby.userName ?? ''}
-        ${lobby.details ?? ''}
-      `.toLowerCase()
-
-      const matchesSearch =
-        normalizedSearch === '' ||
-        searchableText.includes(normalizedSearch)
-
-      return matchesGame && matchesSkill && matchesSearch
-    })
+    return filterLobbyFeed(lobbies, searchValue, selectedGame, selectedSkill)
   }, [lobbies, searchValue, selectedGame, selectedSkill])
 
   // Backend currently returns newest lobbies first.
@@ -121,18 +100,8 @@ function LobbyFeed() {
   // PAGINATION
   // ============================================================
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredLobbies.length / LOBBIES_PER_PAGE),
-  )
-
-  const firstLobbyIndex =
-    (currentPage - 1) * LOBBIES_PER_PAGE
-
-  const visibleLobbies = filteredLobbies.slice(
-    firstLobbyIndex,
-    firstLobbyIndex + LOBBIES_PER_PAGE,
-  )
+  const { page: safePage, totalPages, items: visibleLobbies } =
+    lobbyFeedPage(filteredLobbies, currentPage, LOBBIES_PER_PAGE)
 
   // ============================================================
   // LOBBY ACTIONS
@@ -260,11 +229,12 @@ function LobbyFeed() {
         </div>
       ) : null}
 
+      {error && lobbies.length > 0 ? <div className="feed-state-message" role="alert">{error}</div> : null}
       {isLoading ? (
         <div className="feed-state-message">
           Loading lobbies...
         </div>
-      ) : error ? (
+      ) : error && lobbies.length === 0 ? (
         <div className="feed-state-message" role="alert">
           {error}
         </div>
@@ -281,6 +251,7 @@ function LobbyFeed() {
               userName={lobby.userName}
               details={lobby.details}
               isJoined={isLobbyJoined(lobby.id)}
+              role={getLobbyRole(lobby.id)}
               onJoin={() => handleJoin(lobby)}
             />
           ))}
@@ -292,7 +263,7 @@ function LobbyFeed() {
         aria-label="Lobby bottom controls"
       >
         <Pagination
-          currentPage={currentPage}
+          currentPage={safePage}
           totalPages={totalPages}
           onSelectPage={setCurrentPage}
         />

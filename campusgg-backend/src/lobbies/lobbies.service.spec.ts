@@ -1,13 +1,36 @@
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository } from 'typeorm';
 import { ConflictException } from '@nestjs/common';
 
 import { LobbiesService } from './lobbies.service';
 import { Lobby } from './lobby.entity';
 import { UsersService } from '../users/users.service';
+import { LobbyMember, LobbyMemberRole } from './lobby-member.entity';
 
 describe('LobbiesService', () => {
+  it('returns the authenticated user’s lobby roles without exposing user or lobby data', async () => {
+    const find = jest.fn().mockResolvedValue([
+      {
+        lobby: { id: 'lobby', details: 'private' },
+        role: LobbyMemberRole.HOST,
+        user: { email: 'private' },
+      },
+    ]);
+    const service = new LobbiesService(
+      { manager: { find } } as unknown as Repository<Lobby>,
+      {} as UsersService,
+    );
+    await expect(service.findMyMemberships('user')).resolves.toEqual([
+      { lobbyId: 'lobby', role: 'host' },
+    ]);
+    expect(find).toHaveBeenCalledWith(LobbyMember, {
+      where: { user: { id: 'user' } },
+      relations: { lobby: true },
+    });
+  });
   function setup() {
-    const find = jest.fn(() => Promise.resolve([] as Lobby[]));
+    const find = jest
+      .fn<Promise<Lobby[]>, [FindManyOptions<Lobby>]>()
+      .mockResolvedValue([]);
 
     const repository = {
       find,
@@ -27,9 +50,15 @@ describe('LobbiesService', () => {
 
     const result = await service.findAll();
 
-    expect(find).toHaveBeenCalledWith({
-      where: {},
-      order: { createdAt: 'DESC' },
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {},
+        order: { createdAt: 'DESC' },
+        relations: { host: true },
+      }),
+    );
+    expect(find.mock.calls[0][0].select).toMatchObject({
+      host: { id: true, username: true },
     });
 
     expect(result).toEqual([]);
@@ -65,13 +94,12 @@ describe('LobbiesService', () => {
       skillLevel: 'Beginner',
     });
 
-    expect(find).toHaveBeenCalledWith({
-      where: {
-        game: 'Valorant',
-        skillLevel: 'Beginner',
-      },
-      order: { createdAt: 'DESC' },
-    });
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { game: 'Valorant', skillLevel: 'Beginner' },
+        order: { createdAt: 'DESC' },
+      }),
+    );
   });
 
   it('should filter lobbies by game only', async () => {
@@ -81,11 +109,11 @@ describe('LobbiesService', () => {
       game: 'Valorant',
     });
 
-    expect(find).toHaveBeenCalledWith({
-      where: {
-        game: 'Valorant',
-      },
-      order: { createdAt: 'DESC' },
-    });
+    expect(find).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { game: 'Valorant' },
+        order: { createdAt: 'DESC' },
+      }),
+    );
   });
 });

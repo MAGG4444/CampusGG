@@ -54,6 +54,19 @@ export class LobbiesService {
     return { items, total, page, limit };
   }
 
+  async findMyMemberships(
+    userId: string,
+  ): Promise<Array<{ lobbyId: string; role: LobbyMemberRole }>> {
+    const memberships = await this.lobbiesRepository.manager.find(LobbyMember, {
+      where: { user: { id: userId } },
+      relations: { lobby: true },
+    });
+    return memberships.map((membership) => ({
+      lobbyId: membership.lobby.id,
+      role: membership.role,
+    }));
+  }
+
   // ============================================================
   // GET ALL LOBBIES
   // Retrieve lobbies from PostgreSQL with optional filters
@@ -61,6 +74,21 @@ export class LobbiesService {
 
   async findAll(filters: SearchLobbiesDto = {}): Promise<Lobby[]> {
     return this.lobbiesRepository.find({
+      relations: { host: true },
+      select: {
+        id: true,
+        lobbyName: true,
+        subtitle: true,
+        details: true,
+        tags: true,
+        game: true,
+        skillLevel: true,
+        participantLimit: true,
+        visibility: true,
+        createdAt: true,
+        updatedAt: true,
+        host: { id: true, username: true },
+      },
       where: {
         ...(filters.game ? { game: filters.game } : {}),
         ...(filters.skillLevel ? { skillLevel: filters.skillLevel } : {}),
