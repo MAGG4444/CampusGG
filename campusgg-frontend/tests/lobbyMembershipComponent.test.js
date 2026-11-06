@@ -65,6 +65,26 @@ test('server membership roles drive host, joined, transfer and stale-response ha
     memberships = []
     await act(async () => { await value.refreshMemberships() })
     assert.equal(value.getLobbyRole('lobby'), null)
+
+    memberships = [{ lobbyId: 'lobby', role: 'host' }]
+    await act(async () => { await value.refreshMemberships() })
+    holdNext = true
+    const previousAccountRequest = value.refreshMemberships()
+    const switchUser = (user, token) => renderer.update(React.createElement(AuthContext.Provider, { value: { user, token } },
+      React.createElement(JoinedLobbiesProvider, null, React.createElement(Consumer))))
+    await act(async () => { switchUser(null, null) })
+    assert.equal(value.isLobbyJoined('lobby'), false)
+    await act(async () => { switchUser({ id: 'another' }, 'another-token') })
+    assert.equal(value.isLobbyJoined('lobby'), false)
+    await act(async () => {
+      resolveOld({ ok: true, json: async () => [{ lobbyId: 'lobby', role: 'host' }] })
+      await previousAccountRequest
+    })
+    assert.equal(value.isLobbyJoined('lobby'), false)
+    await act(async () => { switchUser({ id: 'user' }, 'new-token') })
+    assert.equal(value.isLobbyJoined('lobby'), false)
+    await act(async () => { await value.refreshMemberships() })
+    assert.equal(value.getLobbyRole('lobby'), 'host')
   } finally {
     if (renderer) await act(async () => renderer.unmount())
     globalThis.fetch = previousFetch

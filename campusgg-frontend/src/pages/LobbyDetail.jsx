@@ -6,6 +6,8 @@ import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
 import { myContentReturnTo } from '../utils/myContentNavigation.js'
 import LobbyChat from '../components/LobbyChat.jsx'
 import ConfirmationModal from '../components/ConfirmationModal.jsx'
+import CurrentLobbyDialog from '../components/CurrentLobbyDialog.jsx'
+import { attemptLobbyJoin } from '../utils/currentLobby.js'
 import { useNotifications } from '../components/notifications/useNotifications.js'
 import './LobbyDetail.css'
 
@@ -23,7 +25,7 @@ function LobbyDetail() {
   const returnLabel = returnTo === '/lobby' ? 'Lobby Feed' : 'My Content'
   const { lobbyId } = useParams()
   const { user, token } = useAuth()
-  const { joinLobby, leaveLobby, deleteLobby, refreshLobbyMembers } = useJoinedLobbies()
+  const { joinLobby, leaveLobby, deleteLobby, refreshLobbyMembers, refreshMemberships } = useJoinedLobbies()
   const { addNotification } = useNotifications()
   const [lobby, setLobby] = useState(null)
   const [participants, setParticipants] = useState([])
@@ -33,6 +35,7 @@ function LobbyDetail() {
   const [feedback, setFeedback] = useState('')
   const [confirmation, setConfirmation] = useState(null)
   const [confirmationError, setConfirmationError] = useState('')
+  const [conflictLobby, setConflictLobby] = useState(null)
   const requestRef = useRef(false)
   const [expanded, setExpanded] = useState(false)
   const [selectedId, setSelectedId] = useState(null)
@@ -40,6 +43,8 @@ function LobbyDetail() {
   const avatarRefs = useRef(new Map())
   const currentRoleRef = useRef(null)
   const leavingRef = useRef(false)
+  const joinRequestRef = useRef(null)
+  useEffect(() => () => joinRequestRef.current?.abort(), [])
 
   useEffect(() => {
     let cancelled = false
@@ -120,15 +125,31 @@ function LobbyDetail() {
 
   async function handleJoin() {
     if (!token) { navigate('/signin'); return }
-    if (isFull || lobby.visibility !== 'public') return
+    if (isFull || lobby.visibility !== 'public' || joinRequestRef.current) return
     setIsSubmitting(true)
     setFeedback('')
+    const controller = new AbortController()
+    joinRequestRef.current = controller
     try {
-      await joinLobby(lobby.id)
-      setParticipants(await refreshLobbyMembers(lobby.id))
+      const { current } = await attemptLobbyJoin({ lobby, lobbies: [lobby], refreshMemberships, joinLobby, signal: controller.signal })
+      if (controller.signal.aborted) return
+      if (current) {
+        if (String(current.id) === String(lobby.id)) {
+          const members = await refreshLobbyMembers(lobby.id, controller.signal)
+          if (!controller.signal.aborted) setParticipants(members)
+        }
+        else setConflictLobby(current)
+        return
+      }
+      const members = await refreshLobbyMembers(lobby.id, controller.signal)
+      if (!controller.signal.aborted) setParticipants(members)
     } catch (error) {
+      if (controller.signal.aborted) return
       setFeedback(error instanceof Error ? error.message : 'Unable to join lobby.')
-    } finally { setIsSubmitting(false) }
+    } finally {
+      if (joinRequestRef.current === controller) joinRequestRef.current = null
+      if (!controller.signal.aborted) setIsSubmitting(false)
+    }
   }
 
   async function handleLeave() {
@@ -228,6 +249,8 @@ function LobbyDetail() {
       confirmLabel={confirmation === 'delete' ? 'Delete Lobby' : !isHost ? 'Leave Lobby' : participants.length > 1 ? 'Transfer & Leave' : 'Leave & Delete'}
       destructive={confirmation === 'delete' || (isHost && participants.length <= 1)} busy={isSubmitting} error={confirmationError}
       onCancel={() => setConfirmation(null)} onConfirm={confirmation === 'delete' ? handleDelete : handleLeave} />}
+    {conflictLobby && <CurrentLobbyDialog lobby={conflictLobby} onCancel={() => setConflictLobby(null)}
+      onView={(id) => { setConflictLobby(null); navigate(`/lobby/${id}`) }} />}
   </div>
 }
 

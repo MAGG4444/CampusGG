@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../assets/LOGO.png'
 import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
@@ -11,13 +11,16 @@ import SearchBar from './SearchBar.jsx'
 import SkillFilter from './SkillFilter.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { filterLobbyFeed, lobbyFeedPage, startLobbyFeedSync } from '../utils/lobbyFeedSync.js'
+import { attemptLobbyJoin, currentLobbyFromFeed } from '../utils/currentLobby.js'
+import CurrentLobbyDialog from './CurrentLobbyDialog.jsx'
+import CurrentLobbySection from './CurrentLobbySection.jsx'
 
 const LOBBIES_PER_PAGE = 6
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
 function LobbyFeed() {
   const navigate = useNavigate()
-  const { isLobbyJoined, getLobbyRole, joinLobby, refreshMemberships } = useJoinedLobbies()
+  const { joinedLobbyIds, isLobbyJoined, getLobbyRole, joinLobby, refreshMemberships } = useJoinedLobbies()
 
   // Real lobby data from PostgreSQL
   const [lobbies, setLobbies] = useState([])
@@ -34,6 +37,10 @@ function LobbyFeed() {
   const { isAuthenticated, token } = useAuth()
   const [joinError, setJoinError] = useState('')
   const [joiningLobbyId, setJoiningLobbyId] = useState(null)
+  const joinRequestRef = useRef(null)
+  useEffect(() => () => joinRequestRef.current?.abort(), [])
+  const [conflictLobby, setConflictLobby] = useState(null)
+  const currentLobby = currentLobbyFromFeed(joinedLobbyIds, getLobbyRole, lobbies)
 
   // ============================================================
   // FETCH LOBBIES FROM POSTGRESQL
@@ -121,31 +128,34 @@ function LobbyFeed() {
       return
     }
 
-    if (joiningLobbyId) {
+    if (joiningLobbyId || joinRequestRef.current) {
       return
     }
 
     setJoiningLobbyId(lobby.id)
     setJoinError('')
+    const controller = new AbortController()
+    joinRequestRef.current = controller
 
     try {
-      await joinLobby(lobby.id)
-      navigate(`/lobby/${lobby.id}`)
-    } catch (error) {
-      if (error.status === 409) {
-        // Could already be a member, or the lobby could be full.
-        // Open details to retrieve the authoritative member list.
-        navigate(`/lobby/${lobby.id}`)
+      const { current } = await attemptLobbyJoin({ lobby, lobbies, refreshMemberships, joinLobby, signal: controller.signal })
+      if (controller.signal.aborted) return
+      if (current) {
+        if (String(current.id) === String(lobby.id)) navigate(`/lobby/${current.id}`)
+        else setConflictLobby(current)
         return
       }
-
+      navigate(`/lobby/${lobby.id}`)
+    } catch (error) {
+      if (controller.signal.aborted) return
       setJoinError(
         error instanceof Error
           ? error.message
           : 'Unable to join lobby.',
       )
     } finally {
-      setJoiningLobbyId(null)
+      if (joinRequestRef.current === controller) joinRequestRef.current = null
+      if (!controller.signal.aborted) setJoiningLobbyId(null)
     }
   }
 
@@ -191,6 +201,8 @@ function LobbyFeed() {
           + Create Lobby
         </button>
       </header>
+
+      <CurrentLobbySection lobby={currentLobby} onOpen={(id) => navigate(`/lobby/${id}`)} />
 
       <section
         className="filter-row"
@@ -274,6 +286,8 @@ function LobbyFeed() {
           alt="CampusGG logo"
         />
       </section>
+      {conflictLobby && <CurrentLobbyDialog lobby={conflictLobby} onCancel={() => setConflictLobby(null)}
+        onView={(id) => { setConflictLobby(null); navigate(`/lobby/${id}`) }} />}
     </section>
   )
 }

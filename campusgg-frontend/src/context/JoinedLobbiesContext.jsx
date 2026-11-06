@@ -41,8 +41,15 @@ async function authenticatedRequest(path, token, options = {}) {
 export function JoinedLobbiesProvider({ children }) {
   const { user, token } = useAuth()
   const userId = user?.id ?? null
+  return <MembershipProvider key={`${userId ?? ''}:${token ?? ''}`} userId={userId} token={token}>{children}</MembershipProvider>
+}
+
+function MembershipProvider({ children, userId, token }) {
   const currentUserRef = useRef(userId)
-  useLayoutEffect(() => { currentUserRef.current = userId }, [userId])
+  useLayoutEffect(() => {
+    currentUserRef.current = userId
+    return () => { currentUserRef.current = null }
+  }, [userId])
   const revisionRef = useRef(0)
 
   const [membershipState, setMembershipState] = useState({
@@ -80,13 +87,14 @@ export function JoinedLobbiesProvider({ children }) {
 
   // Retrieve real memberships from PostgreSQL.
   const refreshLobbyMembers = useCallback(
-    async (lobbyId) => {
+    async (lobbyId, signal) => {
       const id = String(lobbyId)
       const revision = ++revisionRef.current
 
       const members = await authenticatedRequest(
         `/lobbies/${encodeURIComponent(id)}/members`,
         token,
+        { signal },
       )
 
       if (!Array.isArray(members)) {
@@ -94,7 +102,7 @@ export function JoinedLobbiesProvider({ children }) {
       }
 
       const membership = members.find((member) => member.id === userId)
-      if (currentUserRef.current === userId && revision === revisionRef.current) updateMembership(id, membership?.role ?? null)
+      if (!signal?.aborted && currentUserRef.current === userId && revision === revisionRef.current) updateMembership(id, membership?.role ?? null)
 
       return members
     },
@@ -120,19 +128,20 @@ export function JoinedLobbiesProvider({ children }) {
       if (current.userId === userId && JSON.stringify(current.roles) === JSON.stringify(roles)) return current
       return { userId, roles }
     })
+    return roles
   }, [token, userId])
 
   const joinLobby = useCallback(
-    async (lobbyId) => {
+    async (lobbyId, signal) => {
       const id = String(lobbyId)
 
       await authenticatedRequest(
         `/lobbies/${encodeURIComponent(id)}/join`,
         token,
-        { method: 'POST' },
+        { method: 'POST', signal },
       )
 
-      updateMembership(id, 'member')
+      if (!signal?.aborted) updateMembership(id, 'member')
     },
     [token, updateMembership],
   )

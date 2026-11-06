@@ -66,6 +66,14 @@
 .create-lobby-button:hover, .create-post-button:hover { transform: translateY(-2px); box-shadow: 0 18px 38px rgba(213, 178, 82, 0.26); filter: brightness(1.04); }
 .create-lobby-button:active, .create-post-button:active { transform: translateY(0); }
 
+.current-lobby { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 24px; padding: 14px 0; border-block: 1px solid var(--border); }
+.current-lobby-info { min-width: 0; }
+.current-lobby h2 { margin: 0 0 6px; color: var(--gold-bright); font-size: 0.85rem; }
+.current-lobby-name { margin: 0; color: var(--text); font-weight: 750; overflow-wrap: anywhere; }
+.current-lobby-meta { margin: 4px 0 0; color: var(--text-soft); font-size: 0.85rem; }
+.current-lobby .join-button { align-self: center; flex: 0 0 auto; }
+@media (max-width: 480px) { .current-lobby { flex-wrap: wrap; } }
+
 .lobby-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; padding-top: 30px; }
 .lobby-card { position: relative; min-width: 0; min-height: 230px; padding: 24px; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; border: 1px solid rgba(240, 207, 114, 0.34); border-radius: var(--radius-lg); background: var(--gradient-gold-card); color: var(--ink); box-shadow: var(--shadow-sm), inset 0 1px rgba(255, 255, 255, 0.28); transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition); }
 .lobby-card::before { position: absolute; top: 0; right: 0; left: 0; height: 3px; background: linear-gradient(90deg, transparent, rgba(255, 247, 214, 0.92), transparent); content: ""; }
