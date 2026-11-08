@@ -40,18 +40,20 @@ export function startLobbyFeedSync({ load, onError, document, window, interval =
   return stop
 }
 
-export function filterLobbyFeed(lobbies, searchValue, selectedGame, selectedSkill) {
+export function filterLobbyFeed(lobbies, searchValue, selectedGame, selectedSkill, capacity = 'any', visibility = 'all') {
   const search = searchValue.trim().toLowerCase()
   return lobbies.filter((lobby) => {
     const text = `${lobby.lobbyName ?? ''} ${lobby.userName ?? ''} ${lobby.details ?? ''}`.toLowerCase()
     return (selectedGame === 'All Games' || lobby.game === selectedGame) &&
-      (selectedSkill === 'Most Popular' || lobby.skillLevel === selectedSkill) &&
+      (['Most Popular', 'Any Skill'].includes(selectedSkill) || lobby.skillLevel === selectedSkill) &&
+      (capacity === 'any' || (capacity === 'unlimited' ? lobby.participantLimit === null : lobby.participantLimit === Number(capacity))) &&
+      (visibility === 'all' || lobby.visibility === visibility) &&
       (!search || text.includes(search))
   })
 }
 
-export function lobbyFeedPage(lobbies, currentPage, pageSize) {
-  const totalPages = Math.max(1, Math.ceil(lobbies.length / pageSize))
-  const page = Math.min(currentPage, totalPages)
-  return { page, totalPages, items: lobbies.slice((page - 1) * pageSize, page * pageSize) }
+export function formatLobbyCapacity(lobby) {
+  const count = Number.isInteger(lobby.memberCount) && lobby.memberCount >= 0 ? lobby.memberCount : '?'
+  const limit = lobby.participantLimit === null ? '∞' : (Number.isInteger(lobby.participantLimit) ? lobby.participantLimit : '?')
+  return `${count} / ${limit} players`
 }

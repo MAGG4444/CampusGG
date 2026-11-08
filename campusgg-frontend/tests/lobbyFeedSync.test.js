@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { filterLobbyFeed, lobbyFeedPage, startLobbyFeedSync } from '../src/utils/lobbyFeedSync.js'
+import { filterLobbyFeed, startLobbyFeedSync } from '../src/utils/lobbyFeedSync.js'
 
 function target() {
   const events = new Map()
@@ -60,9 +60,14 @@ test('refreshing feed data preserves search and game/skill filters', () => {
   assert.equal(filter(updated.slice(1)).length, 1)
 })
 
-test('deletion clamps an empty last page to the last page with results', () => {
-  assert.deepEqual(lobbyFeedPage([1, 2, 3], 2, 2), { page: 2, totalPages: 2, items: [3] })
-  assert.deepEqual(lobbyFeedPage([1, 2], 2, 2), { page: 1, totalPages: 1, items: [1, 2] })
+test('capacity filtering is exact and Any retains historical limits', () => {
+  const limits = [2, 5, 10, null, 20, 50, 100]
+  const lobbies = limits.map(participantLimit => ({ participantLimit, game: 'CS2', skillLevel: 'Advanced', lobbyName: 'Ranked' }))
+  for (const [filter, expected] of [['2', 2], ['5', 5], ['10', 10], ['unlimited', null]]) {
+    assert.deepEqual(filterLobbyFeed(lobbies, 'ranked', 'CS2', 'Advanced', filter).map(lobby => lobby.participantLimit), [expected])
+  }
+  assert.equal(filterLobbyFeed(lobbies, 'ranked', 'CS2', 'Advanced', 'any').length, 7)
+  assert.equal(filterLobbyFeed(lobbies, 'other', 'CS2', 'Advanced', 'any').length, 0)
 })
 
 test('separate visible sessions discover creation and deletion on the next poll', async () => {

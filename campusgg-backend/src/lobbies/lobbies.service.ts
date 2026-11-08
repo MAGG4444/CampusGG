@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 
 import { UsersService } from '../users/users.service';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
@@ -72,8 +72,16 @@ export class LobbiesService {
   // Retrieve lobbies from PostgreSQL with optional filters
   // ============================================================
 
-  async findAll(filters: SearchLobbiesDto = {}): Promise<Lobby[]> {
-    return this.lobbiesRepository.find({
+  async findAll(
+    filters: SearchLobbiesDto = {},
+    userId?: string,
+  ): Promise<Array<Lobby & { memberCount: number }>> {
+    const memberships = userId ? await this.findMyMemberships(userId) : [];
+    const search = {
+      ...(filters.game ? { game: filters.game } : {}),
+      ...(filters.skillLevel ? { skillLevel: filters.skillLevel } : {}),
+    };
+    const lobbies = await this.lobbiesRepository.find({
       relations: { host: true },
       select: {
         id: true,
@@ -89,14 +97,34 @@ export class LobbiesService {
         updatedAt: true,
         host: { id: true, username: true },
       },
-      where: {
-        ...(filters.game ? { game: filters.game } : {}),
-        ...(filters.skillLevel ? { skillLevel: filters.skillLevel } : {}),
-      },
+      where: memberships.length
+        ? [
+            { ...search, visibility: LobbyVisibility.PUBLIC },
+            { ...search, id: In(memberships.map(({ lobbyId }) => lobbyId)) },
+          ]
+        : { ...search, visibility: LobbyVisibility.PUBLIC },
       order: {
         createdAt: 'DESC',
       },
     });
+    if (lobbies.length === 0) return [];
+    const counts = await this.lobbiesRepository.manager
+      .getRepository(LobbyMember)
+      .createQueryBuilder('member')
+      .select('member.lobby_id', 'lobbyId')
+      .addSelect('COUNT(*)', 'count')
+      .where('member.lobby_id IN (:...lobbyIds)', {
+        lobbyIds: lobbies.map(({ id }) => id),
+      })
+      .groupBy('member.lobby_id')
+      .getRawMany<{ lobbyId: string; count: string }>();
+    const byLobby = new Map(
+      counts.map(({ lobbyId, count }) => [lobbyId, Number(count)]),
+    );
+    return lobbies.map((lobby) => ({
+      ...lobby,
+      memberCount: byLobby.get(lobby.id) ?? 0,
+    }));
   }
 
   // ============================================================

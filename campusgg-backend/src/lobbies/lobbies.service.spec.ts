@@ -1,8 +1,8 @@
-import { FindManyOptions, Repository } from 'typeorm';
+import { FindManyOptions, In, Repository } from 'typeorm';
 import { ConflictException } from '@nestjs/common';
 
 import { LobbiesService } from './lobbies.service';
-import { Lobby } from './lobby.entity';
+import { Lobby, LobbyVisibility } from './lobby.entity';
 import { UsersService } from '../users/users.service';
 import { LobbyMember, LobbyMemberRole } from './lobby-member.entity';
 
@@ -31,9 +31,17 @@ describe('LobbiesService', () => {
     const find = jest
       .fn<Promise<Lobby[]>, [FindManyOptions<Lobby>]>()
       .mockResolvedValue([]);
+    const query = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      getRawMany: jest.fn().mockResolvedValue([]),
+    };
 
     const repository = {
       find,
+      manager: { getRepository: () => ({ createQueryBuilder: () => query }) },
     } as unknown as Repository<Lobby>;
 
     const usersService = {
@@ -42,8 +50,45 @@ describe('LobbiesService', () => {
 
     const service = new LobbiesService(repository, usersService);
 
-    return { service, find };
+    return { service, find, query };
   }
+
+  it('counts every membership including the host with a grouped query', async () => {
+    const { service, find, query } = setup();
+    find.mockResolvedValue([{ id: 'a' }, { id: 'b' }] as Lobby[]);
+    query.getRawMany.mockResolvedValue([{ lobbyId: 'a', count: '3' }]);
+    const result = await service.findAll();
+    expect(result.map(({ id, memberCount }) => ({ id, memberCount }))).toEqual([
+      { id: 'a', memberCount: 3 },
+      { id: 'b', memberCount: 0 },
+    ]);
+    expect(query.groupBy).toHaveBeenCalledWith('member.lobby_id');
+    expect(query.where).toHaveBeenCalledWith(
+      'member.lobby_id IN (:...lobbyIds)',
+      { lobbyIds: ['a', 'b'] },
+    );
+    expect(query.getRawMany).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not query counts when no lobbies are visible', async () => {
+    const { service, query } = setup();
+    expect(await service.findAll()).toEqual([]);
+    expect(query.getRawMany).not.toHaveBeenCalled();
+  });
+
+  it('lists only public lobbies and the authenticated user’s memberships', async () => {
+    const { service, find } = setup();
+    jest
+      .spyOn(service, 'findMyMemberships')
+      .mockResolvedValue([
+        { lobbyId: 'private-id', role: LobbyMemberRole.MEMBER },
+      ]);
+    await service.findAll({}, 'user');
+    expect(find.mock.calls[0][0].where).toEqual([
+      { visibility: LobbyVisibility.PUBLIC },
+      { id: In(['private-id']) },
+    ]);
+  });
 
   it('should retrieve all lobbies without filters', async () => {
     const { service, find } = setup();
@@ -52,7 +97,7 @@ describe('LobbiesService', () => {
 
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {},
+        where: { visibility: LobbyVisibility.PUBLIC },
         order: { createdAt: 'DESC' },
         relations: { host: true },
       }),
@@ -96,7 +141,11 @@ describe('LobbiesService', () => {
 
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { game: 'Valorant', skillLevel: 'Beginner' },
+        where: {
+          game: 'Valorant',
+          skillLevel: 'Beginner',
+          visibility: LobbyVisibility.PUBLIC,
+        },
         order: { createdAt: 'DESC' },
       }),
     );
@@ -111,7 +160,7 @@ describe('LobbiesService', () => {
 
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { game: 'Valorant' },
+        where: { game: 'Valorant', visibility: LobbyVisibility.PUBLIC },
         order: { createdAt: 'DESC' },
       }),
     );
