@@ -1,19 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import { matchmakingGames as GAMES } from '../utils/supportedGames.js'
 import './Matchmaking.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
-
-const GAMES = [
-  'CS2',
-  'Valorant',
-  'League of Legends',
-  'Dota',
-  'OW2',
-  'Rocket League',
-  'It Takes Two',
-]
 
 /**
  * Role options per game. Games without fixed roles (Rocket League, It Takes Two)

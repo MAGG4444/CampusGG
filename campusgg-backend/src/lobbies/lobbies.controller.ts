@@ -16,6 +16,7 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import type { AuthenticatedRequest } from '../auth/jwt-auth.guard';
 
 import { CreateLobbyDto } from './dto/create-lobby.dto';
@@ -80,8 +81,12 @@ export class LobbiesController {
   // ============================================================
 
   @Get('db')
-  async getDatabaseLobbies(@Query() filters: SearchLobbiesDto) {
-    return this.lobbiesService.findAll(filters);
+  @UseGuards(OptionalJwtAuthGuard)
+  async getDatabaseLobbies(
+    @Query() filters: SearchLobbiesDto,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    return this.lobbiesService.findAll(filters, request.user?.id);
   }
 
   // ============================================================
@@ -97,6 +102,14 @@ export class LobbiesController {
   ) {
     if (!request.user?.id) throw new UnauthorizedException();
     return this.lobbiesService.findMine(request.user.id, query);
+  }
+
+  @Get('memberships/me')
+  @UseGuards(JwtAuthGuard)
+  findMyMemberships(@Req() request: AuthenticatedRequest) {
+    return this.lobbiesService.findMyMemberships(
+      this.getAuthenticatedUserId(request),
+    );
   }
 
   @Get(':id')

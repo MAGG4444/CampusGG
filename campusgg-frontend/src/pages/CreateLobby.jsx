@@ -8,6 +8,7 @@ import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
 import GameSelect from '../components/GameSelect.jsx'
 import logo from '../assets/LOGO.png'
 import './CreateLobby.css'
+import { participantLimitOptions, participantLimitPayload } from '../utils/lobbyCapacity.js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -17,13 +18,6 @@ const tagOptions = [
   'LFG',
   'Meta Analysis',
   'Tournaments',
-]
-
-const participantLimitOptions = [
-  { label: 'Unlimited', value: 'unlimited' },
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 },
 ]
 
 const visibilityOptions = [
@@ -208,9 +202,7 @@ function CreateLobby() {
           : {}),
 
         // Omit participantLimit for unlimited lobbies.
-        ...(formData.participantLimit !== 'unlimited'
-          ? { participantLimit: formData.participantLimit }
-          : {}),
+        ...participantLimitPayload(formData.participantLimit),
       }
 
       // The backend identifies the host from the JWT.
@@ -436,6 +428,7 @@ function CreateLobby() {
             }
             aria-label="Participant Limit"
           >
+            {[20, 50, 100].includes(formData.participantLimit) && <span className="create-label">Saved limit: {formData.participantLimit}</span>}
             {participantLimitOptions.map((option) => (
               <button
                 className={`mini-chip ${

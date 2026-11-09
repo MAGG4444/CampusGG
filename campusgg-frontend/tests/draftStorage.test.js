@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { deleteDraft, draftDefaults, getDraft, listDrafts, saveDraft } from '../src/utils/draftStorage.js'
+import { participantLimitOptions, participantLimitPayload } from '../src/utils/lobbyCapacity.js'
 
 function memoryStorage() {
   const data = new Map()
@@ -12,6 +13,16 @@ function memoryStorage() {
     removeItem: (key) => data.delete(key),
   }
 }
+
+test('new and historical lobby capacity drafts restore and preserve submission values', () => {
+  const storage = memoryStorage()
+  assert.deepEqual(participantLimitOptions.map(option => option.value), [2, 5, 10, 'unlimited'])
+  for (const value of [2, 5, 10, 'unlimited', 20, 50, 100]) {
+    const draft = saveDraft('alice', 'lobby', { ...draftDefaults.lobby, participantLimit: value }, null, storage)
+    assert.equal(getDraft('alice', draft.id, 'lobby', storage).formData.participantLimit, value)
+    assert.deepEqual(participantLimitPayload(value), value === 'unlimited' ? {} : { participantLimit: value })
+  }
+})
 
 test('multiple drafts of both types survive a fresh read and updates preserve identity', () => {
   const storage = memoryStorage()

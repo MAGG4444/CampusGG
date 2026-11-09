@@ -30,7 +30,7 @@ function sanitizeForm(type, data) {
   for (const [field, defaultValue] of Object.entries(draftDefaults[type])) {
     const value = source[field]
     if (field === 'participantLimit') {
-      if (!['unlimited', 20, 50, 100].includes(value)) throw new Error('Invalid participant limit.')
+      if (!['unlimited', 2, 5, 10, 20, 50, 100].includes(value)) throw new Error('Invalid participant limit.')
     } else if (Array.isArray(defaultValue)) {
       if (!Array.isArray(value) || !value.every((item) => typeof item === 'string')) {
         throw new Error('Invalid draft list.')
