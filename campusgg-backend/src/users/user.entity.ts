@@ -30,6 +30,30 @@ export class User {
   @Column({ type: 'varchar', length: 500, default: '' })
   bio?: string;
 
+  @Index('UQ_users_steam_id', { unique: true })
+  @Column({ name: 'steam_id', type: 'varchar', length: 17, nullable: true })
+  steamId?: string | null;
+
+  @Column({ name: 'steam_linked_at', type: 'timestamptz', nullable: true })
+  steamLinkedAt?: Date | null;
+
+  @Column({ name: 'steam_synced_at', type: 'timestamptz', nullable: true })
+  steamSyncedAt?: Date | null;
+
+  @Column({
+    name: 'steam_cs2_playtime_minutes',
+    type: 'integer',
+    nullable: true,
+  })
+  steamCs2PlaytimeMinutes?: number | null;
+
+  @Column({
+    name: 'steam_dota2_playtime_minutes',
+    type: 'integer',
+    nullable: true,
+  })
+  steamDota2PlaytimeMinutes?: number | null;
+
   @Column({
     name: 'gaming_profiles',
     type: 'jsonb',
