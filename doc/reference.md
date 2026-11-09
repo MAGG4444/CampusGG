@@ -1,11 +1,9 @@
-# Reference — CampusGG (Team Relentless III)
+# Reference — CampusGG
 | Field | Value |
 |---|---|
 | Project | CampusGG — a `.edu`-verified forum for finding gaming teammates at the same school |
 | Team | Relentless III — Jingwen Huang, Justin Samuel, Tianyu Du |
 | Repository | [github.com/MAGG4444/CampusGG](https://github.com/MAGG4444/CampusGG) — last updated 2026-11-08 |
-
-**Scope and audience:** implemented behavior in this repository (not a tutorial, how-to, or design rationale), for developers integrating with or extending CampusGG.
 
 ## 1. System Structure
 ### 1.1 Repository layout
