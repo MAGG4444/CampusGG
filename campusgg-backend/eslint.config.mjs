@@ -19,7 +19,14 @@ export default tseslint.config(
       },
       sourceType: 'commonjs',
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: [
+            'test/*.ts',
+            'test/*/*.ts',
+            'test/*/*/*.ts',
+            'test/__mocks__/@nestjs/*.ts',
+          ],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },

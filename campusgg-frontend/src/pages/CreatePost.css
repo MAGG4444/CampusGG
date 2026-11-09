@@ -1,0 +1,5 @@
+.create-post-page { min-height: 640px; }
+.create-post-title-fields { width: 100%; }
+.create-post-content-input { min-height: 280px; padding: 18px; resize: vertical; font-size: 0.96rem; line-height: 1.7; }
+.create-post-actions { padding-top: 28px; }
+@media (max-width: 560px) { .create-post-content-input { min-height: 220px; } }
