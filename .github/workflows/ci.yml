@@ -42,7 +42,7 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
-      - name: Run tests
+      - name: Run unit tests
         run: npm test
 
       - name: Build application
@@ -53,6 +53,31 @@ jobs:
         with:
           name: campusgg-backend-v${{ steps.version.outputs.version }}
           path: campusgg-backend/dist
+
+  integration-test:
+    name: Integration Tests CampusGG
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: campusgg-backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: campusgg-backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: npm run test:e2e
 
   frontend-build-and-test:
     name: Build and Test Frontend CampusGG
@@ -96,7 +121,7 @@ jobs:
 
   generate-sbom:
     name: Generate and Inspect SBOM (Syft)
-    needs: [build-and-test, frontend-build-and-test]
+    needs: [build-and-test, integration-test, frontend-build-and-test]
     runs-on: ubuntu-latest
     permissions:
       contents: write
