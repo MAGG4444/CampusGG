@@ -4,6 +4,8 @@ import { useAuth } from '../context/useAuth.js'
 import './SignIn.css'
 import './SignUp.css'
 
+const PENDING_EMAIL_KEY = 'campusgg-pending-email'
+
 const initialValues = {
   email: '',
   username: '',
@@ -71,11 +73,12 @@ function validate(values) {
 function SignUp() {
   const [values, setValues] = useState(initialValues)
   const [errors, setErrors] = useState({})
-  const [successMessage, setSuccessMessage] = useState('')
   const [formError, setFormError] = useState('')
   const { signUp } = useAuth()
   const navigate = useNavigate()
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const normalizedEmail = values.email.trim().toLowerCase()
 
   function handleChange(event) {
     const { name, value } = event.target
@@ -88,7 +91,6 @@ function SignUp() {
       delete nextErrors[name]
       return nextErrors
     })
-    setSuccessMessage('')
     setFormError('')
   }
 
@@ -97,7 +99,6 @@ function SignUp() {
 
     const nextErrors = validate(values)
     setErrors(nextErrors)
-    setSuccessMessage('')
 
     const firstInvalidField = fields.find((field) => nextErrors[field.name])
     if (firstInvalidField) {
@@ -105,19 +106,19 @@ function SignUp() {
       return
     }
 
-    setSuccessMessage('')
     setFormError('')
     setIsSubmitting(true)
 
     try {
       await signUp({
-        email: values.email,
+        email: normalizedEmail,
         username: values.username,
         password: values.password,
       })
 
-      // Registration succeeded — send them to verify their email.
-      navigate('/verify-email', { state: { email: values.email } })
+      // Keep only the pending email in this browser tab, never the password or OTP.
+      sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail)
+      navigate('/verify-email', { state: { email: normalizedEmail } })
     } catch (err) {
       setFormError(
         err instanceof Error
@@ -188,14 +189,14 @@ function SignUp() {
           >
             {isSubmitting ? 'Creating Account...' : 'Sign Up'}
           </button>
-
-          {successMessage && (
-            <p className="signup-success" role="status">
-              {successMessage}
-            </p>
-          )}
         </form>
 
+        <p className="auth-switch">
+          Already started signing up?{' '}
+          <Link to="/verify-email" state={{ email: normalizedEmail }}>
+            Continue Email Verification
+          </Link>
+        </p>
         <p className="auth-switch">
           Already have an account? <Link to="/signin">Sign In</Link>
         </p>

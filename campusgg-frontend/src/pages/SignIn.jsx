@@ -1,15 +1,16 @@
-
 import { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import './SignIn.css'
+
+const PENDING_EMAIL_KEY = 'campusgg-pending-email'
 
 function SignIn() {
   const navigate = useNavigate()
   const location = useLocation()
   const { signIn } = useAuth()
 
-  const [email, setEmail] = useState('')
+  const [email, setEmail] = useState(location.state?.email ?? '')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -33,20 +34,27 @@ function SignIn() {
     setIsSubmitting(true)
 
     try {
-      // Authenticate against the CampusGG backend.
       await signIn(email, password)
-
-      // Clear the password after successful login.
       setPassword('')
+      sessionStorage.removeItem(PENDING_EMAIL_KEY)
 
       // Return to where the user was trying to go (e.g., /matchmaking).
       navigate(location.state?.from?.pathname || '/')
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : 'Unable to sign in. Please try again.',
-      )
+      const message = err instanceof Error
+        ? err.message
+        : 'Unable to sign in. Please try again.'
+
+      // The backend returns this only after validating the user's password.
+      // Redirect the unverified user to the existing verification flow.
+      if (message.toLowerCase().includes('verify your .edu email')) {
+        const normalizedEmail = email.trim().toLowerCase()
+        sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail)
+        navigate('/verify-email', { state: { email: normalizedEmail } })
+        return
+      }
+
+      setError(message)
     } finally {
       setIsSubmitting(false)
     }
@@ -65,6 +73,12 @@ function SignIn() {
           Welcome back. Your next squad is waiting.
         </p>
 
+        {location.state?.verified && (
+          <p className="signin-intro" role="status">
+            Your email is verified. You can now sign in.
+          </p>
+        )}
+
         <form noValidate onSubmit={handleSubmit}>
           <div className="signin-field">
             <label htmlFor="signin-email">Email</label>
@@ -76,9 +90,7 @@ function SignIn() {
               autoComplete="email"
               value={email}
               aria-describedby={error ? 'signin-error' : undefined}
-              aria-invalid={
-                Boolean(error) && !email.trim() ? 'true' : undefined
-              }
+              aria-invalid={Boolean(error) && !email.trim() ? 'true' : undefined}
               onChange={(event) => {
                 setEmail(event.target.value)
                 setError('')
@@ -96,9 +108,7 @@ function SignIn() {
               autoComplete="current-password"
               value={password}
               aria-describedby={error ? 'signin-error' : undefined}
-              aria-invalid={
-                Boolean(error) && !password.trim() ? 'true' : undefined
-              }
+              aria-invalid={Boolean(error) && !password.trim() ? 'true' : undefined}
               onChange={(event) => {
                 setPassword(event.target.value)
                 setError('')
@@ -107,27 +117,24 @@ function SignIn() {
           </div>
 
           {error ? (
-            <p
-              className="signin-error"
-              id="signin-error"
-              role="alert"
-            >
+            <p className="signin-error" id="signin-error" role="alert">
               {error}
             </p>
           ) : null}
 
-          <button
-            className="signin-submit"
-            type="submit"
-            disabled={isSubmitting}
-          >
+          <button className="signin-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
 
         <p className="auth-switch">
-          Don&apos;t have an account?{' '}
-          <Link to="/signup">Sign Up</Link>
+          Haven&apos;t verified your account?{' '}
+          <Link to="/verify-email" state={{ email: email.trim().toLowerCase() }}>
+            Verify Email
+          </Link>
+        </p>
+        <p className="auth-switch">
+          Don&apos;t have an account? <Link to="/signup">Sign Up</Link>
         </p>
       </section>
     </div>

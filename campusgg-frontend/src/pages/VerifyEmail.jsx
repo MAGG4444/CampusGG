@@ -1,21 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
 import './SignIn.css'
+
+const PENDING_EMAIL_KEY = 'campusgg-pending-email'
 
 function VerifyEmail() {
   const navigate = useNavigate()
   const location = useLocation()
   const { verifyEmail, resendVerification } = useAuth()
 
-  // Pre-fill email from route state if we arrived from the signup page.
-  const initialEmail = location.state?.email ?? ''
-  const [email, setEmail] = useState(initialEmail)
+  // Route state handles first signup; session storage handles returning later.
+  const [email, setEmail] = useState(
+    () => location.state?.email || sessionStorage.getItem(PENDING_EMAIL_KEY) || '',
+  )
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResending, setIsResending] = useState(false)
+
+  useEffect(() => {
+    const normalizedEmail = email.trim().toLowerCase()
+    if (/^[^\s@]+@[^\s@]+\.edu$/.test(normalizedEmail)) {
+      sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail)
+    }
+  }, [email])
 
   async function handleVerify(event) {
     event.preventDefault()
@@ -36,9 +46,11 @@ function VerifyEmail() {
 
     try {
       await verifyEmail(email, code)
-
-      // Verification complete — send them to sign in.
-      navigate('/signin')
+      sessionStorage.removeItem(PENDING_EMAIL_KEY)
+      navigate('/signin', {
+        replace: true,
+        state: { verified: true, email: email.trim().toLowerCase() },
+      })
     } catch (err) {
       setError(
         err instanceof Error
@@ -52,24 +64,13 @@ function VerifyEmail() {
 
   async function handleResend(event) {
     event.preventDefault()
-
     if (isResending) return
 
     setSuccessMessage('')
-    const trimmedEmail = email.trim()
+    const normalizedEmail = email.trim().toLowerCase()
 
-    if (!trimmedEmail) {
-      setError('Enter your email address to resend the code.')
-      return
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
-      setError('Enter a valid email address.')
-      return
-    }
-
-    if (!trimmedEmail.toLowerCase().endsWith('.edu')) {
-      setError('Use an email address that ends in .edu.')
+    if (!/^[^\s@]+@[^\s@]+\.edu$/.test(normalizedEmail)) {
+      setError('Enter a valid .edu email address to request a new code.')
       return
     }
 
@@ -77,14 +78,17 @@ function VerifyEmail() {
     setIsResending(true)
 
     try {
-      await resendVerification(trimmedEmail)
-      setError('')
-      setSuccessMessage(`Verification code resent to ${trimmedEmail}. Check your inbox.`)
+      const response = await resendVerification(normalizedEmail)
+      sessionStorage.setItem(PENDING_EMAIL_KEY, normalizedEmail)
+      setCode('')
+      setSuccessMessage(
+        response?.message || 'If this account is pending verification, check your inbox for a new code.',
+      )
     } catch (err) {
       setError(
         err instanceof Error && err.message
           ? err.message
-          : 'Unable to resend verification code. Please try again.',
+          : 'Unable to request a new verification code. Please try again.',
       )
     } finally {
       setIsResending(false)
@@ -100,8 +104,8 @@ function VerifyEmail() {
 
         <h1 id="verify-title">Verify Your Email</h1>
         <p className="signin-intro">
-          A 6-digit code was sent to your inbox. Enter it below to complete
-          registration.
+          Enter your 6-digit code to finish creating your account. If you left
+          this page earlier or the code expired, request a new one below.
         </p>
 
         <form className="verify-form" noValidate onSubmit={handleVerify}>
@@ -116,6 +120,7 @@ function VerifyEmail() {
               placeholder="you@university.edu"
               onChange={(event) => {
                 setEmail(event.target.value)
+                setCode('')
                 setError('')
                 setSuccessMessage('')
               }}
@@ -130,12 +135,12 @@ function VerifyEmail() {
               name="code"
               type="text"
               autoComplete="one-time-code"
-              inputmode="numeric"
-              maxlength="6"
+              inputMode="numeric"
+              maxLength={6}
               value={code}
               placeholder="000000"
               onChange={(event) => {
-                setCode(event.target.value.replace(/\D/g, ''))
+                setCode(event.target.value.replace(/\D/g, '').slice(0, 6))
                 setError('')
               }}
               required
@@ -154,11 +159,7 @@ function VerifyEmail() {
             ) : null}
           </div>
 
-          <button
-            className="signin-submit"
-            type="submit"
-            disabled={isSubmitting}
-          >
+          <button className="signin-submit" type="submit" disabled={isSubmitting || isResending}>
             {isSubmitting ? 'Verifying...' : 'Verify Email'}
           </button>
 
@@ -167,7 +168,7 @@ function VerifyEmail() {
             <button
               type="button"
               onClick={handleResend}
-              disabled={isResending}
+              disabled={isResending || isSubmitting}
               aria-busy={isResending}
               className="resend-link"
             >
@@ -176,8 +177,7 @@ function VerifyEmail() {
           </p>
 
           <p className="auth-switch">
-            Already have an account?{' '}
-            <Link to="/signin">Sign In</Link>
+            Already verified? <Link to="/signin">Sign In</Link>
           </p>
         </form>
       </section>
