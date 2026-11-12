@@ -118,4 +118,58 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   async delete(key: string) {
     return this.getClient().del(key);
   }
+
+  /**
+   * Whether Redis is connected and ready for commands.
+   * Optional cache consumers use this to skip work when Redis is disabled.
+   */
+  isAvailable(): boolean {
+    return this.client?.isReady === true;
+  }
+
+  /**
+   * Best-effort cache reads. Redis is optional in this project, so callers
+   * that can fall back to a live data source should use these helpers
+   * instead of the strict get/set/delete methods above.
+   */
+  async tryGet(key: string): Promise<string | null> {
+    if (!this.isAvailable()) return null;
+
+    try {
+      return await this.get(key);
+    } catch (error) {
+      this.logger.warn(
+        `Redis read failed for ${key}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
+
+  async trySet(
+    key: string,
+    value: string,
+    expirationSeconds?: number,
+  ): Promise<void> {
+    if (!this.isAvailable()) return;
+
+    try {
+      await this.set(key, value, expirationSeconds);
+    } catch (error) {
+      this.logger.warn(
+        `Redis write failed for ${key}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  async tryDelete(key: string): Promise<void> {
+    if (!this.isAvailable()) return;
+
+    try {
+      await this.delete(key);
+    } catch (error) {
+      this.logger.warn(
+        `Redis delete failed for ${key}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
 }
