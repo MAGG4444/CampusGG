@@ -3,7 +3,8 @@ const PREFIX = 'campusgg-draft:v1:'
 export const draftDefaults = {
   lobby: {
     lobbyName: '', subtitle: '', administratorInput: '', administrators: [],
-    tags: ['All Categories'], game: '', details: '', participantLimit: 'unlimited', visibility: 'public',
+    tags: ['All Categories'], game: '', skillLevel: '', neededRoles: [],
+    details: '', participantLimit: 'unlimited', visibility: 'public',
   },
   post: {
     title: '', tag: 'All Categories', game: '', content: '', visibility: 'Public',
@@ -28,7 +29,7 @@ function sanitizeForm(type, data) {
     : lobbyCompatibleData
   const result = {}
   for (const [field, defaultValue] of Object.entries(draftDefaults[type])) {
-    const value = source[field]
+    const value = source[field] === undefined ? defaultValue : source[field]
     if (field === 'participantLimit') {
       if (!['unlimited', 2, 5, 10, 20, 50, 100].includes(value)) throw new Error('Invalid participant limit.')
     } else if (Array.isArray(defaultValue)) {

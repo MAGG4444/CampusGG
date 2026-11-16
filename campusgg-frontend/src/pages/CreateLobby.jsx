@@ -9,6 +9,11 @@ import GameSelect from '../components/GameSelect.jsx'
 import logo from '../assets/LOGO.png'
 import './CreateLobby.css'
 import { participantLimitOptions, participantLimitPayload } from '../utils/lobbyCapacity.js'
+import {
+  canonicalGameName,
+  experienceLevels,
+  rolesForGame,
+} from '../utils/profile.js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000'
 
@@ -40,11 +45,26 @@ function CreateLobby() {
   const [errors, setErrors] = useState({})
   const [adminFeedback, setAdminFeedback] = useState('')
   const [isPublishing, setIsPublishing] = useState(false)
+  const [prefill] = useState(() => {
+    const params = new URLSearchParams(location.search)
+    const game = canonicalGameName(params.get('game')?.trim() ?? '')
+    const allowedRoles = new Set(
+      rolesForGame(game).map((role) => role.toLowerCase()),
+    )
+    const neededRoles = (params.get('roles') ?? '')
+      .split(',')
+      .map((role) => role.trim())
+      .filter((role) => role && allowedRoles.has(role.toLowerCase()))
+    return {
+      ...(game ? { game } : {}),
+      ...(neededRoles.length > 0 ? { neededRoles } : {}),
+    }
+  })
   const {
     formData, setFormData, statusMessage, setStatusMessage, blocked,
     hasSavedDraft, save: handleSave, discard, completePublish,
     navigationBlocker,
-  } = useDraftEditor('lobby', isPublishing)
+  } = useDraftEditor('lobby', isPublishing, prefill)
 
   function updateField(field, value) {
     setFormData((currentData) => ({
@@ -81,6 +101,35 @@ function CreateLobby() {
       return nextErrors
     })
 
+    setStatusMessage('')
+  }
+
+  function changeGame(game) {
+    const allowedRoles = new Set(
+      rolesForGame(game).map((role) => role.toLowerCase()),
+    )
+    setFormData((currentData) => ({
+      ...currentData,
+      game,
+      neededRoles: currentData.neededRoles.filter((role) =>
+        allowedRoles.has(role.toLowerCase()),
+      ),
+    }))
+    setErrors((currentErrors) => {
+      const nextErrors = { ...currentErrors }
+      delete nextErrors.game
+      return nextErrors
+    })
+    setStatusMessage('')
+  }
+
+  function toggleNeededRole(role) {
+    setFormData((currentData) => ({
+      ...currentData,
+      neededRoles: currentData.neededRoles.includes(role)
+        ? currentData.neededRoles.filter((selected) => selected !== role)
+        : [...currentData.neededRoles, role],
+    }))
     setStatusMessage('')
   }
 
@@ -191,6 +240,14 @@ function CreateLobby() {
 
         ...(formData.game.trim()
           ? { game: formData.game.trim() }
+          : {}),
+
+        ...(formData.skillLevel
+          ? { skillLevel: formData.skillLevel }
+          : {}),
+
+        ...(formData.neededRoles.length > 0
+          ? { neededRoles: formData.neededRoles }
           : {}),
 
         ...(formData.subtitle.trim()
@@ -374,12 +431,60 @@ function CreateLobby() {
             id="lobby-game"
             value={formData.game}
             invalid={Boolean(errors.game)}
-            onChange={(game) => updateField('game', game)}
+            onChange={changeGame}
           />
           {errors.game ? (
             <div className="field-error" role="alert">{errors.game}</div>
           ) : null}
         </div>
+
+        <div className="create-form-group create-settings-section">
+          <span className="create-label">Skill level</span>
+          <div className="tag-row" aria-label="Skill level">
+            <button
+              className={`mini-chip ${formData.skillLevel === '' ? 'mini-chip-dark' : ''}`}
+              type="button"
+              aria-pressed={formData.skillLevel === ''}
+              onClick={() => updateField('skillLevel', '')}
+            >
+              {formData.skillLevel === '' ? '▽ ' : ''}Any skill
+            </button>
+            {experienceLevels.map((level) => (
+              <button
+                className={`mini-chip ${formData.skillLevel === level ? 'mini-chip-dark' : ''}`}
+                key={level}
+                type="button"
+                aria-pressed={formData.skillLevel === level}
+                onClick={() => updateField('skillLevel', level)}
+              >
+                {formData.skillLevel === level ? '▽ ' : ''}
+                {level}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {rolesForGame(formData.game).length > 0 ? (
+          <div className="create-form-group create-settings-section">
+            <span className="create-label">
+              Roles needed <span>(optional)</span>
+            </span>
+            <div className="tag-row" aria-label="Roles needed">
+              {rolesForGame(formData.game).map((role) => (
+                <button
+                  className={`mini-chip ${formData.neededRoles.includes(role) ? 'mini-chip-dark' : ''}`}
+                  key={role}
+                  type="button"
+                  aria-pressed={formData.neededRoles.includes(role)}
+                  onClick={() => toggleNeededRole(role)}
+                >
+                  {formData.neededRoles.includes(role) ? '▽ ' : ''}
+                  {role}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="create-form-group create-settings-section create-tags-group">
           <span className="create-label">Tags</span>

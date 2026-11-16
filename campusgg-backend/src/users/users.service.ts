@@ -5,28 +5,16 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
-
-const GAME_OPTIONS: Record<string, { name: string; roles: readonly string[] }> =
-  {
-    valorant: {
-      name: 'Valorant',
-      roles: ['Duelist', 'Initiator', 'Controller', 'Sentinel'],
-    },
-    'league of legends': {
-      name: 'League of Legends',
-      roles: ['Top', 'Jungle', 'Mid', 'ADC', 'Support'],
-    },
-    'overwatch 2': {
-      name: 'Overwatch 2',
-      roles: ['Tank', 'Damage', 'Support'],
-    },
-  };
-const GENERIC_ROLE_OPTIONS = ['Leader', 'Strategist', 'Support', 'Flex'];
+import {
+  canonicalRole,
+  findGameDefinition,
+  findGamingProfile,
+} from '../common/games.config';
 
 @Injectable()
 export class UsersService {
@@ -64,23 +52,18 @@ export class UsersService {
     if (dto.bio !== undefined) changes.bio = dto.bio.trim();
     if (dto.gamingProfiles !== undefined) {
       changes.gamingProfiles = dto.gamingProfiles.map((profile) => {
-        const gameKey = profile.game.toLowerCase();
-        const knownGame = GAME_OPTIONS[gameKey];
-        const allowedRoles = knownGame?.roles ?? GENERIC_ROLE_OPTIONS;
-        const canonicalRoles = new Map(
-          allowedRoles.map((role) => [role.toLowerCase(), role]),
-        );
+        const game = findGameDefinition(profile.game);
         const preferredRoles = profile.preferredRoles.map((role) => {
-          const canonicalRole = canonicalRoles.get(role.toLowerCase());
-          if (!canonicalRole) {
+          const canonical = canonicalRole(profile.game, role);
+          if (!canonical) {
             throw new BadRequestException(
               `Invalid preferred role for ${profile.game}: ${role}`,
             );
           }
-          return canonicalRole;
+          return canonical;
         });
         return {
-          game: knownGame?.name ?? profile.game,
+          game: game?.name ?? profile.game,
           preferredRoles,
           experienceLevel: profile.experienceLevel,
         };
@@ -93,5 +76,38 @@ export class UsersService {
     }
 
     return this.findOne(id);
+  }
+
+  /**
+   * Public-profile fields for Suggested Users. The caller must not serialize
+   * `email`; it exists here only to derive a campus domain.
+   */
+  async findRecommendationCandidates(
+    viewerId: string,
+    game?: string,
+  ): Promise<User[]> {
+    const candidates = await this.usersRepository.find({
+      select: {
+        id: true,
+        username: true,
+        displayName: true,
+        bio: true,
+        email: true,
+        eduVerified: true,
+        gamingProfiles: true,
+        createdAt: true,
+      },
+      where: { eduVerified: true, id: Not(viewerId) },
+      order: { createdAt: 'DESC' },
+      take: 200,
+    });
+    if (!game) {
+      return candidates.filter(
+        (candidate) => (candidate.gamingProfiles ?? []).length > 0,
+      );
+    }
+    return candidates.filter((candidate) =>
+      findGamingProfile(candidate.gamingProfiles, game),
+    );
   }
 }

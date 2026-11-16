@@ -14,7 +14,6 @@ import './Navbar.css'
 const PENDING_EMAIL_KEY = 'campusgg-pending-email'
 
 const navItems = [
-  { to: '/matchmaking', label: 'Matchmaking', icon: Gamepad2 },
   { to: '/lobby', label: 'Lobby', icon: UsersRound },
   { to: '/forum', label: 'Forum', icon: MessageSquareText },
   { to: '/chat', label: 'Connection', icon: MessageCircle },

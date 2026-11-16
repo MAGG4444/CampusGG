@@ -1,5 +1,5 @@
 import { FindManyOptions, In, Repository } from 'typeorm';
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { LobbiesService } from './lobbies.service';
 import { Lobby, LobbyVisibility } from './lobby.entity';
@@ -129,6 +129,64 @@ describe('LobbiesService', () => {
       service.create({ lobbyName: 'Test', details: 'Test' }, 'user'),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(manager.create).not.toHaveBeenCalled();
+  });
+
+  it('canonicalizes the game and needed roles on creation', async () => {
+    const manager = {
+      findOneOrFail: jest.fn().mockResolvedValue({ id: 'user' }),
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn((_entity: unknown, data: unknown) => data),
+      save: jest.fn().mockResolvedValue({ id: 'lobby' }),
+      transaction: jest.fn(),
+    };
+    manager.transaction.mockImplementation(
+      (work: (value: unknown) => unknown) => work(manager),
+    );
+    const service = new LobbiesService(
+      { manager } as unknown as Repository<Lobby>,
+      {
+        findOne: jest.fn().mockResolvedValue({ id: 'user' }),
+      } as unknown as UsersService,
+    );
+
+    await service.create(
+      {
+        lobbyName: 'Test',
+        details: 'Test',
+        game: 'csgo',
+        neededRoles: ['support', 'Entry'],
+      },
+      'user',
+    );
+
+    expect(manager.create).toHaveBeenCalledWith(
+      Lobby,
+      expect.objectContaining({
+        game: 'CS2',
+        neededRoles: ['Support', 'Entry'],
+      }),
+    );
+  });
+
+  it('rejects needed roles that are not valid for the game', async () => {
+    const service = new LobbiesService(
+      { manager: {} } as unknown as Repository<Lobby>,
+      {
+        findOne: jest.fn().mockResolvedValue({ id: 'user' }),
+      } as unknown as UsersService,
+    );
+
+    await expect(
+      service.create(
+        {
+          lobbyName: 'Test',
+          details: 'Test',
+          game: 'CS2',
+          neededRoles: ['Controller'],
+        },
+        'user',
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 
   it('should filter lobbies by game and skill level', async () => {

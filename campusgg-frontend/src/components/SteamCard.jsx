@@ -223,7 +223,7 @@ export default function SteamCard({ token, onNavigate }) {
           <p className="steam-copy">
             Link your Steam account to display your Counter-Strike 2 and
             Dota 2 playtime. Playtime is shown for context only and never
-            affects matchmaking.
+            affects lobby recommendations.
           </p>
           <button className="steam-action steam-action-primary" type="button"
             onClick={handleLink} disabled={busy}>
@@ -239,7 +239,7 @@ export default function SteamCard({ token, onNavigate }) {
         <>
           <p className="steam-copy">
             Playtime synced from Steam. Shown for context only; it does not
-            affect matchmaking.
+            affect lobby recommendations.
           </p>
           {(stats.cs2 || stats.dota2) && (
             <div className="steam-highlights">

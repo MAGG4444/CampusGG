@@ -223,3 +223,46 @@
   .chat-empty-state { padding-inline: 24px; }
   .active-chat-header .chat-avatar-large { width: 46px; height: 46px; border-radius: 13px; }
 }
+
+/* Suggested teammates: read-only discovery inside the connection sidebar. */
+.suggested-users { flex: 0 0 auto; margin: 0 16px 12px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: rgba(5, 14, 26, 0.5); }
+.suggested-users summary { min-height: 42px; padding: 0 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; list-style: none; color: var(--text-soft); font-size: 0.78rem; font-weight: 800; cursor: pointer; }
+.suggested-users summary::-webkit-details-marker { display: none; }
+.suggested-users summary::after { width: 7px; height: 7px; flex: none; border-right: 1.5px solid var(--gold-soft); border-bottom: 1.5px solid var(--gold-soft); transform: rotate(45deg); content: ""; transition: transform var(--transition-fast); }
+.suggested-users[open] summary::after { transform: rotate(225deg); }
+.suggested-users-title { min-width: 0; display: inline-flex; align-items: center; gap: 7px; color: var(--gold-soft); }
+.suggested-users-count { min-width: 22px; min-height: 22px; margin-left: auto; padding: 0 6px; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: var(--radius-pill); background: rgba(213, 178, 82, 0.1); color: var(--gold-bright); font-size: 0.68rem; }
+.suggested-users-body { max-height: 240px; padding: 6px 8px 8px; overflow-y: auto; border-top: 1px solid var(--border); scrollbar-color: rgba(213, 178, 82, 0.35) transparent; }
+.suggested-users-status { margin: 0; padding: 10px 5px; color: var(--muted); font-size: 0.76rem; line-height: 1.45; }
+.suggested-users-status a { color: var(--gold-bright); font-weight: 700; }
+.suggested-users-list { margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; list-style: none; }
+.suggested-user-card { width: 100%; min-width: 0; padding: 7px; display: flex; align-items: center; gap: 9px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--text); text-align: left; transition: border-color var(--transition-fast), background var(--transition-fast); }
+.suggested-user-card:hover { border-color: var(--border); background: rgba(255, 255, 255, 0.045); }
+.suggested-user-card > svg { flex: 0 0 auto; color: var(--muted); }
+.suggested-avatar { width: 34px; height: 34px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: 10px; background: linear-gradient(145deg, rgba(213, 178, 82, 0.22), rgba(36, 67, 103, 0.48)); color: var(--gold-bright); font-family: var(--font-display); font-size: 0.7rem; font-weight: 800; }
+.suggested-avatar-large { width: 54px; height: 54px; border-radius: 16px; font-size: 0.95rem; }
+.suggested-user-copy { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.suggested-user-copy strong { overflow: hidden; font-size: 0.79rem; text-overflow: ellipsis; white-space: nowrap; }
+.suggested-user-copy > span { overflow: hidden; color: var(--muted); font-size: 0.69rem; text-overflow: ellipsis; white-space: nowrap; }
+.suggested-user-copy .suggested-user-reason { color: var(--gold-soft); font-size: 0.65rem; }
+
+.suggested-user-modal-backdrop { position: fixed; inset: 0; z-index: 80; padding: 20px; display: grid; place-items: center; background: rgba(3, 9, 17, 0.72); backdrop-filter: blur(5px); }
+.suggested-user-modal { width: min(100%, 460px); max-height: min(86dvh, 640px); overflow: hidden; display: flex; flex-direction: column; border: 1px solid var(--border-strong); border-radius: var(--radius-lg); background: linear-gradient(180deg, #152a44, #081525); box-shadow: 0 28px 70px rgba(0, 0, 0, 0.48); }
+.suggested-user-modal:focus { outline: none; }
+.suggested-user-modal-header { padding: 18px 18px 16px 20px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--border); }
+.suggested-user-modal-identity { min-width: 0; display: flex; align-items: center; gap: 13px; }
+.suggested-user-modal-identity h2 { margin: 2px 0 0; font-family: var(--font-display); font-size: 1.25rem; }
+.suggested-user-modal-identity div > span { display: block; margin-top: 2px; color: var(--muted); font-size: 0.76rem; }
+.suggested-user-modal-eyebrow { margin: 0; color: var(--gold-soft); font-size: 0.62rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
+.suggested-user-modal-header > button { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 11px; background: rgba(255, 255, 255, 0.04); color: var(--text-soft); }
+.suggested-user-modal-header > button:hover { border-color: var(--border-strong); background: rgba(213, 178, 82, 0.1); color: var(--gold-bright); }
+.suggested-user-modal-body { min-height: 0; padding: 18px 20px 22px; overflow-y: auto; }
+.suggested-user-bio { margin: 0 0 14px; color: var(--text-soft); font-size: 0.88rem; line-height: 1.55; }
+.suggested-user-bio-empty { color: var(--muted); font-style: italic; }
+.suggested-user-reasons { margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; list-style: none; }
+.suggested-user-reasons li { padding: 4px 9px; border: 1px solid rgba(240, 207, 114, 0.34); border-radius: var(--radius-pill); background: rgba(213, 178, 82, 0.1); color: var(--gold-soft); font-size: 0.7rem; font-weight: 700; }
+.suggested-user-facts { margin: 0 0 18px; display: grid; gap: 10px; }
+.suggested-user-facts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
+.suggested-user-facts dt { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
+.suggested-user-facts dd { margin: 0; color: var(--text); font-size: 0.8rem; font-weight: 700; text-align: right; overflow-wrap: anywhere; }
+.suggested-user-note { margin: 0; padding: 11px 12px; border: 1px dashed var(--border-strong); border-radius: 10px; color: var(--muted); font-size: 0.72rem; line-height: 1.45; }

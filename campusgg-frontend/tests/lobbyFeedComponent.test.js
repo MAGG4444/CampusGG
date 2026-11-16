@@ -31,6 +31,8 @@ test('sticky toolbar, incremental rendering, filtering and background refresh', 
     replace('/src/components/LobbyCard.jsx', moduleUrl(`import React from ${JSON.stringify(reactUrl)}; export default function Card(props) { return React.createElement('article', { ref: props.cardRef, 'data-name': props.lobbyName, 'data-count': props.memberCount, 'data-joining': props.isJoining, 'data-joined': props.isJoined }, React.createElement('button', { onClick: props.onJoin, disabled: props.isJoining }, 'Join')) }`))
     replace('/src/components/SearchBar.jsx', moduleUrl(`import React from ${JSON.stringify(reactUrl)}; export default function Search(props) { return React.createElement('input', { 'aria-label': 'Search', value: props.value, onChange: e => props.onChange(e.target.value) }) }`))
     replace('/src/components/CurrentLobbyDialog.jsx', moduleUrl('export default function Stub() { return null }'))
+    replace('/src/components/RecommendedLobbies.jsx', moduleUrl('export default function Recommended(props) { globalThis.__feedTest.recommended = props; return null }'))
+    replace('/src/api/recommendations.js', moduleUrl('export const quickJoin = (...args) => globalThis.__feedTest.quickJoin(...args)'))
     const { default: LobbyFeed } = await import(moduleUrl(source))
     const listeners = new Map()
     const events = { addEventListener(name, fn) { listeners.set(name, fn) }, removeEventListener(name) { listeners.delete(name) } }
@@ -63,7 +65,8 @@ test('sticky toolbar, incremental rendering, filtering and background refresh', 
     mode = 'data'
     await act(async () => { resolveFirst({ ok: true, json: async () => [...lobbies, lobbies[0]] }); await wait(0) })
     const toolbar = renderer.root.findByProps({ className: 'lobby-toolbar' })
-    assert.equal(toolbar.findAllByType('button').length, 2)
+    assert.equal(toolbar.findAllByType('button').length, 3)
+    assert.ok(toolbar.findAllByType('button').some(button => button.children.includes('Find a squad')))
     assert.equal(toolbar.findAllByType('input').length, 1)
     assert.equal(renderer.root.findAllByType('h1').length, 0)
     assert.equal(renderer.root.findAllByType('article').length, 6)

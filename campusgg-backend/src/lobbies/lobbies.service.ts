@@ -4,6 +4,7 @@ import {
   MyContentQueryDto,
 } from '../common/dto/my-content.dto';
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -14,6 +15,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 
 import { UsersService } from '../users/users.service';
+import {
+  canonicalGameName,
+  canonicalRole,
+  gamesMatch,
+} from '../common/games.config';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
 import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 import { Lobby, LobbyVisibility } from './lobby.entity';
@@ -91,6 +97,7 @@ export class LobbiesService {
         tags: true,
         game: true,
         skillLevel: true,
+        neededRoles: true,
         participantLimit: true,
         visibility: true,
         createdAt: true,
@@ -128,6 +135,80 @@ export class LobbiesService {
   }
 
   // ============================================================
+  // RECOMMENDATION CANDIDATES
+  // Public, joinable lobbies for the recommendation scorer.
+  // ============================================================
+
+  async findRecommendationCandidates(
+    viewerId: string,
+    game?: string,
+  ): Promise<Array<Lobby & { memberCount: number }>> {
+    const lobbies = await this.lobbiesRepository.find({
+      relations: { host: true },
+      select: {
+        id: true,
+        lobbyName: true,
+        subtitle: true,
+        details: true,
+        tags: true,
+        game: true,
+        skillLevel: true,
+        neededRoles: true,
+        participantLimit: true,
+        visibility: true,
+        createdAt: true,
+        updatedAt: true,
+        host: { id: true, username: true, email: true, gamingProfiles: true },
+      },
+      where: { visibility: LobbyVisibility.PUBLIC },
+      order: { updatedAt: 'DESC' },
+      take: 200,
+    });
+    if (lobbies.length === 0) return [];
+
+    const counts = await this.lobbiesRepository.manager
+      .getRepository(LobbyMember)
+      .createQueryBuilder('member')
+      .select('member.lobby_id', 'lobbyId')
+      .addSelect('COUNT(*)', 'count')
+      .where('member.lobby_id IN (:...lobbyIds)', {
+        lobbyIds: lobbies.map(({ id }) => id),
+      })
+      .groupBy('member.lobby_id')
+      .getRawMany<{ lobbyId: string; count: string }>();
+    const byLobby = new Map(
+      counts.map(({ lobbyId, count }) => [lobbyId, Number(count)]),
+    );
+    const staleBefore = Date.now() - 14 * 24 * 60 * 60 * 1000;
+
+    return lobbies
+      .map((lobby) => ({
+        ...lobby,
+        memberCount: byLobby.get(lobby.id) ?? 0,
+      }))
+      .filter(
+        (lobby) =>
+          lobby.host.id !== viewerId &&
+          lobby.updatedAt.getTime() >= staleBefore &&
+          (lobby.participantLimit == null ||
+            lobby.memberCount < lobby.participantLimit) &&
+          (!game || gamesMatch(lobby.game, game)),
+      );
+  }
+
+  /** The lobby the user currently belongs to, if any. */
+  async findCurrentLobbyId(userId: string): Promise<string | null> {
+    const membership = await this.lobbiesRepository.manager.findOne(
+      LobbyMember,
+      {
+        where: { user: { id: userId } },
+        relations: { lobby: true },
+      },
+    );
+    return membership?.lobby.id ?? null;
+  }
+
+  // ============================================================
   // GET LOBBY BY ID
   // Retrieve a specific lobby using its UUID
   // ============================================================
@@ -155,6 +236,17 @@ export class LobbiesService {
   ): Promise<Lobby> {
     // Verify that the hosting user exists
     const host = await this.usersService.findOne(hostUserId);
+    const gameInput = createLobbyDto.game?.trim();
+    const game = gameInput ? canonicalGameName(gameInput) : null;
+    const neededRoles = (createLobbyDto.neededRoles ?? []).map((role) => {
+      const canonical = canonicalRole(game, role);
+      if (!canonical) {
+        throw new BadRequestException(
+          `Invalid needed role for ${game ?? 'this lobby'}: ${role}`,
+        );
+      }
+      return canonical;
+    });
 
     // Create lobby and host membership in one transaction
     return this.lobbiesRepository.manager.transaction(async (manager) => {
@@ -175,8 +267,9 @@ export class LobbiesService {
         subtitle: createLobbyDto.subtitle ?? null,
         details: createLobbyDto.details,
         tags: createLobbyDto.tags ?? [],
-        game: createLobbyDto.game ?? null,
+        game,
         skillLevel: createLobbyDto.skillLevel ?? null,
+        neededRoles,
         participantLimit: createLobbyDto.participantLimit ?? null,
         visibility: createLobbyDto.visibility ?? LobbyVisibility.PUBLIC,
         host,
@@ -195,59 +288,6 @@ export class LobbiesService {
       // Save the host membership
       await manager.save(LobbyMember, hostMembership);
 
-      return savedLobby;
-    });
-  }
-
-  /** Create a matched lobby and every required membership in one transaction. */
-  async createMatchedLobby(
-    dto: CreateLobbyDto,
-    userIds: readonly string[],
-  ): Promise<Lobby> {
-    if (!userIds.length || new Set(userIds).size !== userIds.length) {
-      throw new ConflictException('A match must contain distinct players.');
-    }
-
-    return this.lobbiesRepository.manager.transaction(async (manager) => {
-      const users = new Map<string, User>();
-      // Match the lock order used by batch enrollment to avoid deadlocks.
-      for (const id of [...userIds].sort()) {
-        const user = await manager.findOneOrFail(User, {
-          where: { id },
-          lock: { mode: 'pessimistic_write' },
-        });
-        users.set(id, user);
-      }
-      for (const id of userIds) {
-        if (await manager.findOne(LobbyMember, { where: { user: { id } } })) {
-          throw new ConflictException(
-            'A player already belongs to an active lobby.',
-          );
-        }
-      }
-
-      const lobby = manager.create(Lobby, {
-        lobbyName: dto.lobbyName,
-        subtitle: dto.subtitle ?? null,
-        details: dto.details,
-        tags: dto.tags ?? [],
-        game: dto.game ?? null,
-        skillLevel: dto.skillLevel ?? null,
-        participantLimit: dto.participantLimit ?? null,
-        visibility: dto.visibility ?? LobbyVisibility.PUBLIC,
-        host: users.get(userIds[0])!,
-      });
-      const savedLobby = await manager.save(Lobby, lobby);
-      for (const [index, id] of userIds.entries()) {
-        await manager.save(
-          LobbyMember,
-          manager.create(LobbyMember, {
-            lobby: savedLobby,
-            user: users.get(id)!,
-            role: index === 0 ? LobbyMemberRole.HOST : LobbyMemberRole.MEMBER,
-          }),
-        );
-      }
       return savedLobby;
     });
   }
@@ -396,64 +436,6 @@ export class LobbiesService {
           'Only the current host can delete this lobby',
         );
       await manager.remove(Lobby, lobby);
-    });
-  }
-
-  // ============================================================
-  // ADD MEMBERS (batch)
-  // Add multiple users to a lobby as members.
-  // Used by the matchmaking service to populate a lobby from a MatchGroup.
-  // ============================================================
-
-  async addMembers(lobbyId: string, userIds: string[]): Promise<void> {
-    return this.lobbiesRepository.manager.transaction(async (manager) => {
-      for (const userId of [...new Set(userIds)].sort()) {
-        await manager.findOneOrFail(User, {
-          where: { id: userId },
-          lock: { mode: 'pessimistic_write' },
-        });
-      }
-      const lobby = await manager.findOne(Lobby, {
-        where: { id: lobbyId },
-        lock: { mode: 'pessimistic_write' },
-      });
-
-      if (!lobby) {
-        throw new NotFoundException(`Lobby ${lobbyId} not found`);
-      }
-
-      for (const userId of userIds) {
-        const user = await this.usersService.findOne(userId);
-
-        const existing = await manager.findOne(LobbyMember, {
-          where: {
-            lobby: { id: lobbyId },
-            user: { id: userId },
-          },
-        });
-
-        if (existing) {
-          continue;
-        }
-
-        if (
-          await manager.findOne(LobbyMember, {
-            where: { user: { id: userId } },
-          })
-        ) {
-          throw new ConflictException(
-            'A player already belongs to an active lobby.',
-          );
-        }
-
-        const membership = manager.create(LobbyMember, {
-          lobby,
-          user,
-          role: LobbyMemberRole.MEMBER,
-        });
-
-        await manager.save(LobbyMember, membership);
-      }
     });
   }
 

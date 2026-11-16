@@ -1,7 +1,7 @@
 import { Users } from 'lucide-react'
 import { formatLobbyCapacity } from '../utils/lobbyFeedSync.js'
 
-function LobbyCard({ lobbyName, userName, details, game, skillLevel, memberCount, participantLimit, visibility, isJoined, isJoining, onJoin, cardRef }) {
+function LobbyCard({ lobbyName, userName, details, game, skillLevel, memberCount, participantLimit, visibility, isJoined, isJoining, onJoin, cardRef, reasons = [] }) {
   const full = Number.isInteger(memberCount) && Number.isInteger(participantLimit) && memberCount >= participantLimit
   const unavailable = !isJoined && (isJoining || full || visibility === 'private' || visibility === 'friends')
   function moveGlow(event) {
@@ -18,6 +18,11 @@ function LobbyCard({ lobbyName, userName, details, game, skillLevel, memberCount
       <p className="lobby-card-host">{userName} · {skillLevel || 'Any skill'}</p>
       <p className="lobby-card-description">{details || 'No description.'}</p>
     </div>
+    {reasons.length > 0 ? (
+      <ul className="lobby-card-reasons" aria-label="Why this lobby fits">
+        {reasons.map((reason) => <li key={reason}>{reason}</li>)}
+      </ul>
+    ) : null}
     <div className="lobby-card-footer">
       <span className="lobby-card-count"><Users size={15} aria-hidden="true" />{formatLobbyCapacity({ memberCount, participantLimit })}</span>
       <button className="join-button lobby-card-action" type="button" disabled={unavailable} onClick={onJoin}>

@@ -1,14 +1,16 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { ArrowUpRight, Gamepad2 } from 'lucide-react'
+import { ArrowUpRight, Gamepad2, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useJoinedLobbies } from '../context/useJoinedLobbies.js'
 import LobbyFilters, { ActiveLobbyFilters } from './LobbyFilters.jsx'
 import LobbyCard from './LobbyCard.jsx'
+import RecommendedLobbies from './RecommendedLobbies.jsx'
 import SearchBar from './SearchBar.jsx'
 import { useAuth } from '../context/useAuth.js'
 import { filterLobbyFeed, startLobbyFeedSync } from '../utils/lobbyFeedSync.js'
 import { attemptLobbyJoin, currentLobbyFromFeed } from '../utils/currentLobby.js'
+import { quickJoin } from '../api/recommendations.js'
 import CurrentLobbyDialog from './CurrentLobbyDialog.jsx'
 
 const LOBBY_BATCH_SIZE = 6
@@ -43,6 +45,7 @@ function LobbyFeed() {
   const { isAuthenticated, token } = useAuth()
   const [joinError, setJoinError] = useState('')
   const [joiningLobbyId, setJoiningLobbyId] = useState(null)
+  const [isFindingSquad, setIsFindingSquad] = useState(false)
   const joinRequestRef = useRef(null)
   const syncRef = useRef(null)
   useEffect(() => () => joinRequestRef.current?.abort(), [])
@@ -243,6 +246,46 @@ function LobbyFeed() {
   }
 
 
+  async function handleFindSquad() {
+    if (!isAuthenticated) {
+      navigate('/signin')
+      return
+    }
+    if (currentId) {
+      navigate(`/lobby/${currentId}`)
+      return
+    }
+    if (isFindingSquad) return
+
+    setIsFindingSquad(true)
+    setJoinError('')
+    try {
+      const data = await quickJoin(token, {
+        game: selectedGame === 'All Games' ? undefined : selectedGame,
+      })
+      if (data?.lobbyId) {
+        await refreshMemberships()
+        navigate(`/lobby/${data.lobbyId}`)
+        return
+      }
+      if (data?.fallback === 'create-lobby') {
+        const params = new URLSearchParams()
+        if (data.prefill?.game) params.set('game', data.prefill.game)
+        if (data.prefill?.neededRoles?.length) {
+          params.set('roles', data.prefill.neededRoles.join(','))
+        }
+        const query = params.toString()
+        navigate(`/create-lobby${query ? `?${query}` : ''}`)
+      }
+    } catch (error) {
+      setJoinError(
+        error instanceof Error ? error.message : 'Unable to find a squad.',
+      )
+    } finally {
+      setIsFindingSquad(false)
+    }
+  }
+
   function handleFilterChange(key, value) {
     const setters = { game: setSelectedGame, skill: setSelectedSkill, capacity: setCapacity, visibility: setVisibility }
     setters[key](value)
@@ -261,6 +304,7 @@ function LobbyFeed() {
     resetResults()
   }
   const hasConstraints = Boolean(searchValue.trim()) || selectedGame !== 'All Games' || selectedSkill !== 'Any Skill' || capacity !== 'any' || visibility !== 'all'
+  const recommendationsHidden = Boolean(searchValue.trim()) || selectedSkill !== 'Any Skill' || capacity !== 'any' || visibility !== 'all' || Boolean(currentId)
   function clearAllConstraints() {
     setSearchValue('')
     clearFilters()
@@ -278,6 +322,16 @@ function LobbyFeed() {
         </button>
         <SearchBar value={searchValue} onChange={handleSearchChange} />
         <button
+          className="find-squad-button"
+          type="button"
+          onClick={handleFindSquad}
+          disabled={isFindingSquad}
+        >
+          {isFindingSquad
+            ? <><span className="lobby-spinner" aria-hidden="true" />Finding a squad…</>
+            : <><Zap size={16} aria-hidden="true" />Find a squad</>}
+        </button>
+        <button
           className="create-lobby-button"
           type="button"
           onClick={() => navigate('/create-lobby')}
@@ -292,6 +346,17 @@ function LobbyFeed() {
       <div className="lobby-feed-content">
       <div ref={resultsRef} className="lobby-results-anchor" />
       <ActiveLobbyFilters game={selectedGame} skill={selectedSkill} capacity={capacity} visibility={visibility} onChange={handleFilterChange} onClear={clearFilters} />
+
+      <RecommendedLobbies
+        token={token}
+        isAuthenticated={isAuthenticated}
+        game={selectedGame}
+        hidden={recommendationsHidden}
+        refreshKey={joinedLobbyIds.join('|')}
+        onJoin={handleJoin}
+        joiningLobbyId={joiningLobbyId}
+        isLobbyJoined={isLobbyJoined}
+      />
       
       {joinError ? (
         <div className="lobby-join-error" role="alert">
@@ -315,6 +380,7 @@ function LobbyFeed() {
           <p>{hasConstraints ? 'Try adjusting your search or filters.' : 'Be the first to create one.'}</p>
           <div className="lobby-empty-actions">
             {hasConstraints && <button type="button" className="lobby-empty-secondary" onClick={clearAllConstraints}>Clear Filters</button>}
+            {!hasConstraints && <button type="button" className="lobby-empty-secondary" onClick={handleFindSquad}>Find a squad</button>}
             <button type="button" className="create-lobby-button" onClick={() => navigate('/create-lobby')}>Create Lobby</button>
           </div>
         </div>
