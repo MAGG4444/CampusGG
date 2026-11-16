@@ -5,8 +5,8 @@ import { useNotifications } from '../components/notifications/useNotifications.j
 import { deleteDraft, draftDefaults, getDraft, saveDraft } from '../utils/draftStorage.js'
 import { createDraftNavigationGuard } from '../utils/draftNavigation.js'
 
-function loadEditor(userId, type, id) {
-  let formData = draftDefaults[type]
+function loadEditor(userId, type, id, initialData = {}) {
+  let formData = { ...draftDefaults[type], ...initialData }
   let statusMessage = ''
   let blocked = false
   if (id !== null) {
@@ -21,25 +21,25 @@ function loadEditor(userId, type, id) {
   return { userId, type, id, requestedId: id, formData, savedData: JSON.stringify(formData), statusMessage, blocked }
 }
 
-export function useDraftEditor(type, isPublishing) {
+export function useDraftEditor(type, isPublishing, initialData = {}) {
   const { user } = useAuth()
   const { addNotification } = useNotifications()
   const userId = user?.id
   const { state: navigationState } = useLocation()
   const [params, setParams] = useSearchParams()
   const requestedId = params.get('draftId')
-  const [editor, setEditor] = useState(() => loadEditor(userId, type, requestedId))
+  const [editor, setEditor] = useState(() => loadEditor(userId, type, requestedId, initialData))
   const published = useRef(false)
   const [navigationGuard] = useState(createDraftNavigationGuard)
 
   // Reset synchronously on account/URL changes, before a stale form can be saved.
   if (editor.userId !== userId || editor.type !== type) {
-    setEditor(loadEditor(userId, type, requestedId))
+    setEditor(loadEditor(userId, type, requestedId, initialData))
   } else if (editor.requestedId !== requestedId) {
     // Router navigation can commit after the local save/delete state update.
     setEditor(editor.id === requestedId
       ? { ...editor, requestedId }
-      : loadEditor(userId, type, requestedId))
+      : loadEditor(userId, type, requestedId, initialData))
   }
 
   const { id, formData, savedData, statusMessage, blocked } = editor
@@ -103,7 +103,7 @@ export function useDraftEditor(type, isPublishing) {
     if (!window.confirm('Delete this draft and clear this form? This cannot be undone.')) return false
     try {
       if (id !== null) deleteDraft(userId, id)
-      setEditor({ ...loadEditor(userId, type, null), requestedId,
+      setEditor({ ...loadEditor(userId, type, null, initialData), requestedId,
         statusMessage: 'Draft deleted. The form is now empty.' })
       navigationGuard.replaceDraftUrl(() => setParams((current) => {
         current.delete('draftId')

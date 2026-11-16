@@ -1,5 +1,6 @@
 import {
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
@@ -12,6 +13,7 @@ import { User } from '../users/user.entity';
 import { ForumPost } from './forum-post.entity';
 
 @Entity('forum_comments')
+@Index('IDX_forum_comments_post', ['post'])
 export class ForumComment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

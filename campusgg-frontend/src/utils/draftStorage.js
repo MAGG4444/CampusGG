@@ -6,7 +6,7 @@ export const draftDefaults = {
     tags: ['All Categories'], game: '', details: '', participantLimit: 'unlimited', visibility: 'public',
   },
   post: {
-    title: '', tag: 'All Categories', game: '', content: '', visibility: 'Public',
+    title: '', tag: 'All Categories', game: '', channelSlug: '', content: '', visibility: 'Public',
   },
 }
 
@@ -28,7 +28,7 @@ function sanitizeForm(type, data) {
     : lobbyCompatibleData
   const result = {}
   for (const [field, defaultValue] of Object.entries(draftDefaults[type])) {
-    const value = source[field]
+    const value = type === 'post' && field === 'channelSlug' && source[field] === undefined ? '' : source[field]
     if (field === 'participantLimit') {
       if (!['unlimited', 2, 5, 10, 20, 50, 100].includes(value)) throw new Error('Invalid participant limit.')
     } else if (Array.isArray(defaultValue)) {

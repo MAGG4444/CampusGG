@@ -1,13 +1,13 @@
 import { draftEditorReturnTo } from '../utils/myContentNavigation.js'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, FilePenLine } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import { useAuth } from '../context/useAuth.js'
 import { useDraftEditor } from '../hooks/useDraftEditor.js'
+import ChannelLogo from '../components/ChannelLogo.jsx'
 import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
-import GameSelect from '../components/GameSelect.jsx'
 import { createForumPost } from '../api/forum.js'
 
 import logo from '../assets/LOGO.png'
@@ -15,13 +15,28 @@ import logo from '../assets/LOGO.png'
 import './CreateLobby.css'
 import './CreatePost.css'
 
-function CreatePost() {
+function CreatePostEditor() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { slug } = useParams()
   // Saving a new draft adds draftId to the URL without changing its entry point.
   const [backPath] = useState(() => draftEditorReturnTo(location, '/forum'))
   const fromDrafts = backPath === '/my-content?tab=drafts'
   const { token } = useAuth()
+
+  const [channels, setChannels] = useState(null)
+  const [channelError, setChannelError] = useState('')
+  useEffect(() => {
+    const controller = new AbortController()
+    fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/forum/channels`, { signal: controller.signal })
+      .then((response) => { if (!response.ok) throw new Error(); return response.json() })
+      .then((data) => {
+        if (!Array.isArray(data)) throw new Error()
+        if (!controller.signal.aborted) setChannels(data)
+      })
+      .catch(() => { if (!controller.signal.aborted) setChannelError('Unable to load game channels. Please try again later.') })
+    return () => controller.abort()
+  }, [])
 
   const [errors, setErrors] = useState({})
   const [isPublishing, setIsPublishing] = useState(false)
@@ -29,7 +44,10 @@ function CreatePost() {
     formData, setFormData, statusMessage, setStatusMessage, blocked,
     hasSavedDraft, save: handleSave, discard, completePublish,
     navigationBlocker,
-  } = useDraftEditor('post', isPublishing)
+  } = useDraftEditor('post', isPublishing, { channelSlug: slug || '' })
+
+  const channel = channels?.find((item) => item.slug === formData.channelSlug) ||
+    (!formData.channelSlug && formData.game ? channels?.find((item) => item.aliases?.includes(formData.game.trim().toLowerCase())) : null)
 
   function updateField(field, value) {
     setFormData((current) => ({
@@ -60,9 +78,7 @@ function CreatePost() {
       next.content = 'Post content must be 10,000 characters or less.'
     }
 
-    if (formData.game.trim().length > 50) {
-      next.game = 'Game must be at most 50 characters.'
-    }
+    if (!channel) next.game = 'Choose a valid game channel before publishing.'
 
     return next
   }
@@ -95,7 +111,7 @@ function CreatePost() {
         {
           title: formData.title.trim(),
           content: formData.content.trim(),
-          game: formData.game.trim() || undefined,
+          channelSlug: channel.slug,
         },
         token
       )
@@ -119,6 +135,16 @@ function CreatePost() {
     setErrors({})
   }
 
+  if (!hasSavedDraft && !slug && !blocked) {
+    return <div className="create-lobby-wrapper"><div className="create-lobby-page create-post-page">
+      <h1>Choose a game channel</h1>
+      <p>Open a channel to create a post.</p>
+      {channelError ? <p role="alert">{channelError}</p> : !channels ? <p role="status">Loading channels...</p> :
+        <ul>{channels.map((item) => <li key={item.id}><Link to={`/forum/channel/${item.slug}`}>{item.name}</Link></li>)}</ul>}
+      <Link to="/my-content?tab=drafts">My Drafts</Link>
+    </div></div>
+  }
+
   return (
     <div className="create-lobby-wrapper page-enter">
       <DraftNavigationDialog blocker={navigationBlocker} />
@@ -131,7 +157,7 @@ function CreatePost() {
             className="back-button create-post-back-button"
             type="button"
             aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Forum'}
-            onClick={() => navigate(backPath)}
+            onClick={() => navigate(backPath === '/forum' && channel ? `/forum/channel/${channel.slug}` : backPath)}
           >
             <ArrowLeft size={28} strokeWidth={2.2} aria-hidden="true" />
           </button>
@@ -141,7 +167,7 @@ function CreatePost() {
           <div className="create-flow-copy">
             <p className="page-kicker">Start a conversation</p>
             <h1>Create a forum post</h1>
-            <p>Share with the campus gaming community.</p>
+            <p>{channel ? `Posting in ${channel.name}` : 'Choose a game channel to publish.'}</p>
           </div>
           <Link className="editor-drafts-link" to="/my-content?tab=drafts">
             <FilePenLine size={17} aria-hidden="true" />
@@ -177,18 +203,14 @@ function CreatePost() {
           )}
 
           <div className="create-post-game-field">
-            <label className="create-field-label" htmlFor="post-game">
-              Game <span>(optional)</span>
-            </label>
-            <GameSelect
-              id="post-game"
-              value={formData.game}
-              invalid={Boolean(errors.game)}
-              onChange={(game) => updateField('game', game)}
-            />
-            {errors.game && (
-              <div className="field-error" role="alert">{errors.game}</div>
-            )}
+            {channel ? <p className="create-post-channel-identity"><ChannelLogo channel={channel} small /> Channel: <strong>{channel.name}</strong></p> : channelError ? <p role="alert">{channelError}</p> : !channels ? <p role="status">Loading channel...</p> :
+              hasSavedDraft ? <label>Choose a channel for this draft
+                <select value="" onChange={(event) => setFormData((current) => ({ ...current, channelSlug: event.target.value, game: '' }))}>
+                  <option value="">Select a game channel</option>
+                  {channels.map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}
+                </select>
+              </label> : <p role="alert">Channel not found. <Link to="/forum">Return to Forum</Link></p>}
+            {errors.game && <div className="field-error" role="alert">{errors.game}</div>}
           </div>
         </div>
 
@@ -242,7 +264,7 @@ function CreatePost() {
           <button
             className="footer-action footer-publish"
             type="submit"
-            disabled={isPublishing || blocked}
+            disabled={isPublishing || blocked || !channel}
           >
             {isPublishing
               ? 'Publishing...'
@@ -270,4 +292,7 @@ function CreatePost() {
   )
 }
 
-export default CreatePost
+export default function CreatePost() {
+  const { slug } = useParams()
+  return <CreatePostEditor key={slug || 'global'} />
+}

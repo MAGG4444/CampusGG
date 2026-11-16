@@ -6,6 +6,10 @@ import { AddLobbyMessages1792368003000 } from './migrations/add-lobby-messages';
 import { OneLobbyPerUser1792368004000 } from './migrations/one-lobby-per-user';
 import { AddLobbyReadPosition1792368005000 } from './migrations/add-lobby-read-position';
 
+import { AddForumRankingIndexes1792368008000 } from './migrations/add-forum-ranking-indexes';
+import { AddForumChannelFollows1792368007000 } from './migrations/add-forum-channel-follows';
+import { AddForumChannels1792368006000 } from './migrations/add-forum-channels';
+
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
 export default new DataSource({
@@ -19,6 +23,9 @@ export default new DataSource({
     AddLobbyMessages1792368003000,
     OneLobbyPerUser1792368004000,
     AddLobbyReadPosition1792368005000,
+    AddForumChannels1792368006000,
+    AddForumChannelFollows1792368007000,
+    AddForumRankingIndexes1792368008000,
   ],
   migrationsTransactionMode: 'all',
 });

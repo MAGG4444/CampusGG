@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Flag, Heart, MessageCircle } from 'lucide-react'
+import { Flag, Heart, MessageCircle, MoreHorizontal } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import ChannelLogo from './ChannelLogo.jsx'
 
 import { useAuth } from '../context/useAuth.js'
 
@@ -29,11 +31,11 @@ function ForumPostContent({
   title,
   author,
   time,
-  category,
+  game,
+  channel,
   summary,
   likes = 0,
   replies,
-  onReadMore,
   onReport,
   token,
 }) {
@@ -96,81 +98,33 @@ function ForumPostContent({
 
   return (
     <article className="forum-post-card">
-      <div className="forum-post-main">
-        <h2 className="forum-post-title">
-          {title}
-        </h2>
-
-        <p className="forum-post-meta">
-          By {author} · {time} · {category}
-        </p>
-
-        <p className="forum-post-summary">
-          {summary}
-        </p>
-      </div>
-
-      <aside
-        className="forum-post-side"
-        aria-label={`${title} actions`}
-      >
+      <p className="forum-post-meta">
+        <strong>{author}</strong>{game && <> <span aria-hidden="true">&middot;</span> {channel ? <Link className="forum-game-link" to={`/forum/channel/${channel.slug}`}><ChannelLogo channel={channel} small />{game}</Link> : <span>{game}</span>}</>}
+        {' '}<span aria-hidden="true">&middot;</span> <time>{time}</time>
+      </p>
+      <Link className="forum-post-link" to={`/forum/${id}`}>
+        <h2 className="forum-post-title">{title}</h2>
+        {summary && <p className="forum-post-summary">{summary}</p>}
+      </Link>
+      <div className="forum-post-actions" aria-label={`${title} actions`}>
         <button
-          className="forum-report-button"
-          type="button"
-          onClick={onReport}
-        >
-          <Flag
-            className="forum-post-icon"
-            size={12}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-          <span>Report</span>
-        </button>
-
-        <button
-          className={`forum-count-button ${
-            isLiked ? 'forum-count-button-active' : ''
-          }`}
-          type="button"
-          onClick={toggleLike}
-          disabled={isBusy}
-          aria-pressed={isLiked}
+          className={`forum-count-button ${isLiked ? 'forum-count-button-active' : ''}`}
+          type="button" onClick={toggleLike} disabled={isBusy} aria-pressed={isLiked}
           aria-label={isLiked ? 'Unlike post' : 'Like post'}
         >
-          <Heart
-            className="forum-post-icon"
-            size={12}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-          <span>{likeCount} likes</span>
+          <Heart size={16} aria-hidden="true" /> <span>{likeCount} likes</span>
         </button>
-
-        <span className="forum-reply-count">
-          <MessageCircle
-            className="forum-post-icon"
-            size={12}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-          <span>{replies ?? '—'} replies</span>
-        </span>
-
-        <button
-          className="read-more-button"
-          type="button"
-          onClick={onReadMore}
-        >
-          Read More
-        </button>
-
-        {status && (
-          <small role="status">
-            {status}
-          </small>
-        )}
-      </aside>
+        <span className="forum-reply-count"><MessageCircle size={16} aria-hidden="true" /> {replies ?? '\u2014'} replies</span>
+        <details className="forum-post-menu">
+          <summary aria-label={`More actions for ${title}`}><MoreHorizontal size={20} aria-hidden="true" /></summary>
+          <div className="forum-post-menu-items">
+            <button type="button" onClick={(event) => { onReport(); event.currentTarget.closest('details').open = false }}>
+              <Flag size={16} aria-hidden="true" /> Report
+            </button>
+          </div>
+        </details>
+      </div>
+      {status && <small className="forum-post-status" role="status">{status}</small>}
     </article>
   )
 }

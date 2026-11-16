@@ -13,6 +13,7 @@ const ForumPost = load('forum/forum-post.entity', 'ForumPost');
 const Lobby = load('lobbies/lobby.entity', 'Lobby');
 const LobbyMember = load('lobbies/lobby-member.entity', 'LobbyMember');
 const entities = [User, ForumPost, Lobby, LobbyMember,
+  load('forum/forum-channel.entity', 'ForumChannel'),
   load('forum/forum-post-like.entity', 'ForumPostLike'),
   load('forum/forum-comment.entity', 'ForumComment')];
 
@@ -42,6 +43,7 @@ async function createFixture() {
       ['forum/forum.service', 'ForumService'],
       ['forum/forum-comments.service', 'ForumCommentsService'],
       ['lobbies/lobbies.service', 'LobbiesService'],
+      ['lobbies/lobby-chat.service', 'LobbyChatService'],
       ['auth/login.service', 'LoginService'],
       ['users/users.service', 'UsersService'],
     ].map(([path, name]) => load(path, name));
@@ -71,7 +73,7 @@ async function createFixture() {
       { host: b, lobbyName: 'Joined only lobby', details: 'Hosted by B', tags: [], visibility: 'public' },
     ]);
     await db.getRepository(LobbyMember).save([
-      ...lobbies.map(lobby => ({ lobby, user: lobby.host, role: 'host' })),
+      { lobby: lobbies[2], user: b, role: 'host' },
       { lobby: lobbies[2], user: a, role: 'member' },
     ]);
     const jwt = module.get(JwtService);

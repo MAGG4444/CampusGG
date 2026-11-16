@@ -28,7 +28,11 @@ const router = createBrowserRouter(createRoutesFromElements(
     <Route path="/matchmaking" element={<Matchmaking />} />
     <Route path="/create-lobby" element={<CreateLobby />} />
     <Route path="/forum" element={<Forum />} />
+    <Route path="/forum/popular" element={<Forum />} />
+    <Route path="/forum/explore" element={<Forum />} />
+    <Route path="/forum/channel/:slug" element={<Forum />} />
     <Route path="/forum/:postId" element={<PostDetail />} />
+    <Route path="/forum/channel/:slug/create-post" element={<CreatePost />} />
     <Route path="/create-post" element={<CreatePost />} />
     <Route path="/chat" element={<Chat />} />
     <Route path="/profile" element={<Profile />} />
