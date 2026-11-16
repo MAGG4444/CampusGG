@@ -44,13 +44,16 @@ export class Lobby {
   })
   game!: string | null;
 
-  @Column({
-    name: 'skill_level',
-    type: 'varchar',
-    length: 30,
-    nullable: true,
-  })
+  @Column({ name: 'skill_level', type: 'varchar', length: 30, nullable: true })
   skillLevel!: string | null;
+
+  @Column({
+    name: 'needed_roles',
+    type: 'text',
+    array: true,
+    default: () => "'{}'",
+  })
+  neededRoles!: string[];
 
   @Column({
     name: 'participant_limit',

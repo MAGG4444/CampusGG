@@ -38,7 +38,7 @@ function SignIn() {
       setPassword('')
       sessionStorage.removeItem(PENDING_EMAIL_KEY)
 
-      // Return to where the user was trying to go (e.g., /matchmaking).
+      // Return to where the user was trying to go (e.g., /lobby).
       navigate(location.state?.from?.pathname || '/')
     } catch (err) {
       const message = err instanceof Error

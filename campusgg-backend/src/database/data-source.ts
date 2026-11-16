@@ -6,6 +6,7 @@ import { AddLobbyMessages1792368003000 } from './migrations/add-lobby-messages';
 import { OneLobbyPerUser1792368004000 } from './migrations/one-lobby-per-user';
 import { AddLobbyReadPosition1792368005000 } from './migrations/add-lobby-read-position';
 import { AddSteamAccount1792368006000 } from './migrations/add-steam-account';
+import { AddLobbyNeededRoles1792368007000 } from './migrations/add-lobby-needed-roles';
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
@@ -21,6 +22,7 @@ export default new DataSource({
     OneLobbyPerUser1792368004000,
     AddLobbyReadPosition1792368005000,
     AddSteamAccount1792368006000,
+    AddLobbyNeededRoles1792368007000,
   ],
   migrationsTransactionMode: 'all',
 });

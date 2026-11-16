@@ -1,9 +1,32 @@
 export const experienceLevels = ['Beginner', 'Intermediate', 'Advanced']
 
+// Keep this list canonical with the backend games.config.ts.
 export const gameRoleOptions = {
+  CS2: ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support'],
   Valorant: ['Duelist', 'Initiator', 'Controller', 'Sentinel'],
   'League of Legends': ['Top', 'Jungle', 'Mid', 'ADC', 'Support'],
+  'Dota 2': ['Carry', 'Mid', 'Offlane', 'Soft Support', 'Hard Support'],
   'Overwatch 2': ['Tank', 'Damage', 'Support'],
+  'Rocket League': [],
+  'It Takes Two': [],
+}
+
+const gameAliases = {
+  csgo: 'CS2',
+  'cs:go': 'CS2',
+  'counter-strike 2': 'CS2',
+  'counter strike 2': 'CS2',
+  league: 'League of Legends',
+  lol: 'League of Legends',
+  dota: 'Dota 2',
+  dota2: 'Dota 2',
+  ow: 'Overwatch 2',
+  ow2: 'Overwatch 2',
+  overwatch: 'Overwatch 2',
+  overwatch2: 'Overwatch 2',
+  rocketleague: 'Rocket League',
+  rl: 'Rocket League',
+  itt: 'It Takes Two',
 }
 
 export const genericRoleOptions = ['Leader', 'Strategist', 'Support', 'Flex']
@@ -18,10 +41,21 @@ export const profileLimits = {
   roleName: 40,
 }
 
-function canonicalGameName(game) {
+export function canonicalGameName(game) {
   const trimmed = game.trim()
-  return suggestedGames.find((name) => name.toLowerCase() === trimmed.toLowerCase())
+  const lower = trimmed.toLowerCase()
+  return gameAliases[lower]
+    ?? suggestedGames.find((name) => name.toLowerCase() === lower)
     ?? trimmed
+}
+
+export function gameKey(game) {
+  return canonicalGameName(game ?? '').toLowerCase()
+}
+
+export function sameGame(a, b) {
+  const left = gameKey(a)
+  return Boolean(left) && left === gameKey(b)
 }
 
 export function rolesForGame(game) {

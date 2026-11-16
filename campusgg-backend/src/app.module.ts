@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LobbiesModule } from './lobbies/lobbies.module';
-import { MatchmakingModule } from './matchmaking/matchmaking.module';
+import { RecommendationsModule } from './recommendations/recommendations.module';
 
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
@@ -36,7 +36,7 @@ import { SteamModule } from './steam/steam.module';
     AuthModule,
     RedisModule,
     LobbiesModule,
-    MatchmakingModule,
+    RecommendationsModule,
     ForumModule,
     SteamModule,
   ],

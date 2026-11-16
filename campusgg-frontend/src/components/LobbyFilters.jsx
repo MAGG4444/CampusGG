@@ -1,8 +1,7 @@
 import { suggestedGames } from '../utils/profile.js'
-import { matchmakingGames } from '../utils/supportedGames.js'
 
 const primaryGames = ['CS2', 'Valorant', 'Overwatch 2']
-const baseGames = [...new Set([...primaryGames, 'Apex', ...suggestedGames, ...matchmakingGames])]
+const baseGames = [...new Set([...primaryGames, 'Apex', ...suggestedGames])]
 const skills = ['Any Skill', 'Beginner', 'Intermediate', 'Advanced']
 const capacities = [['any', 'Any'], ['2', '2'], ['5', '5'], ['10', '10'], ['unlimited', 'Unlimited (∞)']]
 

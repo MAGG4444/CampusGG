@@ -1,4 +1,6 @@
 import {
+  ArrayMaxSize,
+  ArrayUnique,
   IsArray,
   IsEnum,
   IsInt,
@@ -41,6 +43,16 @@ export class CreateLobbyDto {
   @IsString()
   @MaxLength(30)
   skillLevel?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10)
+  @ArrayUnique((role: unknown) =>
+    typeof role === 'string' ? role.toLowerCase() : role,
+  )
+  @IsString({ each: true })
+  @MaxLength(40, { each: true })
+  neededRoles?: string[];
 
   @IsOptional()
   @IsInt()

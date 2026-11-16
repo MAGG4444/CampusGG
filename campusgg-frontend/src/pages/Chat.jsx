@@ -7,6 +7,7 @@ import ChatHeader from '../components/chat/ChatHeader.jsx'
 import ChatMessage from '../components/chat/ChatMessage.jsx'
 import ConversationList from '../components/chat/ConversationList.jsx'
 import ConversationSearch from '../components/chat/ConversationSearch.jsx'
+import SuggestedUsers from '../components/chat/SuggestedUsers.jsx'
 import { useNotifications } from '../components/notifications/useNotifications.js'
 import { CURRENT_USER_ID } from '../data/chatData.js'
 import { useChat } from '../context/chatContext.js'
@@ -123,6 +124,7 @@ function Chat() {
             </span>
           </div>
           <ConversationSearch value={searchQuery} onChange={setSearchQuery} inputRef={searchInputRef} />
+          <SuggestedUsers />
           <ConversationList
             conversations={filteredConversations}
             selectedId={selectedConversationId}
