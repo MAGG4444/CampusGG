@@ -12,6 +12,7 @@ import { AuthModule } from './auth/auth.module';
 import { RedisModule } from './redis/redis.module';
 import { DatabaseController } from './database/database.controller';
 import { ForumModule } from './forum/forum.module';
+import { SteamModule } from './steam/steam.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ForumModule } from './forum/forum.module';
     LobbiesModule,
     MatchmakingModule,
     ForumModule,
+    SteamModule,
   ],
 
   controllers: [AppController, DatabaseController],

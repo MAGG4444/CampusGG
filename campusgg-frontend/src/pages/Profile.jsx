@@ -1,17 +1,31 @@
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowRight, FolderOpen, PencilLine } from 'lucide-react'
 import VersionLabel from '../components/VersionLabel.jsx'
 import { useAuth } from '../context/useAuth.js'
 import ProfileEditor, { ProfileLeaveDialog } from '../components/ProfileEditor.jsx'
+import SteamCard from '../components/SteamCard.jsx'
 import { useProfileEditor } from '../hooks/useProfileEditor.js'
+import { steamLinkFeedback } from '../utils/steam.js'
 import './Profile.css'
 
 function ProfileContent({ user }) {
-  const { signOut, updateProfile } = useAuth()
+  const { signOut, updateProfile, token } = useAuth()
   const editor = useProfileEditor(user, updateProfile)
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [steamNotice] = useState(() => steamLinkFeedback(searchParams))
   const profileName = user.displayName || user.username
   const avatarInitial = profileName.charAt(0).toUpperCase()
+
+  useEffect(() => {
+    if (!searchParams.has('steam')) return
+
+    const next = new URLSearchParams(searchParams)
+    next.delete('steam')
+    next.delete('reason')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
 
   function handleSignOut() {
     if (!editor.discard()) return
@@ -48,6 +62,14 @@ function ProfileContent({ user }) {
                 ? 'profile-error profile-feedback'
                 : 'profile-success profile-feedback'}>
               {editor.feedback.message}
+            </p>
+          )}
+          {steamNotice && (
+            <p role={steamNotice.type === 'error' ? 'alert' : 'status'}
+              className={steamNotice.type === 'error'
+                ? 'profile-error profile-feedback'
+                : 'profile-success profile-feedback'}>
+              {steamNotice.message}
             </p>
           )}
         </div>
@@ -97,6 +119,8 @@ function ProfileContent({ user }) {
                 <h2 id="about-heading">About Me</h2>
                 <p>{user.bio || 'No bio added yet.'}</p>
               </section>
+
+              <SteamCard token={token} />
             </>
           )}
 

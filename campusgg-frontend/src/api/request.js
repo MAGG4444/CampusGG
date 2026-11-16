@@ -1,8 +1,11 @@
 const API_URL =
   import.meta.env?.VITE_API_URL || 'http://localhost:3000'
 
-export async function request(path, { token, ...options } = {}) {
-  const response = await fetch(`${API_URL}${path}`, {
+export async function request(
+  path,
+  { token, fetchImpl = fetch, ...options } = {},
+) {
+  const response = await fetchImpl(`${API_URL}${path}`, {
     ...options,
     headers: {
       ...(options.body
