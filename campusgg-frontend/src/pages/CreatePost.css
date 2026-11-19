@@ -1,58 +1,63 @@
 .create-post-page {
   --post-editor-width: 900px;
-  grid-template-columns: minmax(0, 1fr);
-  align-items: start;
-}
-
-.create-post-page > .create-topbar,
-.create-post-page > .create-flow-heading,
-.create-post-title-fields,
-.create-post-content-group,
-.create-post-actions,
-.create-post-page > .create-status {
-  grid-column: 1;
-}
-
-.create-post-title-fields,
-.create-post-content-group,
-.create-post-actions,
-.create-post-page > .create-status {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   width: min(100%, var(--post-editor-width));
-  justify-self: center;
+  margin: 0 auto;
 }
+.create-post-wrapper { padding-top: clamp(12px, 2vw, 22px); padding-bottom: 24px; }
+.create-post-header { width: 100%; display: flex; align-items: center; gap: 14px; }
+.create-post-back-button { flex: none; }
+.create-post-title-main { min-width: 0; flex: 1; }
+.create-post-page .create-title-input { min-width: 0; padding: 8px 0; border: 0; border-radius: 0; background: transparent; color: var(--gold-bright); font-size: clamp(1.05rem, 2vw, 1.5rem); }
+.create-post-page .create-title-input::placeholder { color: var(--gold); opacity: .8; }
+.create-post-page .create-title-input:focus { background: transparent; color: var(--gold-bright); box-shadow: none; }
+.create-post-page .create-title-input:focus-visible { outline: none; box-shadow: none; }
+.create-post-page .create-title-input:-webkit-autofill { -webkit-text-fill-color: var(--gold-bright); transition: background-color 99999s ease-in-out 0s; }
+.create-post-page .create-title-input[aria-invalid='true'] { box-shadow: none; }
+.create-post-header .editor-drafts-link, .create-post-header .editor-drafts-link:visited { flex: none; min-height: 42px; padding: 0 15px; border-color: var(--border-strong); background: rgba(10, 24, 42, .55); }
+.create-post-header .editor-drafts-link:hover { border-color: var(--gold); background: rgba(213, 178, 82, .1); }
 
-.create-post-title-fields {
-  grid-row: 3;
-  padding-bottom: 24px;
-}
-
-.create-post-game-field {
-  width: min(100%, 340px);
-  margin-top: 20px;
-}
-
-.create-post-game-field > .create-field-label { margin-top: 0; }
+.create-post-channel-control { flex: 0 1 190px; min-width: 0; }
+.create-post-channel-input { display: block; width: 100%; min-width: 0; min-height: 42px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(10, 24, 42, .55); color: var(--muted); font: inherit; font-size: .85rem; text-overflow: ellipsis; }
+.create-post-channel-input.is-selected { color: var(--gold-bright); }
+.create-post-channel-input option { color: var(--text); background: var(--surface-strong); }
+.create-post-channel-input::placeholder { color: var(--muted); }
+.create-post-page .create-post-channel-input:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; box-shadow: none; }
+.create-post-channel-status { color: var(--muted); font-size: .85rem; }
+.create-post-channel-status p { margin: 0; }
 
 .create-post-content-group {
-  grid-row: 4;
   min-width: 0;
-  padding-top: 24px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 
-.create-post-content-group > .create-field-label { margin-top: 0; }
-
-.create-post-content-input {
-  min-height: 300px;
-  padding: 17px;
+.create-post-page .create-post-content-input {
+  min-height: clamp(180px, 27vh, 260px);
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   resize: vertical;
   font-size: 0.97rem;
   line-height: 1.7;
 }
+.create-post-page .create-post-content-input:focus { background: transparent; box-shadow: none; }
+.create-post-page .create-post-content-input:focus-visible { outline: none; box-shadow: none; }
+.create-post-page .create-post-content-input[aria-invalid='true'] { box-shadow: none; }
 
-.create-post-actions { grid-row: 5; }
-.create-post-page > .create-status { grid-row: 6; }
+.create-post-actions { margin-top: 0; }
+.create-post-page > .create-status { margin-top: 0; }
 
 @media (max-width: 560px) {
-  .create-post-content-input { min-height: 230px; }
+  .create-post-page .create-post-content-input { min-height: 180px; }
+  .create-post-header { gap: 8px; }
+  .create-post-header .editor-drafts-link { padding-inline: 10px; }
+}
+@container (max-width: 620px) {
+  .create-post-header { flex-wrap: wrap; }
+  .create-post-title-main { flex: 1 1 calc(100% - 60px); }
+  .create-post-channel-control { margin-left: auto; flex: 0 1 190px; }
 }
