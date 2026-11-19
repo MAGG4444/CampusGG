@@ -151,3 +151,18 @@ test('a stale autosave cannot overwrite a different type or a corrupted/replaced
     assert.equal(storage.getItem(key), raw)
   }
 })
+
+test('post drafts retain channel slugs and restore legacy drafts without one', () => {
+  const storage = memoryStorage()
+  const draft = saveDraft('alice', 'post', { ...draftDefaults.post, title: 'A title', content: 'Saved text', channelSlug: 'valorant' }, null, storage)
+  assert.equal(getDraft('alice', draft.id, 'post', storage).formData.channelSlug, 'valorant')
+  const key = storage.key(0)
+  const legacy = JSON.parse(storage.getItem(key))
+  delete legacy.formData.channelSlug
+  legacy.formData.game = 'Unknown old game'
+  storage.setItem(key, JSON.stringify(legacy))
+  const restored = getDraft('alice', draft.id, 'post', storage).formData
+  assert.equal(restored.channelSlug, '')
+  assert.equal(restored.game, 'Unknown old game')
+  assert.equal(restored.content, 'Saved text')
+})

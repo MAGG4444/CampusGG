@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   Gamepad2,
@@ -9,6 +10,8 @@ import {
   UsersRound,
 } from 'lucide-react'
 import { useAuth } from '../context/useAuth.js'
+import { useForumChannels } from '../context/forumChannelsContext.js'
+import ChannelLogo from './ChannelLogo.jsx'
 import './Navbar.css'
 
 const PENDING_EMAIL_KEY = 'campusgg-pending-email'
@@ -21,6 +24,8 @@ const navItems = [
 
 function Navbar({ headerRef }) {
   const { isAuthenticated } = useAuth()
+  const { channels, error, retry } = useForumChannels()
+  const [forumOpen, setForumOpen] = useState(false)
   // useLocation causes this component to re-render when the page changes,
   // including right after signup stores the pending verification email.
   useLocation()
@@ -52,6 +57,14 @@ function Navbar({ headerRef }) {
         <nav className="nav" aria-label="Primary navigation">
           {visibleItems.map((item) => {
             const Icon = item.icon
+            if (item.to === '/forum') return (
+              <div className={`nav-forum ${forumOpen ? 'is-open' : ''}`} key={item.to} onMouseEnter={() => setForumOpen(true)} onMouseLeave={() => setForumOpen(false)} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setForumOpen(false) }} onKeyDown={(event) => { if (event.key === 'Escape') { setForumOpen(false); event.currentTarget.querySelector('a')?.focus() } }}>
+                <NavLink className={({ isActive }) => `nav-link ${isActive ? 'nav-link-active' : ''}`} to="/forum" aria-controls="nav-forum-channels" aria-expanded={forumOpen} aria-keyshortcuts="ArrowDown" title="Forum (press Down Arrow for game channels)" onKeyDown={(event) => { if (event.key === 'ArrowDown') { event.preventDefault(); setForumOpen(true); const region = event.currentTarget.parentElement; requestAnimationFrame(() => region.querySelector('.nav-forum-menu a, .nav-forum-menu button')?.focus()) } }} onClick={() => setForumOpen(false)}><Icon size={17} aria-hidden="true" />Forum</NavLink>
+                <div className={`nav-forum-menu ${forumOpen ? 'is-open' : ''}`} id="nav-forum-channels" aria-label="Game channels" aria-hidden={!forumOpen} inert={!forumOpen}>
+                  {error ? <p role="alert">{error} <button type="button" onClick={retry}>Retry</button></p> : !channels ? <p role="status">Loading channels...</p> : channels.length === 0 ? <p>No channels available.</p> : channels.map((channel) => <Link key={channel.id} to={`/forum/channel/${channel.slug}`} onClick={() => setForumOpen(false)}><ChannelLogo channel={channel} small />{channel.name}</Link>)}
+                </div>
+              </div>
+            )
             return (
               <NavLink
                 key={item.to}

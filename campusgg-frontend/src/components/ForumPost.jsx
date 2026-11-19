@@ -1,178 +1,40 @@
-import { useEffect, useState } from 'react'
-import { Flag, Heart, MessageCircle } from 'lucide-react'
-
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/useAuth.js'
+import PostFollowButton from './PostFollowButton.jsx'
+import { rememberForumFeed } from '../utils/forumFeedReturn.js'
 
-import {
-  getMyForumLike,
-  likeForumPost,
-  unlikeForumPost,
-} from '../api/forum.js'
+function relativeTime(value) {
+  const date = new Date(value)
+  if (!value || Number.isNaN(date.getTime())) return null
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000))
+  if (seconds < 60) return 'now'
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`
+  return `${Math.floor(seconds / 86400)}d`
+}
 
-// Remount the interactive content when the post, signed-in user, or
-// server-provided like count changes. This initializes component state
-// without synchronously resetting it inside an effect.
-function ForumPost(props) {
+export default function ForumPost({ id, title, author, createdAt, replyCount, followed, onFollowChange, feedState, feedUrl, feedScope }) {
   const { token } = useAuth()
-
-  return (
-    <ForumPostContent
-      key={`${props.id ?? ''}:${token ?? ''}:${props.likes ?? 0}`}
-      {...props}
-      token={token}
-    />
-  )
-}
-
-function ForumPostContent({
-  id,
-  title,
-  author,
-  time,
-  category,
-  summary,
-  likes = 0,
-  replies,
-  onReadMore,
-  onReport,
-  token,
-}) {
-  const [isLiked, setIsLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(
-    Number(likes) || 0
-  )
-  const [isBusy, setIsBusy] = useState(false)
-  const [status, setStatus] = useState('')
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    if (token && id) {
-      getMyForumLike(id, token, controller.signal)
-        .then((result) => {
-          if (!controller.signal.aborted) {
-            setIsLiked(Boolean(result.liked))
-          }
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) {
-            setStatus('Could not check like status.')
-          }
-        })
-    }
-
-    return () => controller.abort()
-  }, [id, token])
-
-  async function toggleLike() {
-    if (!token) {
-      setStatus('Sign in to like posts.')
-      return
-    }
-
-    if (!id || isBusy) return
-
-    setIsBusy(true)
-    setStatus('')
-
-    try {
-      // Check the real database status before changing it.
-      const state = await getMyForumLike(id, token)
-
-      const currentlyLiked = Boolean(state.liked)
-
-      const result = currentlyLiked
-        ? await unlikeForumPost(id, token)
-        : await likeForumPost(id, token)
-
-      setIsLiked(!currentlyLiked)
-      setLikeCount(Number(result.likeCount) || 0)
-    } catch (error) {
-      setStatus(error.message || 'Could not update like.')
-    } finally {
-      setIsBusy(false)
-    }
+  const navigate = useNavigate()
+  const location = useLocation()
+  const navigationState = { fromForum: `${location.pathname}${location.search}` }
+  const relative = relativeTime(createdAt)
+  const exact = relative ? new Date(createdAt).toLocaleString() : 'Unknown time'
+  function remember() { rememberForumFeed({ ...feedState, account: token || 'guest', route: navigationState.fromForum, url: feedUrl, scope: feedScope, scrollY: window.scrollY || 0, anchorId: id }) }
+  function selectingText(row) {
+    const selection = window.getSelection?.()
+    return Boolean(selection && !selection.isCollapsed && (row.contains(selection.anchorNode) || row.contains(selection.focusNode)))
   }
-
-  return (
-    <article className="forum-post-card">
-      <div className="forum-post-main">
-        <h2 className="forum-post-title">
-          {title}
-        </h2>
-
-        <p className="forum-post-meta">
-          By {author} · {time} · {category}
-        </p>
-
-        <p className="forum-post-summary">
-          {summary}
-        </p>
-      </div>
-
-      <aside
-        className="forum-post-side"
-        aria-label={`${title} actions`}
-      >
-        <button
-          className="forum-report-button"
-          type="button"
-          onClick={onReport}
-        >
-          <Flag
-            className="forum-post-icon"
-            size={12}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-          <span>Report</span>
-        </button>
-
-        <button
-          className={`forum-count-button ${
-            isLiked ? 'forum-count-button-active' : ''
-          }`}
-          type="button"
-          onClick={toggleLike}
-          disabled={isBusy}
-          aria-pressed={isLiked}
-          aria-label={isLiked ? 'Unlike post' : 'Like post'}
-        >
-          <Heart
-            className="forum-post-icon"
-            size={12}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-          <span>{likeCount} likes</span>
-        </button>
-
-        <span className="forum-reply-count">
-          <MessageCircle
-            className="forum-post-icon"
-            size={12}
-            strokeWidth={2.2}
-            aria-hidden="true"
-          />
-          <span>{replies ?? '—'} replies</span>
-        </span>
-
-        <button
-          className="read-more-button"
-          type="button"
-          onClick={onReadMore}
-        >
-          Read More
-        </button>
-
-        {status && (
-          <small role="status">
-            {status}
-          </small>
-        )}
-      </aside>
-    </article>
-  )
+  function openRow(event) {
+    if (event.defaultPrevented || event.target.closest('a, button, input, select, textarea, summary, [role="button"]') || selectingText(event.currentTarget)) return
+    remember(event.currentTarget)
+    navigate(`/forum/${id}`, { state: navigationState })
+  }
+  return <article className="forum-post-card" role="row" onClick={openRow}>
+    <div className="forum-post-title-cell" role="cell"><Link className="forum-post-link" to={`/forum/${id}`} state={navigationState} title={title} aria-label={title} onClick={(event) => { const row = event.currentTarget.closest('.forum-post-card'); if (selectingText(row)) event.preventDefault(); else if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey && (event.button == null || event.button === 0)) remember(row) }}><span className="forum-post-title">{title}</span></Link><div className="forum-post-mobile-meta">{author || 'Unknown User'} · <time dateTime={relative ? createdAt : undefined} title={exact}>{relative || '—'}</time></div></div>
+    <div className="forum-post-poster" role="cell">{author || 'Unknown User'}</div>
+    <div className="forum-post-time" role="cell"><time dateTime={relative ? createdAt : undefined} title={exact} aria-label={exact}>{relative || '—'}</time></div>
+    <div className="forum-post-replies" role="cell" aria-label={`${replyCount ?? 'Unknown'} replies`}>{replyCount ?? '—'}</div>
+    <div className="forum-post-follow" role="cell" onClick={(event) => { if (event.target.closest('button')) event.stopPropagation() }}>{(!token || followed !== undefined) && <PostFollowButton postId={id} postTitle={title} following={followed} onChange={onFollowChange} iconOnly />}</div>
+  </article>
 }
-
-export default ForumPost
