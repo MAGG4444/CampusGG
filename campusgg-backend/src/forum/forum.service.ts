@@ -4,7 +4,6 @@ import {
   MyContentQueryDto,
 } from '../common/dto/my-content.dto';
 import {
-  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -14,8 +13,6 @@ import { Repository } from 'typeorm';
 
 import { User } from '../users/user.entity';
 import { ForumPost } from './forum-post.entity';
-import { ForumChannel } from './forum-channel.entity';
-import { ForumComment } from './forum-comment.entity';
 import { ForumPostLike } from './forum-post-like.entity';
 import { CreateForumPostDto } from './dto/create-forum-post.dto';
 import { UpdateForumPostDto } from './dto/update-forum-post.dto';
@@ -31,9 +28,6 @@ export class ForumService {
 
     @InjectRepository(ForumPostLike)
     private readonly likes: Repository<ForumPostLike>,
-
-    @InjectRepository(ForumChannel)
-    private readonly channels: Repository<ForumChannel>,
   ) {}
 
   async findMine(
@@ -118,23 +112,10 @@ export class ForumService {
       throw new ForbiddenException('A verified account is required');
     }
 
-    const slug = dto.channelSlug?.trim().toLowerCase();
-    const game = dto.game?.trim().toLowerCase();
-    if (!slug && !game)
-      throw new BadRequestException('A valid game channel is required');
-    const channel = slug
-      ? await this.channels.findOneBy({ slug })
-      : await this.channels
-          .createQueryBuilder('channel')
-          .where(':game = ANY(channel.aliases)', { game })
-          .getOne();
-    if (!channel || (game && !channel.aliases.includes(game))) {
-      throw new BadRequestException('Invalid game channel');
-    }
     const post = this.posts.create({
       title: dto.title.trim(),
       content: dto.content.trim(),
-      game: channel.name,
+      game: dto.game?.trim() || null,
       author,
     });
 
@@ -158,43 +139,6 @@ export class ForumService {
 
     return {
       posts,
-      total,
-      page: safePage,
-      limit: safeLimit,
-    };
-  }
-
-  async findChannelPosts(aliases: string[], page = 1, limit = 25) {
-    const safePage = Math.max(1, page);
-    const safeLimit = Math.min(100, Math.max(1, limit));
-    const [posts, total] = await this.baseQuery()
-      .where('LOWER(TRIM(post.game)) IN (:...aliases)', { aliases })
-      .orderBy('post.createdAt', 'DESC')
-      .addOrderBy('post.id', 'DESC')
-      .skip((safePage - 1) * safeLimit)
-      .take(safeLimit)
-      .getManyAndCount();
-    await this.attachLikeCounts(posts);
-    const counts = posts.length
-      ? await this.posts.manager
-          .getRepository(ForumComment)
-          .createQueryBuilder('comment')
-          .select('comment.post_id', 'postId')
-          .addSelect('COUNT(*)', 'count')
-          .where('comment.post_id IN (:...ids)', {
-            ids: posts.map((post) => post.id),
-          })
-          .groupBy('comment.post_id')
-          .getRawMany<{ postId: string; count: string }>()
-      : [];
-    const byPost = new Map(
-      counts.map((row) => [row.postId, Number(row.count)]),
-    );
-    return {
-      posts: posts.map((post) => ({
-        ...post,
-        replyCount: byPost.get(post.id) ?? 0,
-      })),
       total,
       page: safePage,
       limit: safeLimit,

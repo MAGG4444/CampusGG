@@ -7,7 +7,7 @@ export const draftDefaults = {
     details: '', participantLimit: 'unlimited', visibility: 'public',
   },
   post: {
-    title: '', tag: 'All Categories', game: '', channelSlug: '', content: '', visibility: 'Public',
+    title: '', tag: 'All Categories', game: '', content: '', visibility: 'Public',
   },
 }
 

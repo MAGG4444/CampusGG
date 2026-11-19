@@ -3,7 +3,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 
 import { ForumService } from './forum.service';
-import { ForumChannel } from './forum-channel.entity';
 import { ForumPost } from './forum-post.entity';
 import { ForumPostLike } from './forum-post-like.entity';
 import { User } from '../users/user.entity';
@@ -38,7 +37,6 @@ describe('ForumService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ForumService,
-        { provide: getRepositoryToken(ForumChannel), useValue: {} },
         {
           provide: getRepositoryToken(ForumPost),
           useValue: postsRepositoryMock,

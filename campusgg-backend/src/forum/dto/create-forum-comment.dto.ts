@@ -1,11 +1,4 @@
-import {
-  IsString,
-  MaxLength,
-  MinLength,
-  Matches,
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+import { IsString, MaxLength, MinLength, Matches } from 'class-validator';
 
 export class CreateForumCommentDto {
   @IsString()
@@ -15,8 +8,4 @@ export class CreateForumCommentDto {
     message: 'Comment cannot be empty',
   })
   content!: string;
-
-  @IsOptional()
-  @IsUUID()
-  parentReplyId?: string;
 }

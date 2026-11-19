@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import '../pages/CreateLobby.css'
 
-export default function DraftNavigationDialog({ blocker, title = 'Leave this draft?', description = 'Your latest changes may not be saved. Stay to continue editing or leave this page.', stayLabel = 'Stay', leaveLabel = 'Leave page' }) {
+export default function DraftNavigationDialog({ blocker }) {
   const dialog = useRef(null)
   useEffect(() => {
     if (blocker.state === 'blocked') dialog.current.showModal()
@@ -14,11 +14,11 @@ export default function DraftNavigationDialog({ blocker, title = 'Leave this dra
         event.preventDefault()
         blocker.reset?.()
       }}>
-      <h2 id="draft-navigation-title">{title}</h2>
-      <p id="draft-navigation-description">{description}</p>
+      <h2 id="draft-navigation-title">Leave this draft?</h2>
+      <p id="draft-navigation-description">Your latest changes may not be saved. Stay to continue editing or leave this page.</p>
       <div className="create-actions">
-        <button type="button" className="footer-action footer-save" onClick={() => blocker.reset?.()}>{stayLabel}</button>
-        <button type="button" className="footer-action footer-delete" onClick={() => blocker.proceed?.()}>{leaveLabel}</button>
+        <button type="button" className="footer-action footer-save" onClick={() => blocker.reset?.()}>Stay</button>
+        <button type="button" className="footer-action footer-delete" onClick={() => blocker.proceed?.()}>Leave page</button>
       </div>
     </dialog>
   )

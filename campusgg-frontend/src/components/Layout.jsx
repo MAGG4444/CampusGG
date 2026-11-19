@@ -6,7 +6,6 @@ import ConnectionSidebar from './ConnectionSidebar.jsx'
 import Navbar from './Navbar.jsx'
 import VersionLabel from './VersionLabel.jsx'
 import ChatProvider from '../context/ChatProvider.jsx'
-import ForumChannelsProvider from '../context/ForumChannelsProvider.jsx'
 
 function Layout() {
   const { isAuthenticated, user } = useAuth()
@@ -46,7 +45,7 @@ function Layout() {
   }, [user?.id])
 
   return (
-    <ForumChannelsProvider><ChatProvider key={user?.id ?? 'guest'}><div className="app-shell">
+    <ChatProvider key={user?.id ?? 'guest'}><div className="app-shell">
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <Navbar headerRef={headerRef} />
       <div className={`app-workspace ${
@@ -67,7 +66,7 @@ function Layout() {
       <footer className="app-footer">
         <VersionLabel />
       </footer>
-    </div></ChatProvider></ForumChannelsProvider>
+    </div></ChatProvider>
   )
 }
 

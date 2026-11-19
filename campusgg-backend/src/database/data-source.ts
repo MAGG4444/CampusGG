@@ -7,13 +7,6 @@ import { OneLobbyPerUser1792368004000 } from './migrations/one-lobby-per-user';
 import { AddLobbyReadPosition1792368005000 } from './migrations/add-lobby-read-position';
 import { AddSteamAccount1792368006000 } from './migrations/add-steam-account';
 import { AddLobbyNeededRoles1792368007000 } from './migrations/add-lobby-needed-roles';
-import { AddForumChannels1792368006000 } from './migrations/add-forum-channels';
-import { AddForumChannelFollows1792368007000 } from './migrations/add-forum-channel-follows';
-import { AddForumRankingIndexes1792368008000 } from './migrations/add-forum-ranking-indexes';
-import { AddForumPostFollows1792368009000 } from './migrations/add-forum-post-follows';
-import { AddForumCommentThreads1792368010000 } from './migrations/add-forum-comment-threads';
-import { AddForumReports1792368011000 } from './migrations/add-forum-reports';
-import { AddForumCommentTombstones1792368012000 } from './migrations/add-forum-comment-tombstones';
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
@@ -30,13 +23,6 @@ export default new DataSource({
     AddLobbyReadPosition1792368005000,
     AddSteamAccount1792368006000,
     AddLobbyNeededRoles1792368007000,
-    AddForumChannels1792368006000,
-    AddForumChannelFollows1792368007000,
-    AddForumRankingIndexes1792368008000,
-    AddForumPostFollows1792368009000,
-    AddForumCommentThreads1792368010000,
-    AddForumReports1792368011000,
-    AddForumCommentTombstones1792368012000,
   ],
   migrationsTransactionMode: 'all',
 });

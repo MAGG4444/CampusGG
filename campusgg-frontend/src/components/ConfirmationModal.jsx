@@ -3,16 +3,15 @@ import { createPortal } from 'react-dom'
 import { AlertTriangle } from 'lucide-react'
 import './ConfirmationModal.css'
 
-export default function ConfirmationModal({ title, message, confirmLabel, destructive, busy, error, onCancel, onConfirm, returnFocus }) {
+export default function ConfirmationModal({ title, message, confirmLabel, destructive, busy, error, onCancel, onConfirm }) {
   const dialogRef = useRef(null)
   const cancelRef = useRef(null)
-  const returnFocusRef = useRef(returnFocus)
   const titleId = useId()
   const descriptionId = useId()
 
   useEffect(() => {
     const dialog = dialogRef.current
-    const trigger = returnFocusRef.current || document.activeElement
+    const trigger = document.activeElement
     dialog.showModal()
     cancelRef.current?.focus()
     return () => {

@@ -1,6 +1,5 @@
 import {
   Entity,
-  Index,
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
@@ -14,7 +13,6 @@ import { User } from '../users/user.entity';
 import { ForumPostLike } from './forum-post-like.entity';
 
 @Entity('forum_posts')
-@Index('IDX_forum_posts_rank_date', ['createdAt', 'id'])
 export class ForumPost {
   @PrimaryGeneratedColumn('uuid')
   id!: string;

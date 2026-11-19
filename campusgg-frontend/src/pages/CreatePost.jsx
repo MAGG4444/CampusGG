@@ -1,43 +1,35 @@
 import { draftEditorReturnTo } from '../utils/myContentNavigation.js'
 
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import { ArrowLeft, FilePenLine } from 'lucide-react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '../context/useAuth.js'
 import { useDraftEditor } from '../hooks/useDraftEditor.js'
 import DraftNavigationDialog from '../components/DraftNavigationDialog.jsx'
+import GameSelect from '../components/GameSelect.jsx'
 import { createForumPost } from '../api/forum.js'
-import { useForumChannels } from '../context/forumChannelsContext.js'
-import { invalidateForumFeedCache } from '../hooks/useInfiniteForumFeed.js'
+
+import logo from '../assets/LOGO.png'
 
 import './CreateLobby.css'
 import './CreatePost.css'
 
-function CreatePostEditor() {
+function CreatePost() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { slug } = useParams()
   // Saving a new draft adds draftId to the URL without changing its entry point.
   const [backPath] = useState(() => draftEditorReturnTo(location, '/forum'))
   const fromDrafts = backPath === '/my-content?tab=drafts'
   const { token } = useAuth()
 
-  const { channels, error: channelError, retry: retryChannels } = useForumChannels()
-
   const [errors, setErrors] = useState({})
   const [isPublishing, setIsPublishing] = useState(false)
-  const publishingRef = useRef(false)
   const {
     formData, setFormData, statusMessage, setStatusMessage, blocked,
     hasSavedDraft, save: handleSave, discard, completePublish,
     navigationBlocker,
-  } = useDraftEditor('post', isPublishing, { channelSlug: slug || '' })
-
-  const channel = channels?.find((item) => item.slug === formData.channelSlug) ||
-    (!formData.channelSlug && formData.game ? channels?.find((item) => item.aliases?.includes(formData.game.trim().toLowerCase())) : null)
-  const channelMismatch = Boolean(slug && channel && channel.slug !== slug)
-  const canPublishChannel = Boolean(channel && !channelMismatch && (!slug || channel.slug === slug))
+  } = useDraftEditor('post', isPublishing)
 
   function updateField(field, value) {
     setFormData((current) => ({
@@ -68,7 +60,9 @@ function CreatePostEditor() {
       next.content = 'Post content must be 10,000 characters or less.'
     }
 
-    if (!canPublishChannel) next.game = 'Choose a valid game channel before publishing.'
+    if (formData.game.trim().length > 50) {
+      next.game = 'Game must be at most 50 characters.'
+    }
 
     return next
   }
@@ -76,7 +70,7 @@ function CreatePostEditor() {
   async function handlePublish(event) {
     event.preventDefault()
 
-    if (blocked || publishingRef.current) return
+    if (blocked || isPublishing) return
 
     const nextErrors = validateForm()
 
@@ -93,7 +87,6 @@ function CreatePostEditor() {
       return
     }
 
-    publishingRef.current = true
     setIsPublishing(true)
     setStatusMessage('')
 
@@ -102,12 +95,11 @@ function CreatePostEditor() {
         {
           title: formData.title.trim(),
           content: formData.content.trim(),
-          channelSlug: channel.slug,
+          game: formData.game.trim() || undefined,
         },
         token
       )
 
-      invalidateForumFeedCache()
       completePublish()
 
       navigate(`/forum/${post.id}`, {
@@ -118,7 +110,6 @@ function CreatePostEditor() {
         error.message || 'Unable to publish post.'
       )
     } finally {
-      publishingRef.current = false
       setIsPublishing(false)
     }
   }
@@ -129,42 +120,28 @@ function CreatePostEditor() {
   }
 
   return (
-    <div className="create-lobby-wrapper create-post-wrapper page-enter">
+    <div className="create-lobby-wrapper page-enter">
       <DraftNavigationDialog blocker={navigationBlocker} />
       <form
         className="create-lobby-page create-post-page"
         onSubmit={handlePublish}
       >
-        <header className="create-post-header">
+        <div className="create-topbar">
           <button
             className="back-button create-post-back-button"
             type="button"
             aria-label={fromDrafts ? 'Back to My Drafts' : backPath.startsWith('/my-content?') ? 'Back to My Content' : 'Back to Forum'}
-            onClick={() => navigate(backPath === '/forum' && slug ? `/forum/channel/${slug}` : backPath)}
+            onClick={() => navigate(backPath)}
           >
             <ArrowLeft size={28} strokeWidth={2.2} aria-hidden="true" />
           </button>
-          <div className="create-post-title-main">
-            <label className="sr-only" htmlFor="post-title">Post title</label>
-            <input
-              className="create-title-input"
-              id="post-title"
-              type="text"
-              placeholder="Type a title"
-              value={formData.title}
-              maxLength={100}
-              aria-invalid={Boolean(errors.title)}
-              aria-describedby={errors.title ? 'post-title-error' : undefined}
-              onChange={(event) => updateField('title', event.target.value)}
-            />
-            {errors.title && <div id="post-title-error" className="field-error" role="alert">{errors.title}</div>}
-          </div>
-          <div className="create-post-channel-control">
-            <label className="sr-only" htmlFor="post-channel">Post channel</label>
-            {slug ? <input id="post-channel" className={`create-post-channel-input ${channel && !channelMismatch ? 'is-selected' : ''}`} value={channel && !channelMismatch ? channel.name : ''} placeholder="Channel unavailable" readOnly /> : <select id="post-channel" className={`create-post-channel-input ${channel ? 'is-selected' : ''}`} required value={channel?.slug || ''} onChange={(event) => { updateField('channelSlug', event.target.value); setFormData((current) => ({ ...current, game: '' })) }}>
-              <option value="">Post Channel</option>
-              {(channels || []).map((item) => <option key={item.id} value={item.slug}>{item.name}</option>)}
-            </select>}
+        </div>
+
+        <header className="create-flow-heading create-editor-heading">
+          <div className="create-flow-copy">
+            <p className="page-kicker">Start a conversation</p>
+            <h1>Create a forum post</h1>
+            <p>Share with the campus gaming community.</p>
           </div>
           <Link className="editor-drafts-link" to="/my-content?tab=drafts">
             <FilePenLine size={17} aria-hidden="true" />
@@ -172,14 +149,52 @@ function CreatePostEditor() {
           </Link>
         </header>
 
-        {(channelError || !channels || channels.length === 0 || (slug && (channelMismatch || !channel)) || errors.game) && <div className="create-post-channel-status">
-            {channelError ? <p role="alert">{channelError} <button type="button" onClick={retryChannels}>Retry</button></p> : !channels ? <p role="status">Loading channels...</p> : channels.length === 0 ? <p>No game channels are available. <button type="button" onClick={retryChannels}>Retry</button></p> : slug && channelMismatch ? <p role="alert">This draft belongs to {channel.name}. Open it from My Drafts to preserve its channel.</p> : slug && !channel ? <p role="alert">Channel unavailable or draft channel unrecognized. Open the draft from My Drafts to select a channel.</p> : null}
-            {errors.game && <div className="field-error" role="alert">{errors.game}</div>}
-        </div>}
+        <div className="create-title-fields create-post-title-fields">
+          <label
+            className="create-field-label"
+            htmlFor="post-title"
+          >
+            Post title
+          </label>
+
+          <input
+            className="create-title-input"
+            id="post-title"
+            type="text"
+            placeholder="Post title"
+            value={formData.title}
+            maxLength={100}
+            aria-invalid={Boolean(errors.title)}
+            onChange={(event) =>
+              updateField('title', event.target.value)
+            }
+          />
+
+          {errors.title && (
+            <div className="field-error" role="alert">
+              {errors.title}
+            </div>
+          )}
+
+          <div className="create-post-game-field">
+            <label className="create-field-label" htmlFor="post-game">
+              Game <span>(optional)</span>
+            </label>
+            <GameSelect
+              id="post-game"
+              value={formData.game}
+              invalid={Boolean(errors.game)}
+              onChange={(game) => updateField('game', game)}
+            />
+            {errors.game && (
+              <div className="field-error" role="alert">{errors.game}</div>
+            )}
+          </div>
+        </div>
 
         <div className="create-form-group create-post-content-group">
           <label
-            className="sr-only"
+            className="create-field-label"
             htmlFor="post-content"
           >
             Post content
@@ -192,14 +207,13 @@ function CreatePostEditor() {
             placeholder="Write your post..."
             value={formData.content}
             aria-invalid={Boolean(errors.content)}
-            aria-describedby={errors.content ? 'post-content-error' : undefined}
             onChange={(event) =>
               updateField('content', event.target.value)
             }
           />
 
           {errors.content && (
-            <div id="post-content-error" className="field-error" role="alert">
+            <div className="field-error" role="alert">
               {errors.content}
             </div>
           )}
@@ -228,7 +242,7 @@ function CreatePostEditor() {
           <button
             className="footer-action footer-publish"
             type="submit"
-            disabled={isPublishing || blocked || !canPublishChannel}
+            disabled={isPublishing || blocked}
           >
             {isPublishing
               ? 'Publishing...'
@@ -247,11 +261,13 @@ function CreatePostEditor() {
         </div>
       </form>
 
+      <img
+        className="create-corner-logo"
+        src={logo}
+        alt="CampusGG logo"
+      />
     </div>
   )
 }
 
-export default function CreatePost() {
-  const { slug } = useParams()
-  return <CreatePostEditor key={slug || 'global'} />
-}
+export default CreatePost

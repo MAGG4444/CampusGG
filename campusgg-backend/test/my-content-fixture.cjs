@@ -13,8 +13,6 @@ const ForumPost = load('forum/forum-post.entity', 'ForumPost');
 const Lobby = load('lobbies/lobby.entity', 'Lobby');
 const LobbyMember = load('lobbies/lobby-member.entity', 'LobbyMember');
 const entities = [User, ForumPost, Lobby, LobbyMember,
-  load('forum/forum-channel.entity', 'ForumChannel'),
-  load('forum/forum-comment-like.entity', 'ForumCommentLike'),
   load('forum/forum-post-like.entity', 'ForumPostLike'),
   load('forum/forum-comment.entity', 'ForumComment')];
 
@@ -50,7 +48,7 @@ async function createFixture() {
     const module = await Test.createTestingModule({
       imports: [JwtModule.register({ secret: randomUUID(), signOptions: { expiresIn: '1h' } })],
       controllers,
-      providers: [...services, { provide: load('lobbies/lobby-chat.service', 'LobbyChatService'), useValue: {} }, ...entities.map(entity => ({ provide: getRepositoryToken(entity), useValue: db.getRepository(entity) }))],
+      providers: [...services, ...entities.map(entity => ({ provide: getRepositoryToken(entity), useValue: db.getRepository(entity) }))],
     }).compile();
     app = module.createNestApplication({ logger: false });
     app.enableCors();
@@ -73,7 +71,7 @@ async function createFixture() {
       { host: b, lobbyName: 'Joined only lobby', details: 'Hosted by B', tags: [], visibility: 'public' },
     ]);
     await db.getRepository(LobbyMember).save([
-      { lobby: lobbies[2], user: b, role: 'host' },
+      ...lobbies.map(lobby => ({ lobby, user: lobby.host, role: 'host' })),
       { lobby: lobbies[2], user: a, role: 'member' },
     ]);
     const jwt = module.get(JwtService);
