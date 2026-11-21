@@ -7,9 +7,10 @@ export default function GameSelect({
   onChange,
   invalid = false,
   describedBy,
+  games = suggestedGames,
 }) {
   const savedGameIsCustom = Boolean(
-    value && !suggestedGames.includes(value),
+    value && !games.includes(value),
   )
 
   return (
@@ -25,7 +26,7 @@ export default function GameSelect({
       {savedGameIsCustom ? (
         <option value={value}>{value} (saved)</option>
       ) : null}
-      {suggestedGames.map((game) => (
+      {games.map((game) => (
         <option key={game} value={game}>{game}</option>
       ))}
     </select>

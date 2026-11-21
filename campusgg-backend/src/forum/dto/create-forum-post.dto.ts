@@ -15,4 +15,9 @@ export class CreateForumPostDto {
   @IsString()
   @MaxLength(50)
   game?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  channelSlug?: string;
 }

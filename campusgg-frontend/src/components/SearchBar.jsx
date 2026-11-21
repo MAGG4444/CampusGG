@@ -1,13 +1,14 @@
 import { Search } from 'lucide-react'
 
-function SearchBar({ value, onChange }) {
+function SearchBar({ value, onChange, label = 'Search', placeholder = 'Search', maxLength }) {
   return (
     <div className="search-bar">
       <input
         className="search-input"
         type="text"
-        placeholder="Search"
-        aria-label="Search"
+        placeholder={placeholder}
+        aria-label={label}
+        maxLength={maxLength}
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />

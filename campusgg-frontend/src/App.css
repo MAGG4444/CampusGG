@@ -3,11 +3,12 @@
   isolation: isolate;
   min-height: 100vh;
   min-height: 100dvh;
-  overflow: hidden;
-  background:
+  overflow: clip;
+  --app-page-background:
     radial-gradient(circle at 12% 4%, rgba(213, 178, 82, 0.12), transparent 30rem),
     radial-gradient(circle at 88% 18%, rgba(50, 100, 160, 0.16), transparent 34rem),
     linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+  background: var(--app-page-background);
   display: flex;
   flex-direction: column;
 }

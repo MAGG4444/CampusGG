@@ -54,6 +54,48 @@ export class ForumCommentsController {
     return this.commentsService.create(postId, dto, userId);
   }
 
+  @Get('likes/me')
+  @UseGuards(JwtAuthGuard)
+  likedIds(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    if (!request.user?.id) throw new UnauthorizedException();
+    return this.commentsService.likedIds(postId, request.user.id);
+  }
+
+  @Post(':commentId/like')
+  @UseGuards(JwtAuthGuard)
+  like(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    if (!request.user?.id) throw new UnauthorizedException();
+    return this.commentsService.setLike(
+      postId,
+      commentId,
+      request.user.id,
+      true,
+    );
+  }
+
+  @Delete(':commentId/like')
+  @UseGuards(JwtAuthGuard)
+  unlike(
+    @Param('postId', ParseUUIDPipe) postId: string,
+    @Param('commentId', ParseUUIDPipe) commentId: string,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    if (!request.user?.id) throw new UnauthorizedException();
+    return this.commentsService.setLike(
+      postId,
+      commentId,
+      request.user.id,
+      false,
+    );
+  }
+
   @Patch(':commentId')
   @UseGuards(JwtAuthGuard)
   update(

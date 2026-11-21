@@ -2,6 +2,14 @@ import { request } from './request.js'
 
 const id = (value) => encodeURIComponent(value)
 
+export function getPostFollowStatuses(ids, token, signal) {
+  return request(`/forum/post-follows?ids=${encodeURIComponent(ids.join(','))}`, { token, signal })
+}
+
+export function setPostFollow(postId, following, token) {
+  return request(`/forum/posts/${id(postId)}/follow`, { token, method: following ? 'POST' : 'DELETE' })
+}
+
 export function getForumPost(postId, signal) {
   return request(`/forum/posts/${id(postId)}`, {
     signal,
@@ -74,12 +82,25 @@ export async function getAllForumComments(postId, signal) {
   return comments
 }
 
-export function createForumComment(postId, content, token) {
+export function createForumComment(postId, content, token, parentReplyId = null) {
   return request(`/forum/posts/${id(postId)}/comments`, {
     method: 'POST',
     token,
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, ...(parentReplyId ? { parentReplyId } : {}) }),
   })
+}
+
+export function getMyCommentLikes(postId, token, signal) {
+  return request(`/forum/posts/${id(postId)}/comments/likes/me`, { token, signal })
+}
+
+export function setCommentLike(postId, commentId, liked, token) {
+  return request(`/forum/posts/${id(postId)}/comments/${id(commentId)}/like`, { token, method: liked ? 'POST' : 'DELETE' })
+}
+
+export function reportForumContent(postId, commentId, payload, token) {
+  const path = commentId ? `/forum/posts/${id(postId)}/comments/${id(commentId)}/report` : `/forum/posts/${id(postId)}/report`
+  return request(path, { method: 'POST', token, body: JSON.stringify(payload) })
 }
 
 export function updateForumComment(
@@ -137,27 +158,6 @@ export function getForumLikeCount(postId, signal) {
   return request(`/forum/posts/${id(postId)}/likes`, {
     signal,
   })
-}
-
-export async function getForumRecommendations(
-  game,
-  excludingPostId,
-  signal,
-) {
-  if (!game) return []
-
-  const response = await request(
-    '/forum/posts?page=1&limit=50',
-    { signal },
-  )
-
-  return Array.isArray(response.posts)
-    ? response.posts.filter(
-        (item) =>
-          item.id !== excludingPostId &&
-          item.game?.toLowerCase() === game.toLowerCase()
-      )
-    : []
 }
 
 export function getMyForumPosts(token, { page = 1, limit = 10, signal } = {}) {
