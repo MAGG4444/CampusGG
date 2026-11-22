@@ -1,4 +1,3 @@
-import { Check } from 'lucide-react'
 import ChatAvatar from './ChatAvatar.jsx'
 
 function ConversationItem({ conversation, selected, onSelect }) {
@@ -32,11 +31,6 @@ function ConversationItem({ conversation, selected, onSelect }) {
               </span>
             ) : null}
           </span>
-          {selected ? (
-            <span className="conversation-active-label">
-              <Check size={12} strokeWidth={2.5} aria-hidden="true" /> Active conversation
-            </span>
-          ) : null}
         </span>
       </button>
     </li>

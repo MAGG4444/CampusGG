@@ -46,7 +46,7 @@ function Layout() {
   }, [user?.id])
 
   return (
-    <ForumChannelsProvider><ChatProvider key={user?.id ?? 'guest'}><div className="app-shell">
+    <ForumChannelsProvider><ChatProvider key={user?.id ?? 'guest'}><div className={`app-shell${pathname === '/chat' ? ' app-shell-chat' : ''}`}>
       <a className="skip-link" href="#main-content">Skip to main content</a>
       <Navbar headerRef={headerRef} />
       <div className={`app-workspace ${
