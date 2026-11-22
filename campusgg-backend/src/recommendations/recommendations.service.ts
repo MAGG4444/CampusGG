@@ -73,6 +73,12 @@ export class RecommendationsService {
 
     const game =
       query.game?.trim() || viewer.gamingProfiles?.[0]?.game || undefined;
+    // Cross-game browsing without a profile produces neutral, reasonless
+    // scores. Suppress it instead of showing a weak "possible" card.
+    if (!game || !findGamingProfile(viewer.gamingProfiles, game)) {
+      return { items: [] };
+    }
+
     const candidates = await this.lobbiesService.findRecommendationCandidates(
       userId,
       game,
@@ -100,6 +106,14 @@ export class RecommendationsService {
     }
 
     const game = query.game?.trim() || profiles[0].game;
+    if (!findGamingProfile(profiles, game)) {
+      return {
+        items: [],
+        needsProfile: true,
+        game: canonicalGameName(game),
+      };
+    }
+
     const candidates: SuggestedUserCandidate[] =
       await this.usersService.findRecommendationCandidates(userId, game);
     const items = rankSuggestedUsers(candidates, viewer, game, {

@@ -11,6 +11,7 @@ import {
   campusFit,
   fitLabel,
   roundScore,
+  selectWithCampusDiversity,
   skillFit,
   uniqueRoles,
   type FitLabel,
@@ -24,12 +25,33 @@ export interface SuggestedUserCandidate {
   email?: string | null;
   campusDomain?: string | null;
   gamingProfiles?: GamingProfile[];
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
 }
 
 export interface SuggestedUserViewer {
   email?: string | null;
   campusDomain?: string | null;
   gamingProfiles?: GamingProfile[];
+}
+
+export interface SuggestedRoleFit {
+  value: number;
+  complementary: boolean;
+  overlaps: boolean;
+  complementaryRoleCount: number;
+  sharedRoleCount: number;
+  sharedRoleRatio: number;
+}
+
+export interface SuggestedUserTieBreak {
+  complementaryRoleCount: number;
+  sharedRoleCount: number;
+  sharedRoleRatio: number;
+  /** Latest known profile activity, used only for deterministic ordering. */
+  activityAt: number;
+  /** Internal only; never serialized in recommendation responses. */
+  campusDomain: string | null;
 }
 
 export interface ScoredSuggestedUser {
@@ -47,6 +69,7 @@ export interface ScoredSuggestedUser {
     roleFit: number;
     campusFit: number;
   };
+  tieBreak: SuggestedUserTieBreak;
 }
 
 function roleKey(role: string): string {
@@ -58,20 +81,53 @@ export function suggestedRoleFit(
   viewerRoles: readonly string[],
   candidateRoles: readonly string[],
   mode: SuggestedUserRoleMode,
-): { value: number; complementary: boolean; overlaps: boolean } {
+): SuggestedRoleFit {
   const viewer = uniqueRoles(viewerRoles).map(roleKey);
   const candidate = uniqueRoles(candidateRoles).map(roleKey);
   if (viewer.length === 0 || candidate.length === 0) {
-    return { value: 0.5, complementary: false, overlaps: false };
+    return {
+      value: 0.5,
+      complementary: false,
+      overlaps: false,
+      complementaryRoleCount: 0,
+      sharedRoleCount: 0,
+      sharedRoleRatio: 0,
+    };
   }
   const viewerSet = new Set(viewer);
-  const overlaps = candidate.some((role) => viewerSet.has(role));
-  const complementary = candidate.some((role) => !viewerSet.has(role));
+  const sharedRoleCount = candidate.filter((role) =>
+    viewerSet.has(role),
+  ).length;
+  const complementaryRoleCount = candidate.length - sharedRoleCount;
+  const sharedRoleRatio = sharedRoleCount / candidate.length;
+  const overlaps = sharedRoleCount > 0;
+  const complementary = complementaryRoleCount > 0;
 
   if (mode === 'overlap') {
-    return { value: overlaps ? 1 : 0.2, complementary, overlaps };
+    return {
+      value: overlaps ? 1 : 0.2,
+      complementary,
+      overlaps,
+      complementaryRoleCount,
+      sharedRoleCount,
+      sharedRoleRatio,
+    };
   }
-  return { value: complementary ? 1 : 0.6, complementary, overlaps };
+  return {
+    value: complementary ? 1 : 0.6,
+    complementary,
+    overlaps,
+    complementaryRoleCount,
+    sharedRoleCount,
+    sharedRoleRatio,
+  };
+}
+
+function latestActivityAt(candidate: SuggestedUserCandidate): number {
+  return Math.max(
+    candidate.updatedAt?.getTime() ?? 0,
+    candidate.createdAt?.getTime() ?? 0,
+  );
 }
 
 export function scoreSuggestedUser(
@@ -137,7 +193,82 @@ export function scoreSuggestedUser(
       roleFit: parts.roleFit.value,
       campusFit: parts.campusFit,
     },
+    tieBreak: {
+      complementaryRoleCount: parts.roleFit.complementaryRoleCount,
+      sharedRoleCount: parts.roleFit.sharedRoleCount,
+      sharedRoleRatio: parts.roleFit.sharedRoleRatio,
+      activityAt: latestActivityAt(candidate),
+      campusDomain: candidateDomain,
+    },
   };
+}
+
+function compareSuggestedUsers(
+  a: ScoredSuggestedUser,
+  b: ScoredSuggestedUser,
+  mode: SuggestedUserRoleMode,
+): number {
+  if (b.score !== a.score) return b.score - a.score;
+
+  if (mode === 'overlap') {
+    if (b.tieBreak.sharedRoleRatio !== a.tieBreak.sharedRoleRatio) {
+      return b.tieBreak.sharedRoleRatio - a.tieBreak.sharedRoleRatio;
+    }
+    if (b.tieBreak.sharedRoleCount !== a.tieBreak.sharedRoleCount) {
+      return b.tieBreak.sharedRoleCount - a.tieBreak.sharedRoleCount;
+    }
+    if (
+      b.tieBreak.complementaryRoleCount !== a.tieBreak.complementaryRoleCount
+    ) {
+      return (
+        b.tieBreak.complementaryRoleCount - a.tieBreak.complementaryRoleCount
+      );
+    }
+  } else {
+    if (
+      b.tieBreak.complementaryRoleCount !== a.tieBreak.complementaryRoleCount
+    ) {
+      return (
+        b.tieBreak.complementaryRoleCount - a.tieBreak.complementaryRoleCount
+      );
+    }
+    // Prefer the purer complement when both candidates fill the same number
+    // of new roles.
+    if (a.tieBreak.sharedRoleRatio !== b.tieBreak.sharedRoleRatio) {
+      return a.tieBreak.sharedRoleRatio - b.tieBreak.sharedRoleRatio;
+    }
+    if (a.tieBreak.sharedRoleCount !== b.tieBreak.sharedRoleCount) {
+      return a.tieBreak.sharedRoleCount - b.tieBreak.sharedRoleCount;
+    }
+  }
+
+  if (b.tieBreak.activityAt !== a.tieBreak.activityAt) {
+    return b.tieBreak.activityAt - a.tieBreak.activityAt;
+  }
+  return a.user.username.localeCompare(b.user.username);
+}
+
+/** Campus is excluded here so diversity is only applied to true rank ties. */
+function sameSuggestedUserRank(
+  a: ScoredSuggestedUser,
+  b: ScoredSuggestedUser,
+  mode: SuggestedUserRoleMode,
+): boolean {
+  if (a.score !== b.score || a.tieBreak.activityAt !== b.tieBreak.activityAt) {
+    return false;
+  }
+  if (mode === 'overlap') {
+    return (
+      a.tieBreak.sharedRoleRatio === b.tieBreak.sharedRoleRatio &&
+      a.tieBreak.sharedRoleCount === b.tieBreak.sharedRoleCount &&
+      a.tieBreak.complementaryRoleCount === b.tieBreak.complementaryRoleCount
+    );
+  }
+  return (
+    a.tieBreak.complementaryRoleCount === b.tieBreak.complementaryRoleCount &&
+    a.tieBreak.sharedRoleRatio === b.tieBreak.sharedRoleRatio &&
+    a.tieBreak.sharedRoleCount === b.tieBreak.sharedRoleCount
+  );
 }
 
 export function rankSuggestedUsers(
@@ -146,13 +277,16 @@ export function rankSuggestedUsers(
   game: string,
   options: { limit?: number; mode?: SuggestedUserRoleMode } = {},
 ): ScoredSuggestedUser[] {
-  return candidates
-    .map((candidate) =>
-      scoreSuggestedUser(candidate, viewer, game, options.mode),
-    )
-    .sort((a, b) => {
-      if (b.score !== a.score) return b.score - a.score;
-      return a.user.username.localeCompare(b.user.username);
-    })
-    .slice(0, options.limit ?? SUGGESTED_USER_LIMIT);
+  const mode = options.mode ?? SUGGESTED_USER_ROLE_MODE;
+  const limit = options.limit ?? SUGGESTED_USER_LIMIT;
+  const ranked = candidates
+    .map((candidate) => scoreSuggestedUser(candidate, viewer, game, mode))
+    .sort((a, b) => compareSuggestedUsers(a, b, mode));
+
+  return selectWithCampusDiversity(
+    ranked,
+    limit,
+    (item) => item.tieBreak.campusDomain,
+    (a, b) => sameSuggestedUserRank(a, b, mode),
+  );
 }

@@ -96,6 +96,7 @@ export class UsersService {
         eduVerified: true,
         gamingProfiles: true,
         createdAt: true,
+        updatedAt: true,
       },
       where: { eduVerified: true, id: Not(viewerId) },
       order: { createdAt: 'DESC' },

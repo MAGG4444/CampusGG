@@ -78,6 +78,31 @@ describe('RecommendationsService', () => {
     });
   });
 
+  it('requires a profile for the requested suggested-users game', async () => {
+    const { usersService, service } = createService();
+    usersService.findOne.mockResolvedValue(viewer);
+
+    await expect(
+      service.recommendUsers('viewer', { game: 'Overwatch 2' }),
+    ).resolves.toEqual({
+      items: [],
+      needsProfile: true,
+      game: 'Overwatch 2',
+    });
+    expect(usersService.findRecommendationCandidates).not.toHaveBeenCalled();
+  });
+
+  it('returns no lobby recommendations for a game outside the profile', async () => {
+    const { usersService, lobbiesService, service } = createService();
+    usersService.findOne.mockResolvedValue(viewer);
+    lobbiesService.findCurrentLobbyId.mockResolvedValue(null);
+
+    await expect(
+      service.recommendLobbies('viewer', { game: 'Overwatch 2' }),
+    ).resolves.toEqual({ items: [] });
+    expect(lobbiesService.findRecommendationCandidates).not.toHaveBeenCalled();
+  });
+
   it('never exposes candidate email in suggested users', async () => {
     const { usersService, service } = createService();
     usersService.findOne.mockResolvedValue(viewer);
@@ -165,5 +190,19 @@ describe('RecommendationsService', () => {
       fallback: 'create-lobby',
       prefill: { game: 'CS2', neededRoles: ['Support'] },
     });
+  });
+
+  it('falls back when the requested game is not on the profile', async () => {
+    const { usersService, lobbiesService, service } = createService();
+    usersService.findOne.mockResolvedValue(viewer);
+    lobbiesService.findCurrentLobbyId.mockResolvedValue(null);
+
+    await expect(
+      service.quickJoin('viewer', { game: 'overwatch' }),
+    ).resolves.toEqual({
+      fallback: 'create-lobby',
+      prefill: { game: 'Overwatch 2', neededRoles: [] },
+    });
+    expect(lobbiesService.findRecommendationCandidates).not.toHaveBeenCalled();
   });
 });

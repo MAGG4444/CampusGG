@@ -23,8 +23,11 @@ export const SUGGESTED_USER_WEIGHTS = {
 export const LOBBY_RECOMMENDATION_LIMIT = 3;
 export const SUGGESTED_USER_LIMIT = 5;
 
-/** Below this score a lobby is hidden, unless it is the only joinable option. */
-export const LOBBY_RECOMMENDATION_MIN_SCORE = 0.35;
+/**
+ * Below this score a lobby is hidden entirely. Weak no-profile or cross-game
+ * candidates should produce an empty list, not a reasonless "possible" card.
+ */
+export const LOBBY_RECOMMENDATION_MIN_SCORE = 0.45;
 
 /** Lobbies untouched for this long are not recommended. */
 export const LOBBY_STALE_HOURS = 14 * 24;

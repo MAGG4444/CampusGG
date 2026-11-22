@@ -93,3 +93,49 @@ export function uniqueRoles(roles: readonly string[]): string[] {
     return true;
   });
 }
+
+/**
+ * Pick `limit` items from an already-sorted list. When the next item repeats a
+ * campus that is already represented, an exactly-tied later item from a new
+ * campus is promoted instead. This keeps ranking quality intact while avoiding
+ * recommendation lists dominated by a single school.
+ */
+export function selectWithCampusDiversity<T>(
+  sorted: readonly T[],
+  limit: number,
+  campusOf: (item: T) => string | null,
+  isTie: (a: T, b: T) => boolean,
+): T[] {
+  if (limit <= 0) return [];
+
+  const remaining = [...sorted];
+  const selected: T[] = [];
+  const campuses = new Set<string>();
+
+  while (remaining.length > 0 && selected.length < limit) {
+    const top = remaining[0];
+    const topCampus = campusOf(top);
+    let pickIndex = 0;
+
+    if (topCampus && campuses.has(topCampus)) {
+      const alternative = remaining.findIndex((candidate, index) => {
+        if (index === 0) return false;
+        const campus = campusOf(candidate);
+        return (
+          campus !== null &&
+          campus !== '' &&
+          !campuses.has(campus) &&
+          isTie(top, candidate)
+        );
+      });
+      if (alternative !== -1) pickIndex = alternative;
+    }
+
+    const [next] = remaining.splice(pickIndex, 1);
+    selected.push(next);
+    const campus = campusOf(next);
+    if (campus) campuses.add(campus);
+  }
+
+  return selected;
+}
