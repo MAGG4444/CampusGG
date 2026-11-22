@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -13,8 +13,9 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import {
   canonicalRole,
   findGameDefinition,
-  findGamingProfile,
+  gameMatchKeys,
 } from '../common/games.config';
+import { MAX_RECOMMENDATION_CANDIDATES } from '../recommendations/recommendation.config';
 
 @Injectable()
 export class UsersService {
@@ -86,29 +87,40 @@ export class UsersService {
     viewerId: string,
     game?: string,
   ): Promise<User[]> {
-    const candidates = await this.usersRepository.find({
-      select: {
-        id: true,
-        username: true,
-        displayName: true,
-        bio: true,
-        email: true,
-        eduVerified: true,
-        gamingProfiles: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      where: { eduVerified: true, id: Not(viewerId) },
-      order: { createdAt: 'DESC' },
-      take: 200,
-    });
-    if (!game) {
-      return candidates.filter(
-        (candidate) => (candidate.gamingProfiles ?? []).length > 0,
+    const gameKeys = gameMatchKeys(game);
+    if (game && gameKeys.length === 0) return [];
+
+    const query = this.usersRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.username',
+        'user.displayName',
+        'user.bio',
+        'user.email',
+        'user.eduVerified',
+        'user.gamingProfiles',
+        'user.createdAt',
+        'user.updatedAt',
+      ])
+      .where('user.eduVerified = :eduVerified', { eduVerified: true })
+      .andWhere('user.id != :viewerId', { viewerId })
+      .orderBy('user.createdAt', 'DESC')
+      .take(MAX_RECOMMENDATION_CANDIDATES);
+
+    if (gameKeys.length > 0) {
+      query.andWhere(
+        `EXISTS (
+          SELECT 1
+          FROM jsonb_array_elements(user.gaming_profiles) AS profile
+          WHERE LOWER(profile->>'game') IN (:...gameKeys)
+        )`,
+        { gameKeys },
       );
+    } else {
+      query.andWhere('jsonb_array_length(user.gaming_profiles) > 0');
     }
-    return candidates.filter((candidate) =>
-      findGamingProfile(candidate.gamingProfiles, game),
-    );
+
+    return query.getMany();
   }
 }

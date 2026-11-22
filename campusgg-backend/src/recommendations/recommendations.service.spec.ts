@@ -92,15 +92,41 @@ describe('RecommendationsService', () => {
     expect(usersService.findRecommendationCandidates).not.toHaveBeenCalled();
   });
 
-  it('returns no lobby recommendations for a game outside the profile', async () => {
+  it.each(['Overwatch 2', 'League of Legends', 'Valorant', 'Dota 2'])(
+    'requires a profile for %s lobby recommendations',
+    async (game) => {
+      const { usersService, lobbiesService, service } = createService();
+      usersService.findOne.mockResolvedValue(viewer);
+      lobbiesService.findCurrentLobbyId.mockResolvedValue(null);
+
+      await expect(
+        service.recommendLobbies('viewer', { game }),
+      ).resolves.toEqual({
+        items: [],
+        needsProfile: true,
+        game,
+      });
+      expect(
+        lobbiesService.findRecommendationCandidates,
+      ).not.toHaveBeenCalled();
+    },
+  );
+
+  it('returns canonical game metadata for lobby recommendations', async () => {
     const { usersService, lobbiesService, service } = createService();
     usersService.findOne.mockResolvedValue(viewer);
     lobbiesService.findCurrentLobbyId.mockResolvedValue(null);
+    lobbiesService.findRecommendationCandidates.mockResolvedValue([
+      makeLobby('lobby-a', 'host-a'),
+    ]);
 
-    await expect(
-      service.recommendLobbies('viewer', { game: 'Overwatch 2' }),
-    ).resolves.toEqual({ items: [] });
-    expect(lobbiesService.findRecommendationCandidates).not.toHaveBeenCalled();
+    const result = await service.recommendLobbies('viewer', { game: 'csgo' });
+
+    expect(result).toMatchObject({
+      needsProfile: false,
+      game: 'CS2',
+    });
+    expect(result.items).toHaveLength(1);
   });
 
   it('never exposes candidate email in suggested users', async () => {

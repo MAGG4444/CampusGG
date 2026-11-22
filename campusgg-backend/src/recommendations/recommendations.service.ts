@@ -52,6 +52,8 @@ export interface LobbyRecommendationItemDto {
 export interface LobbyRecommendationsResponse {
   items: LobbyRecommendationItemDto[];
   currentLobbyId?: string;
+  needsProfile?: boolean;
+  game?: string | null;
 }
 
 @Injectable()
@@ -74,9 +76,14 @@ export class RecommendationsService {
     const game =
       query.game?.trim() || viewer.gamingProfiles?.[0]?.game || undefined;
     // Cross-game browsing without a profile produces neutral, reasonless
-    // scores. Suppress it instead of showing a weak "possible" card.
+    // scores. Suppress it instead of showing a weak "possible" card, but tell
+    // the client which profile is missing so it can offer the right CTA.
     if (!game || !findGamingProfile(viewer.gamingProfiles, game)) {
-      return { items: [] };
+      return {
+        items: [],
+        needsProfile: true,
+        game: game ? canonicalGameName(game) : null,
+      };
     }
 
     const candidates = await this.lobbiesService.findRecommendationCandidates(
@@ -88,6 +95,8 @@ export class RecommendationsService {
     });
 
     return {
+      needsProfile: false,
+      game: canonicalGameName(game),
       items: items.map((item) => ({
         lobby: this.publicLobby(item.lobby),
         score: item.score,

@@ -1,12 +1,13 @@
 /**
  * Demo seed for the lobby recommender.
  *
- * Creates six public lobbies with varied game, skill, needed roles, age, and
+ * Creates public lobbies with varied game, skill, needed roles, age, and
  * occupancy. Every host and filler is an edu-verified user so Suggested Users
  * has candidates as well.
  *
  * Idempotent: re-running replaces only the lobbies hosted by the demo users.
- * The existing skyyu account is given a CS2 profile only when it has none.
+ * The existing skyyu account receives a demo profile only for games it does
+ * not already have.
  *
  * Usage: npm run seed:demo
  */
@@ -144,6 +145,30 @@ const users = [
     bio: 'CS2 IGL. I bring the plan and the mid-round reset.',
     profiles: [{ game: 'CS2', preferredRoles: ['IGL'], experienceLevel: 'Intermediate' }],
   },
+  {
+    key: 'l1',
+    email: 'demo.l1@purdue.edu',
+    username: 'demo_l1',
+    displayName: 'Yuna',
+    bio: 'League mid laner. I roam after pushing, not before.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Mid', 'Top'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'l2',
+    email: 'demo.l2@illinois.edu',
+    username: 'demo_l2',
+    displayName: 'Cato',
+    bio: 'Jungle main. I path toward the lane that actually has priority.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Jungle'], experienceLevel: 'Advanced' }],
+  },
+  {
+    key: 'l3',
+    email: 'demo.l3@purdue.edu',
+    username: 'demo_l3',
+    displayName: 'Nia',
+    bio: 'League support. Wards are a lifestyle, not a suggestion.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Support', 'ADC'], experienceLevel: 'Beginner' }],
+  },
 ]
 
 const minutes = (value) => value * 60 * 1000
@@ -229,6 +254,32 @@ const lobbies = [
     ageMs: days(2),
     members: ['f7', 'f8', 'f9'],
   },
+  {
+    host: 'l1',
+    name: 'League Flex Five',
+    subtitle: 'Jungle and support for a full queue',
+    details: 'Purdue flex queue. We draft around comfort picks, call one objective at a time, and stop after two losses.',
+    tags: ['LFG', 'Strategy'],
+    game: 'League of Legends',
+    skillLevel: 'Intermediate',
+    neededRoles: ['Jungle', 'Support'],
+    participantLimit: 5,
+    ageMs: minutes(30),
+    members: ['l3'],
+  },
+  {
+    host: 'l2',
+    name: 'Clash Practice Block',
+    subtitle: 'Top and ADC wanted for Tuesday Clash',
+    details: 'Advanced lobby. We run one draft, one game, and a short review. Bring a champion pool you can blind pick.',
+    tags: ['Strategy', 'Tournaments'],
+    game: 'League of Legends',
+    skillLevel: 'Advanced',
+    neededRoles: ['Top', 'ADC'],
+    participantLimit: 5,
+    ageMs: hours(4),
+    members: [],
+  },
 ]
 
 async function main() {
@@ -263,22 +314,44 @@ async function main() {
       ids.set(user.key, result.rows[0].id)
     }
 
-    // Give the existing demo viewer a profile only if they have never set one.
-    await client.query(
-      `UPDATE users
-       SET gaming_profiles = $1::jsonb, updated_at = now()
-       WHERE email = 'du328@purdue.edu'
-         AND (gaming_profiles IS NULL OR gaming_profiles = '[]'::jsonb)`,
-      [
-        JSON.stringify([
-          {
-            game: 'CS2',
-            preferredRoles: ['Support'],
-            experienceLevel: 'Intermediate',
-          },
-        ]),
-      ],
-    )
+    // Add a demo profile for each game the viewer does not have yet. Existing
+    // game profiles are left untouched.
+    const demoViewerProfiles = [
+      {
+        game: 'CS2',
+        preferredRoles: ['Support'],
+        experienceLevel: 'Intermediate',
+      },
+      {
+        game: 'Valorant',
+        preferredRoles: ['Controller'],
+        experienceLevel: 'Intermediate',
+      },
+      {
+        game: 'League of Legends',
+        preferredRoles: ['Mid'],
+        experienceLevel: 'Intermediate',
+      },
+      {
+        game: 'Dota 2',
+        preferredRoles: ['Hard Support'],
+        experienceLevel: 'Advanced',
+      },
+    ]
+    for (const profile of demoViewerProfiles) {
+      await client.query(
+        `UPDATE users
+         SET gaming_profiles = COALESCE(gaming_profiles, '[]'::jsonb) || $1::jsonb,
+             updated_at = now()
+         WHERE email = 'du328@purdue.edu'
+           AND NOT EXISTS (
+             SELECT 1
+             FROM jsonb_array_elements(COALESCE(gaming_profiles, '[]'::jsonb)) AS existing
+             WHERE LOWER(existing->>'game') = LOWER($2)
+           )`,
+        [JSON.stringify([profile]), profile.game],
+      )
+    }
 
     const hostIds = [...ids.values()]
     await client.query(

@@ -103,6 +103,24 @@ export function gamesMatch(a?: string | null, b?: string | null): boolean {
   return Boolean(left) && left === right;
 }
 
+/**
+ * Every spelling a stored game value may use, lowercased. Stored values are
+ * normally canonical, but older rows can still contain an alias.
+ */
+export function gameMatchKeys(game?: string | null): string[] {
+  const trimmed = (game ?? '').trim();
+  if (!trimmed) return [];
+  const definition = findGameDefinition(trimmed);
+  if (!definition) return [trimmed.toLowerCase()];
+  return [
+    ...new Set(
+      [definition.name, ...definition.aliases].map((value) =>
+        value.toLowerCase(),
+      ),
+    ),
+  ];
+}
+
 /** Canonical roles for a game; unknown games use the generic role list. */
 export function rolesForGame(game?: string | null): readonly string[] {
   const definition = findGameDefinition(game);

@@ -42,7 +42,15 @@ function LobbyFeed() {
   const loadingMoreRef = useRef(false)
   const revealTimerRef = useRef(null)
 
-  const { isAuthenticated, token } = useAuth()
+  const { user, isAuthenticated, token } = useAuth()
+  const viewerGames = useMemo(
+    () => [...new Set(
+      (user?.gamingProfiles ?? [])
+        .map((profile) => profile.game)
+        .filter(Boolean),
+    )],
+    [user?.gamingProfiles],
+  )
   const [joinError, setJoinError] = useState('')
   const [joiningLobbyId, setJoiningLobbyId] = useState(null)
   const [isFindingSquad, setIsFindingSquad] = useState(false)
@@ -351,6 +359,8 @@ function LobbyFeed() {
         token={token}
         isAuthenticated={isAuthenticated}
         game={selectedGame}
+        viewerGames={viewerGames}
+        onGameChange={(value) => handleFilterChange('game', value)}
         hidden={recommendationsHidden}
         refreshKey={joinedLobbyIds.join('|')}
         onJoin={handleJoin}

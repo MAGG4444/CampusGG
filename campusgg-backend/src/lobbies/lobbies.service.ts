@@ -12,14 +12,18 @@ import {
 } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Raw, Repository } from 'typeorm';
 
 import { UsersService } from '../users/users.service';
 import {
   canonicalGameName,
   canonicalRole,
-  gamesMatch,
+  gameMatchKeys,
 } from '../common/games.config';
+import {
+  LOBBY_STALE_HOURS,
+  MAX_RECOMMENDATION_CANDIDATES,
+} from '../recommendations/recommendation.config';
 import { CreateLobbyDto } from './dto/create-lobby.dto';
 import { SearchLobbiesDto } from './dto/search-lobbies.dto';
 import { Lobby, LobbyVisibility } from './lobby.entity';
@@ -83,8 +87,15 @@ export class LobbiesService {
     userId?: string,
   ): Promise<Array<Lobby & { memberCount: number }>> {
     const memberships = userId ? await this.findMyMemberships(userId) : [];
+    const gameKeys = gameMatchKeys(filters.game);
     const search = {
-      ...(filters.game ? { game: filters.game } : {}),
+      ...(gameKeys.length
+        ? {
+            game: Raw((alias) => `LOWER(${alias}) IN (:...gameKeys)`, {
+              gameKeys,
+            }),
+          }
+        : {}),
       ...(filters.skillLevel ? { skillLevel: filters.skillLevel } : {}),
     };
     const lobbies = await this.lobbiesRepository.find({
@@ -143,27 +154,45 @@ export class LobbiesService {
     viewerId: string,
     game?: string,
   ): Promise<Array<Lobby & { memberCount: number }>> {
-    const lobbies = await this.lobbiesRepository.find({
-      relations: { host: true },
-      select: {
-        id: true,
-        lobbyName: true,
-        subtitle: true,
-        details: true,
-        tags: true,
-        game: true,
-        skillLevel: true,
-        neededRoles: true,
-        participantLimit: true,
-        visibility: true,
-        createdAt: true,
-        updatedAt: true,
-        host: { id: true, username: true, email: true, gamingProfiles: true },
-      },
-      where: { visibility: LobbyVisibility.PUBLIC },
-      order: { updatedAt: 'DESC' },
-      take: 200,
-    });
+    const gameKeys = gameMatchKeys(game);
+    if (game && gameKeys.length === 0) return [];
+
+    const staleBefore = new Date(
+      Date.now() - LOBBY_STALE_HOURS * 60 * 60 * 1000,
+    );
+    const query = this.lobbiesRepository
+      .createQueryBuilder('lobby')
+      .leftJoinAndSelect('lobby.host', 'host')
+      .select([
+        'lobby.id',
+        'lobby.lobbyName',
+        'lobby.subtitle',
+        'lobby.details',
+        'lobby.tags',
+        'lobby.game',
+        'lobby.skillLevel',
+        'lobby.neededRoles',
+        'lobby.participantLimit',
+        'lobby.visibility',
+        'lobby.createdAt',
+        'lobby.updatedAt',
+        'host.id',
+        'host.username',
+        'host.email',
+        'host.gamingProfiles',
+      ])
+      .where('lobby.visibility = :visibility', {
+        visibility: LobbyVisibility.PUBLIC,
+      })
+      .andWhere('lobby.updatedAt >= :staleBefore', { staleBefore })
+      .orderBy('lobby.updatedAt', 'DESC')
+      .take(MAX_RECOMMENDATION_CANDIDATES);
+
+    if (gameKeys.length > 0) {
+      query.andWhere('LOWER(lobby.game) IN (:...gameKeys)', { gameKeys });
+    }
+
+    const lobbies = await query.getMany();
     if (lobbies.length === 0) return [];
 
     const counts = await this.lobbiesRepository.manager
@@ -179,7 +208,6 @@ export class LobbiesService {
     const byLobby = new Map(
       counts.map(({ lobbyId, count }) => [lobbyId, Number(count)]),
     );
-    const staleBefore = Date.now() - 14 * 24 * 60 * 60 * 1000;
 
     return lobbies
       .map((lobby) => ({
@@ -189,10 +217,8 @@ export class LobbiesService {
       .filter(
         (lobby) =>
           lobby.host.id !== viewerId &&
-          lobby.updatedAt.getTime() >= staleBefore &&
           (lobby.participantLimit == null ||
-            lobby.memberCount < lobby.participantLimit) &&
-          (!game || gamesMatch(lobby.game, game)),
+            lobby.memberCount < lobby.participantLimit),
       );
   }
 

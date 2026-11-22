@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Gamepad2, GraduationCap, Sparkles, UsersRound, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { getSuggestedUsers } from '../../api/recommendations.js'
@@ -98,41 +98,58 @@ function SuggestedUserDetails({ item, onClose }) {
 }
 
 function SuggestedUsers() {
-  const { isAuthenticated, token } = useAuth()
+  const { isAuthenticated, token, user } = useAuth()
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle')
   const [items, setItems] = useState([])
   const [needsProfile, setNeedsProfile] = useState(false)
+  const [missingGame, setMissingGame] = useState(null)
+  const [selectedGame, setSelectedGame] = useState('')
   const [selected, setSelected] = useState(null)
-  const requestedRef = useRef(false)
+  const [loadedKey, setLoadedKey] = useState('')
+
+  const viewerGames = useMemo(() => {
+    const games = (user?.gamingProfiles ?? [])
+      .map((profile) => profile.game)
+      .filter(Boolean)
+    return [...new Set(games)]
+  }, [user?.gamingProfiles])
+
+  const activeGame = viewerGames.includes(selectedGame)
+    ? selectedGame
+    : viewerGames[0] ?? ''
+  const requestKey = `${token ?? ''}|${activeGame}`
 
   useEffect(() => {
-    if (!open || !isAuthenticated || !token || requestedRef.current) {
+    if (!open || !isAuthenticated || !token) {
       return undefined
     }
 
-    requestedRef.current = true
     const controller = new AbortController()
-    setStatus('loading')
-    getSuggestedUsers(token, { limit: 5, signal: controller.signal })
+    getSuggestedUsers(token, {
+      game: activeGame || undefined,
+      limit: 5,
+      signal: controller.signal,
+    })
       .then((data) => {
         if (controller.signal.aborted) return
         setItems(Array.isArray(data?.items) ? data.items : [])
         setNeedsProfile(Boolean(data?.needsProfile))
+        setMissingGame(data?.game ?? null)
+        setLoadedKey(requestKey)
         setStatus('ready')
       })
       .catch(() => {
         if (!controller.signal.aborted) setStatus('error')
       })
 
-    return () => {
-      controller.abort()
-      requestedRef.current = false
-    }
-  }, [open, isAuthenticated, token])
+    return () => controller.abort()
+  }, [open, isAuthenticated, token, activeGame, requestKey])
 
   if (!isAuthenticated) return null
   if (status === 'error') return null
+
+  const isLoading = status === 'idle' || loadedKey !== requestKey
 
   return (
     <>
@@ -146,22 +163,39 @@ function SuggestedUsers() {
             <Sparkles size={15} strokeWidth={2} aria-hidden="true" />
             Suggested teammates
           </span>
-          {status === 'ready' && !needsProfile ? (
+          {!isLoading && !needsProfile ? (
             <span className="suggested-users-count">{items.length}</span>
           ) : null}
         </summary>
 
         <div className="suggested-users-body">
-          {status === 'loading' || status === 'idle' ? (
+          {viewerGames.length > 0 ? (
+            <label className="suggested-users-game">
+              <span>Game</span>
+              <select
+                aria-label="Suggested teammates game"
+                value={activeGame}
+                onChange={(event) => setSelectedGame(event.target.value)}
+              >
+                {viewerGames.map((game) => (
+                  <option key={game} value={game}>{game}</option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+
+          {isLoading ? (
             <p className="suggested-users-status">Looking for compatible players…</p>
           ) : needsProfile ? (
             <p className="suggested-users-status">
-              Add a game to your profile to see suggested teammates.{' '}
+              Add {missingGame ?? 'a game'} to your profile to see suggested
+              teammates.{' '}
               <Link to="/profile">Update profile</Link>
             </p>
           ) : items.length === 0 ? (
             <p className="suggested-users-status">
-              No compatible players yet. Check back after more students join.
+              No compatible {activeGame} players yet. Check back after more
+              students join.
             </p>
           ) : (
             <ul className="suggested-users-list">
