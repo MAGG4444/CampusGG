@@ -1,201 +1,55 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Clock3, MessageCircle, UserCheck, UserRoundPlus } from 'lucide-react'
-import ChatComposer from '../components/chat/ChatComposer.jsx'
-import ChatDetailsPanel from '../components/chat/ChatDetailsPanel.jsx'
-import ChatEmptyState from '../components/chat/ChatEmptyState.jsx'
-import ChatHeader from '../components/chat/ChatHeader.jsx'
-import ChatMessage from '../components/chat/ChatMessage.jsx'
-import ConversationList from '../components/chat/ConversationList.jsx'
-import ConversationSearch from '../components/chat/ConversationSearch.jsx'
-import SuggestedUsers from '../components/chat/SuggestedUsers.jsx'
-import { useNotifications } from '../components/notifications/useNotifications.js'
-import { CURRENT_USER_ID } from '../data/chatData.js'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { MessageCircle, Search, UserRoundPlus, UsersRound } from 'lucide-react'
+import { getSuggestedUsers } from '../api/recommendations.js'
+import { useAuth } from '../context/useAuth.js'
 import { useChat } from '../context/chatContext.js'
+import ConversationList from '../components/chat/ConversationList.jsx'
+import ConnectionConversation from '../components/ConnectionConversation.jsx'
+import FindFriends from '../components/FindFriends.jsx'
+import FriendProfileDrawer from '../components/FriendProfileDrawer.jsx'
+import FriendsIndex from '../components/FriendsIndex.jsx'
+import { useWorkspaceNarrow } from '../utils/useWorkspaceNarrow.js'
 import './Chat.css'
 
-function Chat() {
-  const { addNotification } = useNotifications()
-  const { chatConversations, selectedConversationId, selectedConversation, messageDraft,
-    setMessageDraft, selectConversation, sendMessage } = useChat()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [detailsOpen, setDetailsOpen] = useState(false)
-  const activePanelRef = useRef(null)
-  const chatHistoryRef = useRef(null)
-  const detailsButtonRef = useRef(null)
-  const detailsPanelRef = useRef(null)
-  const previousConversationIdRef = useRef(null)
-  const searchInputRef = useRef(null)
+const tabs = [{ id: 'messages', label: 'Messages', icon: MessageCircle }, { id: 'friends', label: 'Friends', icon: UsersRound }]
+const unavailableFriends = []
 
-  const filteredConversations = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase()
-
-    if (!normalizedQuery) return chatConversations
-
-    return chatConversations.filter((conversation) =>
-      conversation.username.toLowerCase().includes(normalizedQuery),
-    )
-  }, [chatConversations, searchQuery])
-
-  const selectedMessageCount = selectedConversation?.messages.length ?? 0
+function RealConnection() {
+  const { isAuthenticated, token, user } = useAuth()
+  const { chatConversations, selectedConversationId, selectedConversation, selectConversation, messageDraft, setMessageDraft, sendMessage } = useChat()
+  const [tab, setTab] = useState('messages')
+  const [view, setView] = useState('list')
+  const [recommendations, setRecommendations] = useState({ status: 'idle', items: [] })
+  const [retry, setRetry] = useState(0)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileButtonRef = useRef(null)
+  const [workspaceRef, narrow] = useWorkspaceNarrow()
+  const closeProfile = useCallback(() => setProfileOpen(false), [])
 
   useEffect(() => {
-    if (!selectedConversationId || !chatHistoryRef.current) return
+    if (view !== 'discover' || !isAuthenticated || !token) return undefined
+    const controller = new AbortController()
+    getSuggestedUsers(token, { limit: 20, signal: controller.signal })
+      .then(data => { if (!Array.isArray(data?.items) || data.items.some(item => !item?.user?.id || !item.user.username)) throw new Error('Invalid suggestions response'); if (!controller.signal.aborted) setRecommendations({ status: data.needsProfile ? 'profile' : 'ready', items: data.items }) })
+      .catch(() => { if (!controller.signal.aborted) setRecommendations({ status: 'error', items: [] }) })
+    return () => controller.abort()
+  }, [view, token, isAuthenticated, retry])
+  function openDiscovery() { setProfileOpen(false); setView('discover'); if (isAuthenticated && token) setRecommendations({ status: 'loading', items: [] }) }
+  function switchTab(id) { setTab(id); if (view === 'discover') setView('list') }
+  const people = recommendations.items.map(({ user: person, reasons }) => ({ id: person.id, name: person.displayName || person.username, username: person.username, game: person.game, bio: person.bio, experienceLevel: person.experienceLevel, reasons, suggested: true }))
+  const showConversation = view === 'conversation' && selectedConversation
+  const detailOpen = view === 'discover' || showConversation
 
-    const behavior = previousConversationIdRef.current === selectedConversationId ? 'smooth' : 'auto'
-    const history = chatHistoryRef.current
-    history.scrollTo({ top: history.scrollHeight, behavior })
-    previousConversationIdRef.current = selectedConversationId
-  }, [selectedConversationId, selectedMessageCount])
-
-  useEffect(() => {
-    if (detailsOpen) {
-      detailsPanelRef.current?.focus({ preventScroll: true })
-    }
-  }, [detailsOpen])
-
-  function handleSelectConversation(conversationId) {
-    setDetailsOpen(false)
-    selectConversation(conversationId)
-  }
-
-  function handleBackToConversations() {
-    setDetailsOpen(false)
-    selectConversation(null)
-    requestAnimationFrame(() => searchInputRef.current?.focus({ preventScroll: true }))
-  }
-
-  function handleCloseDetails() {
-    setDetailsOpen(false)
-    requestAnimationFrame(() => detailsButtonRef.current?.focus({ preventScroll: true }))
-  }
-
-  function handleConnectionFeedback(conversation) {
-    const status = conversation.details?.connectionStatus
-    const feedbackByStatus = {
-      Connected: {
-        type: 'info',
-        title: 'Already connected',
-        message: `You and ${conversation.username} are already connected on CampusGG.`,
-        icon: UserCheck,
-      },
-      Pending: {
-        type: 'warning',
-        title: 'Connection pending',
-        message: `The local profile marks your connection with ${conversation.username} as pending.`,
-        icon: Clock3,
-      },
-      'Not connected': {
-        type: 'error',
-        title: 'Connection unavailable',
-        message: 'Connection requests are not available in this frontend-only preview.',
-        icon: UserRoundPlus,
-      },
-    }
-
-    addNotification(feedbackByStatus[status] || {
-      type: 'info',
-      title: 'Connection status unavailable',
-      message: 'No connection information is available for this conversation.',
-    })
-  }
-
-  return (
-    <div className={`chat-page page-enter ${selectedConversation ? 'chat-page-conversation-active' : ''}`}>
-      <div className="chat-page-heading">
-        <div>
-          <p className="page-kicker">Squad communications</p>
-          <h1>Chat</h1>
-        </div>
-        <p>Keep plans, callouts, and campus connections in one place.</p>
-      </div>
-
-      <section
-        className={`chat-workspace ${detailsOpen ? 'chat-workspace-details-open' : ''}`}
-        aria-label="CampusGG chat"
-      >
-        <aside className={`chat-sidebar ${selectedConversation ? 'chat-sidebar-mobile-hidden' : ''}`}>
-          <div className="chat-sidebar-header">
-            <div>
-              <h2>Conversations</h2>
-              <span>{chatConversations.length} active threads</span>
-            </div>
-            <span className="chat-thread-count" aria-label={`${chatConversations.length} conversations`}>
-              {chatConversations.length}
-            </span>
-          </div>
-          <ConversationSearch value={searchQuery} onChange={setSearchQuery} inputRef={searchInputRef} />
-          <SuggestedUsers />
-          <ConversationList
-            conversations={filteredConversations}
-            selectedId={selectedConversationId}
-            onSelect={handleSelectConversation}
-            hasSearchQuery={searchQuery.trim().length > 0}
-          />
-        </aside>
-
-        <section
-          ref={activePanelRef}
-          className={`active-chat-panel ${selectedConversation ? '' : 'active-chat-panel-mobile-hidden'}`}
-          aria-labelledby={selectedConversation ? 'active-conversation-title' : undefined}
-          tabIndex={selectedConversation ? -1 : undefined}
-        >
-          {selectedConversation ? (
-            <>
-              <ChatHeader
-                conversation={selectedConversation}
-                onBack={handleBackToConversations}
-                onOpenDetails={() => setDetailsOpen(true)}
-                detailsOpen={detailsOpen}
-                detailsButtonRef={detailsButtonRef}
-              />
-              <div
-                ref={chatHistoryRef}
-                className="chat-history"
-                role="log"
-                aria-label={`Messages with ${selectedConversation.username}`}
-                aria-live="polite"
-                aria-relevant="additions"
-              >
-                <div className="chat-date-divider"><span>Today</span></div>
-                {selectedConversation.messages.length > 0 ? (
-                  selectedConversation.messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      message={message}
-                      currentUserId={CURRENT_USER_ID}
-                      senderName={selectedConversation.username}
-                    />
-                  ))
-                ) : (
-                  <div className="chat-history-empty" role="status">
-                    <MessageCircle size={28} strokeWidth={1.8} aria-hidden="true" />
-                    <strong>No messages yet</strong>
-                    <span>Send a message to start this conversation.</span>
-                  </div>
-                )}
-              </div>
-              <ChatComposer
-                value={messageDraft}
-                onChange={setMessageDraft}
-                onSend={sendMessage}
-                recipientName={selectedConversation.username}
-              />
-            </>
-          ) : (
-            <ChatEmptyState />
-          )}
-        </section>
-        {selectedConversation && detailsOpen ? (
-          <ChatDetailsPanel
-            conversation={selectedConversation}
-            onClose={handleCloseDetails}
-            onConnectionFeedback={handleConnectionFeedback}
-            panelRef={detailsPanelRef}
-          />
-        ) : null}
-      </section>
-    </div>
-  )
+  return <div className="chat-page page-enter"><h1 className="sr-only">Connection</h1><section ref={workspaceRef} className={`chat-workspace connection-workspace ${profileOpen && showConversation ? 'connection-profile-open' : ''}`} aria-label="Connection workspace">
+    <aside className={`chat-sidebar ${detailOpen ? 'chat-sidebar-mobile-hidden' : ''}`}>
+      <nav className="connection-tabs" aria-label="Connection sections" style={{ '--tab-index': tabs.findIndex(item => item.id === tab) }}>{tabs.map(({ id, label, icon: Icon }) => <button key={id} type="button" aria-current={tab === id ? 'page' : undefined} onClick={() => switchTab(id)}><Icon size={17} aria-hidden="true" /><span>{label}</span></button>)}</nav>
+      {tab === 'friends' && <div className="friends-search-row"><div className="friends-search"><Search size={18} aria-hidden="true" /><input type="search" aria-label="Search Friends" placeholder="Search Friends" disabled /></div><button type="button" className="connection-icon-button" aria-label="Find Friends" onClick={openDiscovery}><UserRoundPlus size={20} aria-hidden="true" /></button></div>}
+      <div className={`connection-list-content${tab === 'friends' ? ' connection-friends-content' : ''}`} key={tab}>{tab === 'messages' ? <ConversationList conversations={chatConversations} selectedId={selectedConversationId} onSelect={id => { selectConversation(id); setProfileOpen(false); setView('conversation') }} /> : <FriendsIndex people={unavailableFriends} emptyMessage="Friends are not available yet." />}</div>
+    </aside>
+    <section className={`active-chat-panel connection-detail ${detailOpen ? '' : 'active-chat-panel-mobile-hidden'}`} aria-label="Connection details" inert={profileOpen && narrow}>
+      {view === 'discover' ? <FindFriends people={people} status={!isAuthenticated || !token ? 'signin' : recommendations.status} onRetry={() => { setRecommendations({ status: 'loading', items: [] }); setRetry(value => value + 1) }} onBack={() => setView('list')} /> : showConversation ? <ConnectionConversation key={selectedConversation.id} conversation={selectedConversation} currentUserId={user?.id} draft={messageDraft} setDraft={setMessageDraft} sendMessage={sendMessage} onBack={() => { setProfileOpen(false); setView('list') }} onProfile={() => setProfileOpen(value => !value)} profileOpen={profileOpen} profileButtonRef={profileButtonRef} /> : <div className="chat-empty-state"><span className="chat-empty-icon"><UsersRound size={32} aria-hidden="true" /></span><h2>{tab === 'messages' ? 'Your conversations' : 'Your friends'}</h2><p>{tab === 'messages' ? 'Select a conversation to see your messages.' : 'Select a friend to start a conversation.'}</p></div>}
+    </section>
+    {showConversation && <FriendProfileDrawer open={profileOpen} onClose={closeProfile} returnFocusRef={profileButtonRef} narrow={narrow} person={{ name: selectedConversation.username, username: selectedConversation.handle, avatar: selectedConversation.avatar, online: selectedConversation.online, bio: selectedConversation.details?.bio, game: selectedConversation.details?.games, sharedLobby: selectedConversation.sharedLobby }} />}
+  </section></div>
 }
-
-export default Chat
+export default RealConnection

@@ -6,8 +6,8 @@ function ConversationList({ conversations, selectedId, onSelect, hasSearchQuery 
     return (
       <div className="conversation-list-empty" role="status">
         <MessageCircle size={28} strokeWidth={1.8} aria-hidden="true" />
-        <strong>No conversations found</strong>
-        <span>{hasSearchQuery ? 'Try another player name.' : 'Your conversations will appear here.'}</span>
+        <strong>{hasSearchQuery ? 'No conversations found' : 'No conversations yet'}</strong>
+        <span>{hasSearchQuery ? 'Try another player name.' : 'Direct messaging is not available yet.'}</span>
       </div>
     )
   }

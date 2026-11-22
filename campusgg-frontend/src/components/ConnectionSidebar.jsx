@@ -2,7 +2,7 @@ import { MessageCircle, PanelRightClose } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useChat } from '../context/chatContext.js'
-import { CURRENT_USER_ID } from '../data/chatData.js'
+
 import ConversationSearch from './chat/ConversationSearch.jsx'
 import ConversationList from './chat/ConversationList.jsx'
 import ChatHeader from './chat/ChatHeader.jsx'
@@ -82,7 +82,7 @@ export default function ConnectionSidebar({ isOpen, onToggle }) {
             <div className="chat-history" ref={historyRef} role="log"
               aria-label={`Messages with ${selectedConversation.username}`} aria-live={pathname === '/chat' ? 'off' : 'polite'} aria-relevant="additions">
               {selectedConversation.messages.map((message) => <ChatMessage key={message.id}
-                message={message} currentUserId={CURRENT_USER_ID} senderName={selectedConversation.username} />)}
+                message={message} currentUserId={null} senderName={selectedConversation.username} />)}
             </div>
             <ChatComposer value={messageDraft} onChange={setMessageDraft} onSend={sendMessage}
               recipientName={selectedConversation.username} />
