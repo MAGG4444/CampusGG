@@ -26,7 +26,7 @@ test('sidebar collapse and active filter removal remain accessible', async () =>
     assert.equal(sidebar.root.findByType('aside').props['aria-hidden'], false)
     assert.equal(sidebar.root.findByType('aside').props.tabIndex, 0)
     assert.deepEqual(sidebar.root.findAllByType('legend').map(item => item.children.join('')), ['Game', 'Skill Level', 'Lobby Capacity', 'Visibility'])
-    assert.deepEqual(sidebar.root.findAllByType('fieldset')[0].findAllByType('button').map(item => item.children.join('')), ['All Games', 'CS2', 'Valorant', 'Overwatch 2'])
+    assert.deepEqual(sidebar.root.findAllByType('fieldset')[0].findAllByType('button').map(item => item.children.join('')), ['All Games', 'CS2', 'League of Legends', 'Valorant', 'Dota 2', 'Overwatch 2'])
     const details = sidebar.root.findAllByType('details')
     assert.equal(details.length, 2)
     assert.ok(details.every(item => !item.props.open))

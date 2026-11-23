@@ -1,15 +1,13 @@
-function ChatMessage({ message, currentUserId, senderName }) {
+function ChatMessage({ message, currentUserId, senderName, showTimestamp = true }) {
   const sentByCurrentUser = message.senderId === currentUserId
-  const authorLabel = sentByCurrentUser ? 'You' : senderName
-
   return (
     <div
       className={`chat-message ${sentByCurrentUser ? 'chat-message-sent' : 'chat-message-received'}`}
       role="listitem"
+      aria-label={sentByCurrentUser ? 'Message from you' : `Message from ${senderName}`}
     >
-      <span className="chat-message-author">{authorLabel}</span>
-      <p>{message.text}</p>
-      <time>{message.timestamp}</time>
+      <p className="chat-message-bubble">{message.text}</p>
+      {showTimestamp && <time dateTime={message.createdAt || message.sentAt}>{message.timestamp}</time>}
     </div>
   )
 }

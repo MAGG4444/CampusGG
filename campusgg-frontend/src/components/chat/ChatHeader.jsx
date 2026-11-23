@@ -1,7 +1,7 @@
-import { ArrowLeft, PanelRightOpen } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import ChatAvatar from './ChatAvatar.jsx'
 
-function ChatHeader({ conversation, onBack, onOpenDetails, detailsOpen, detailsButtonRef, titleId = 'active-conversation-title' }) {
+function ChatHeader({ conversation, onBack, titleId = 'active-conversation-title' }) {
   return (
     <header className="active-chat-header">
       <button className="chat-mobile-back" type="button" onClick={onBack} aria-label="Back to conversations">
@@ -16,21 +16,9 @@ function ChatHeader({ conversation, onBack, onOpenDetails, detailsOpen, detailsB
       <div className="active-chat-identity">
         <h2 id={titleId}>{conversation.username}</h2>
         <p>
-          <span className={`status-dot ${conversation.online ? 'status-dot-online' : ''}`} aria-hidden="true" />
-          {conversation.online ? 'Online' : 'Offline'} <span aria-hidden="true">·</span> {conversation.handle}
+          {typeof conversation.online === 'boolean' && <><span className={`status-dot ${conversation.online ? 'status-dot-online' : ''}`} aria-hidden="true" />{conversation.online ? 'Online' : 'Offline'} {conversation.handle && <span aria-hidden="true">·</span>}</>} {conversation.handle}
         </p>
       </div>
-      {onOpenDetails && <button
-        className="chat-details-toggle"
-        ref={detailsButtonRef}
-        type="button"
-        aria-label={`View details for ${conversation.username}`}
-        aria-controls="chat-details-panel"
-        aria-expanded={detailsOpen}
-        onClick={onOpenDetails}
-      >
-        <PanelRightOpen size={20} strokeWidth={2.1} aria-hidden="true" />
-      </button>}
     </header>
   )
 }
