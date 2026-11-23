@@ -1,12 +1,14 @@
 /**
  * Demo seed for the lobby recommender.
  *
- * Creates six public lobbies with varied game, skill, needed roles, age, and
+ * Creates public lobbies with varied game, skill, needed roles, age, and
  * occupancy. Every host and filler is an edu-verified user so Suggested Users
  * has candidates as well.
  *
  * Idempotent: re-running replaces only the lobbies hosted by the demo users.
- * The existing skyyu account is given a CS2 profile only when it has none.
+ * The existing skyyu account receives a demo profile for games it does not
+ * have yet. The P0 demo profiles for League and Dota are upgraded to
+ * multi-role profiles only when their roles still match the P0 seed.
  *
  * Usage: npm run seed:demo
  */
@@ -144,6 +146,118 @@ const users = [
     bio: 'CS2 IGL. I bring the plan and the mid-round reset.',
     profiles: [{ game: 'CS2', preferredRoles: ['IGL'], experienceLevel: 'Intermediate' }],
   },
+  {
+    key: 'l1',
+    email: 'demo.l1@purdue.edu',
+    username: 'demo_l1',
+    displayName: 'Yuna',
+    bio: 'League mid laner. I roam after pushing, not before.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Mid', 'Top'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'l2',
+    email: 'demo.l2@illinois.edu',
+    username: 'demo_l2',
+    displayName: 'Cato',
+    bio: 'Jungle main. I path toward the lane that actually has priority.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Jungle'], experienceLevel: 'Advanced' }],
+  },
+  {
+    key: 'l3',
+    email: 'demo.l3@purdue.edu',
+    username: 'demo_l3',
+    displayName: 'Nia',
+    bio: 'League support. Wards are a lifestyle, not a suggestion.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Support', 'ADC'], experienceLevel: 'Beginner' }],
+  },
+  {
+    key: 'l4',
+    email: 'demo.l4@purdue.edu',
+    username: 'demo_l4',
+    displayName: 'Mika',
+    bio: 'League top laner. I like long trades and short comms.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Top'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'l5',
+    email: 'demo.l5@illinois.edu',
+    username: 'demo_l5',
+    displayName: 'Ren',
+    bio: 'League jungler. I path for the lane that wants to play.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Jungle'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'l6',
+    email: 'demo.l6@purdue.edu',
+    username: 'demo_l6',
+    displayName: 'Pia',
+    bio: 'League support. I keep the vision line moving.',
+    profiles: [{ game: 'League of Legends', preferredRoles: ['Support'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'd1',
+    email: 'demo.d1@purdue.edu',
+    username: 'demo_d1',
+    displayName: 'Rhea',
+    bio: 'Dota hard support. Smoke, wards, and a calm voice.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Hard Support'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'd2',
+    email: 'demo.d2@illinois.edu',
+    username: 'demo_d2',
+    displayName: 'Oren',
+    bio: 'Dota mid. I play the map before the map plays me.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Mid'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'd3',
+    email: 'demo.d3@purdue.edu',
+    username: 'demo_d3',
+    displayName: 'Tala',
+    bio: 'Dota offlane. I start fights and apologize later.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Offlane'], experienceLevel: 'Beginner' }],
+  },
+  {
+    key: 'd4',
+    email: 'demo.d4@purdue.edu',
+    username: 'demo_d4',
+    displayName: 'Soren',
+    bio: 'Dota soft support. I trade first and buy the first smoke.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Soft Support'], experienceLevel: 'Advanced' }],
+  },
+  {
+    key: 'd5',
+    email: 'demo.d5@purdue.edu',
+    username: 'demo_d5',
+    displayName: 'Ivo',
+    bio: 'Dota carry. Give me a lane and a timing to hit.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Carry'], experienceLevel: 'Intermediate' }],
+  },
+  {
+    key: 'd6',
+    email: 'demo.d6@illinois.edu',
+    username: 'demo_d6',
+    displayName: 'Nell',
+    bio: 'Dota mid. I like rune timings and awkward rotations.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Mid'], experienceLevel: 'Advanced' }],
+  },
+  {
+    key: 'd7',
+    email: 'demo.d7@purdue.edu',
+    username: 'demo_d7',
+    displayName: 'Cyrus',
+    bio: 'Dota offlane. I build auras and stand in front.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Offlane'], experienceLevel: 'Beginner' }],
+  },
+  {
+    key: 'd8',
+    email: 'demo.d8@purdue.edu',
+    username: 'demo_d8',
+    displayName: 'June',
+    bio: 'Dota hard support. I track cooldowns so you do not have to.',
+    profiles: [{ game: 'Dota 2', preferredRoles: ['Hard Support'], experienceLevel: 'Intermediate' }],
+  },
 ]
 
 const minutes = (value) => value * 60 * 1000
@@ -227,7 +341,85 @@ const lobbies = [
     neededRoles: ['Hard Support'],
     participantLimit: 5,
     ageMs: days(2),
-    members: ['f7', 'f8', 'f9'],
+    members: ['d1', 'd2', 'd3'],
+  },
+  {
+    host: 'l1',
+    name: 'League Flex Five',
+    subtitle: 'Jungle and support for a full queue',
+    details: 'Purdue flex queue. We draft around comfort picks, call one objective at a time, and stop after two losses.',
+    tags: ['LFG', 'Strategy'],
+    game: 'League of Legends',
+    skillLevel: 'Intermediate',
+    neededRoles: ['Jungle', 'Support'],
+    participantLimit: 5,
+    ageMs: minutes(30),
+    members: ['l6'],
+  },
+  {
+    host: 'l2',
+    name: 'Clash Practice Block',
+    subtitle: 'Top and ADC wanted for Tuesday Clash',
+    details: 'Advanced lobby. We run one draft, one game, and a short review. Bring a champion pool you can blind pick.',
+    tags: ['Strategy', 'Tournaments'],
+    game: 'League of Legends',
+    skillLevel: 'Advanced',
+    neededRoles: ['Top', 'ADC'],
+    participantLimit: 5,
+    ageMs: hours(4),
+    members: [],
+  },
+  {
+    host: 'l3',
+    name: 'Mid Lane Academy',
+    subtitle: 'Mid and jungle wanted for a learning stack',
+    details: 'Purdue learning queue. We review one lane matchup, play a flex game, and keep comms kind.',
+    tags: ['LFG', 'Strategy'],
+    game: 'League of Legends',
+    skillLevel: 'Beginner',
+    neededRoles: ['Mid', 'Jungle'],
+    participantLimit: 5,
+    ageMs: hours(1),
+    members: ['l4', 'l5'],
+  },
+  {
+    host: 'f7',
+    name: 'Soft Support Scrim',
+    subtitle: 'Soft support and carry for a scrim block',
+    details: 'Advanced five-stack. We draft around a timing push, play one game, and review the first ten minutes.',
+    tags: ['Strategy', 'Tournaments'],
+    game: 'Dota 2',
+    skillLevel: 'Advanced',
+    neededRoles: ['Soft Support', 'Carry'],
+    participantLimit: 5,
+    ageMs: hours(6),
+    members: ['d4'],
+  },
+  {
+    host: 'f8',
+    name: 'Offlane Only',
+    subtitle: 'Offlane wanted for a late-night queue',
+    details: 'One offlane slot open. We play a standard draft and call it after the game, win or lose.',
+    tags: ['LFG'],
+    game: 'Dota 2',
+    skillLevel: 'Advanced',
+    neededRoles: ['Offlane'],
+    participantLimit: 5,
+    ageMs: hours(30),
+    members: [],
+  },
+  {
+    host: 'f9',
+    name: 'Carry Farm Off',
+    subtitle: 'Carry practice, six slots',
+    details: 'Carry-focused practice lobby. We run farm drills and one match, then compare replay timings.',
+    tags: ['LFG', 'Meta Analysis'],
+    game: 'Dota 2',
+    skillLevel: 'Beginner',
+    neededRoles: ['Carry', 'Mid', 'Offlane'],
+    participantLimit: 6,
+    ageMs: hours(2),
+    members: ['d5', 'd6', 'd7', 'd8'],
   },
 ]
 
@@ -263,22 +455,110 @@ async function main() {
       ids.set(user.key, result.rows[0].id)
     }
 
-    // Give the existing demo viewer a profile only if they have never set one.
-    await client.query(
-      `UPDATE users
-       SET gaming_profiles = $1::jsonb, updated_at = now()
-       WHERE email = 'du328@purdue.edu'
-         AND (gaming_profiles IS NULL OR gaming_profiles = '[]'::jsonb)`,
-      [
-        JSON.stringify([
-          {
-            game: 'CS2',
-            preferredRoles: ['Support'],
-            experienceLevel: 'Intermediate',
-          },
-        ]),
-      ],
+    // Add a demo profile for each game the viewer does not have yet. Existing
+    // game profiles are left untouched.
+    const demoViewerProfiles = [
+      {
+        game: 'CS2',
+        preferredRoles: ['Support'],
+        experienceLevel: 'Intermediate',
+      },
+      {
+        game: 'Valorant',
+        preferredRoles: ['Controller'],
+        experienceLevel: 'Intermediate',
+      },
+      {
+        game: 'League of Legends',
+        preferredRoles: ['Mid'],
+        experienceLevel: 'Intermediate',
+      },
+      {
+        game: 'Dota 2',
+        preferredRoles: ['Hard Support'],
+        experienceLevel: 'Advanced',
+      },
+    ]
+    for (const profile of demoViewerProfiles) {
+      await client.query(
+        `UPDATE users
+         SET gaming_profiles = COALESCE(gaming_profiles, '[]'::jsonb) || $1::jsonb,
+             updated_at = now()
+         WHERE email = 'du328@purdue.edu'
+           AND NOT EXISTS (
+             SELECT 1
+             FROM jsonb_array_elements(COALESCE(gaming_profiles, '[]'::jsonb)) AS existing
+             WHERE LOWER(existing->>'game') = LOWER($2)
+           )`,
+        [JSON.stringify([profile]), profile.game],
+      )
+    }
+
+    // P1 role-coverage demo needs more than one role per game. Only upgrade a
+    // profile when it still has the exact P0 seed values, so a viewer's real
+    // edits are never overwritten.
+    const viewerEmail = 'du328@purdue.edu'
+    const viewerProfileUpgrades = [
+      {
+        game: 'League of Legends',
+        from: {
+          preferredRoles: ['Mid'],
+          experienceLevel: 'Intermediate',
+        },
+        to: {
+          preferredRoles: ['Mid', 'Top', 'Jungle'],
+          experienceLevel: 'Intermediate',
+        },
+      },
+      {
+        game: 'Dota 2',
+        from: {
+          preferredRoles: ['Hard Support'],
+          experienceLevel: 'Advanced',
+        },
+        to: {
+          preferredRoles: ['Hard Support', 'Soft Support', 'Offlane'],
+          experienceLevel: 'Advanced',
+        },
+      },
+    ]
+    const viewerResult = await client.query(
+      'SELECT gaming_profiles FROM users WHERE email = $1',
+      [viewerEmail],
     )
+    const viewerProfiles = Array.isArray(viewerResult.rows[0]?.gaming_profiles)
+      ? viewerResult.rows[0].gaming_profiles
+      : []
+    let viewerProfilesChanged = false
+    for (const upgrade of viewerProfileUpgrades) {
+      const profile = viewerProfiles.find(
+        (item) =>
+          String(item.game).toLowerCase() === upgrade.game.toLowerCase(),
+      )
+      if (!profile) continue
+      const roles = Array.isArray(profile.preferredRoles)
+        ? profile.preferredRoles
+        : []
+      const sameRoles =
+        roles.length === upgrade.from.preferredRoles.length &&
+        roles.every((role, index) => role === upgrade.from.preferredRoles[index])
+      if (
+        sameRoles &&
+        profile.experienceLevel === upgrade.from.experienceLevel
+      ) {
+        profile.preferredRoles = [...upgrade.to.preferredRoles]
+        profile.experienceLevel = upgrade.to.experienceLevel
+        viewerProfilesChanged = true
+      }
+    }
+    if (viewerProfilesChanged) {
+      await client.query(
+        `UPDATE users
+         SET gaming_profiles = $1::jsonb, updated_at = now()
+         WHERE email = $2`,
+        [JSON.stringify(viewerProfiles), viewerEmail],
+      )
+    }
 
     const hostIds = [...ids.values()]
     await client.query(

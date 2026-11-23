@@ -8,13 +8,18 @@ function RecommendedLobbies({
   token,
   isAuthenticated,
   game,
+  viewerGames = [],
+  onGameChange,
   hidden,
   refreshKey,
   onJoin,
   joiningLobbyId,
   isLobbyJoined,
 }) {
-  const requestKey = `${token ?? ''}|${game ?? ''}`
+  const recommendationGame = game && game !== 'All Games'
+    ? game
+    : viewerGames[0]
+  const requestKey = `${token ?? ''}|${recommendationGame ?? ''}`
   const [result, setResult] = useState(null)
 
   useEffect(() => {
@@ -24,38 +29,53 @@ function RecommendedLobbies({
     getLobbyRecommendations(
       token,
       {
-        game: game && game !== 'All Games' ? game : undefined,
+        game: recommendationGame,
         limit: 3,
         signal: controller.signal,
       },
     )
       .then((data) => {
-        if (!controller.signal.aborted) {
-          setResult({
-            key: requestKey,
-            items: Array.isArray(data?.items) ? data.items : [],
-          })
-        }
+        if (controller.signal.aborted) return
+        setResult({
+          key: requestKey,
+          items: Array.isArray(data?.items) ? data.items : [],
+          needsProfile: Boolean(data?.needsProfile),
+          game: data?.game ?? recommendationGame ?? null,
+          failed: false,
+        })
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setResult({ key: requestKey, items: [] })
+          setResult({
+            key: requestKey,
+            items: [],
+            needsProfile: false,
+            game: recommendationGame ?? null,
+            failed: true,
+          })
         }
       })
 
     return () => controller.abort()
-  }, [isAuthenticated, token, game, hidden, refreshKey, requestKey])
+  }, [isAuthenticated, token, recommendationGame, hidden, refreshKey, requestKey])
 
   if (hidden || !isAuthenticated) return null
 
   const loaded = result?.key === requestKey
   const items = loaded ? result.items : []
+  const needsProfile = loaded ? result.needsProfile : false
+  const failed = loaded ? result.failed : false
+  const responseGame = loaded ? result.game : recommendationGame ?? null
   const isLoading = !loaded
 
-  if (!isLoading && items.length === 0) return null
+  const gameOptions = [...new Set([
+    ...viewerGames,
+    ...(game && game !== 'All Games' ? [game] : []),
+  ])]
 
   const createLobbyParams = new URLSearchParams()
-  if (game && game !== 'All Games') createLobbyParams.set('game', game)
+  const prefillGame = game && game !== 'All Games' ? game : responseGame
+  if (prefillGame) createLobbyParams.set('game', prefillGame)
   const createLobbyQuery = createLobbyParams.toString()
   const createLobbyHref = `/create-lobby${createLobbyQuery ? `?${createLobbyQuery}` : ''}`
   const createLobbyTile = (
@@ -74,47 +94,93 @@ function RecommendedLobbies({
     </Link>
   )
 
+  const gameControl = gameOptions.length > 1 ? (
+    <label className="recommended-game-select">
+      <span>Game</span>
+      <select
+        aria-label="Recommendation game"
+        value={recommendationGame ?? ''}
+        onChange={(event) => onGameChange?.(event.target.value)}
+      >
+        {gameOptions.map((value) => (
+          <option key={value} value={value}>{value}</option>
+        ))}
+      </select>
+    </label>
+  ) : responseGame ? (
+    <span className="recommended-game-label">{responseGame}</span>
+  ) : null
+
   return (
     <section className="recommended-lobbies" aria-labelledby="recommended-lobbies-title">
       <header className="recommended-lobbies-heading">
         <span className="recommended-lobbies-icon" aria-hidden="true">
           <Sparkles size={18} strokeWidth={2} />
         </span>
-        <div>
+        <div className="recommended-lobbies-copy">
           <h2 id="recommended-lobbies-title">Recommended for you</h2>
           <p>Ranked by game, role, campus, and how soon the squad is ready.</p>
         </div>
+        {gameControl}
       </header>
 
-      <div
-        className="lobby-grid recommended-lobbies-grid"
-        {...(isLoading ? { role: 'status', 'aria-label': 'Loading recommendations' } : {})}
-      >
-        {isLoading
-          ? [0, 1, 2].map((index) => (
-              <div className="lobby-skeleton" aria-hidden="true" key={index}>
-                <span /><span /><span />
-              </div>
-            ))
-          : items.map(({ lobby, reasons }) => (
-              <LobbyCard
-                key={lobby.id}
-                lobbyName={lobby.lobbyName}
-                userName={lobby.host?.username ?? 'Unknown host'}
-                details={lobby.details}
-                game={lobby.game}
-                skillLevel={lobby.skillLevel}
-                memberCount={lobby.memberCount}
-                participantLimit={lobby.participantLimit}
-                visibility={lobby.visibility}
-                isJoined={isLobbyJoined?.(lobby.id) ?? false}
-                isJoining={String(joiningLobbyId) === String(lobby.id)}
-                onJoin={() => onJoin(lobby)}
-                reasons={reasons}
-              />
-            ))}
-        {createLobbyTile}
-      </div>
+      {needsProfile ? (
+        <div className="recommended-empty">
+          <p>
+            Add {responseGame ?? 'a game'} to your profile to get lobby
+            recommendations for it.
+          </p>
+          <div className="recommended-empty-actions">
+            <Link to="/profile">
+              Update profile
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+            <Link to={createLobbyHref}>Create a lobby</Link>
+          </div>
+        </div>
+      ) : failed ? (
+        <div className="recommended-empty">
+          <p>Recommendations are unavailable right now. Try again in a moment.</p>
+        </div>
+      ) : (
+        <div
+          className="lobby-grid recommended-lobbies-grid"
+          {...(isLoading ? { role: 'status', 'aria-label': 'Loading recommendations' } : {})}
+        >
+          {isLoading
+            ? [0, 1, 2].map((index) => (
+                <div className="lobby-skeleton" aria-hidden="true" key={index}>
+                  <span /><span /><span />
+                </div>
+              ))
+            : items.map(({ lobby, reasons }) => (
+                <LobbyCard
+                  key={lobby.id}
+                  lobbyName={lobby.lobbyName}
+                  userName={lobby.host?.username ?? 'Unknown host'}
+                  details={lobby.details}
+                  game={lobby.game}
+                  skillLevel={lobby.skillLevel}
+                  memberCount={lobby.memberCount}
+                  participantLimit={lobby.participantLimit}
+                  visibility={lobby.visibility}
+                  isJoined={isLobbyJoined?.(lobby.id) ?? false}
+                  isJoining={String(joiningLobbyId) === String(lobby.id)}
+                  onJoin={() => onJoin(lobby)}
+                  reasons={reasons}
+                />
+              ))}
+          {!isLoading && items.length === 0 ? (
+            <div className="recommended-empty">
+              <p>
+                No compatible {responseGame ?? 'lobbies'} yet. Be the first to
+                start one for your campus.
+              </p>
+            </div>
+          ) : null}
+          {createLobbyTile}
+        </div>
+      )}
     </section>
   )
 }

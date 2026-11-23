@@ -95,13 +95,118 @@ describe('scoreLobby', () => {
       NOW,
     );
 
-    expect(result.parts.roleFit).toBe(0.7);
+    expect(result.parts.roleFit).toBe(0.85);
     expect(result.reasons).toContain('Needs Support — your secondary role');
   });
 
   it('stays neutral when the lobby lists no roles', () => {
     const result = scoreLobby(lobby({ neededRoles: [] }), viewer, NOW);
     expect(result.parts.roleFit).toBe(0.5);
+  });
+
+  it('credits extra covered roles and names them', () => {
+    const result = scoreLobby(
+      lobby({
+        game: 'League of Legends',
+        neededRoles: ['Mid', 'Jungle'],
+      }),
+      {
+        email: 'viewer@purdue.edu',
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid', 'Top', 'Jungle'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(result.parts.roleFit).toBe(1);
+    expect(result.reasons).toContain('Needs Mid — your main lane');
+    expect(result.reasons).toContain('Also covers Jungle');
+  });
+
+  it('scores roles outside the main and secondary as coverage', () => {
+    const result = scoreLobby(
+      lobby({ neededRoles: ['Support'] }),
+      {
+        ...viewer,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['IGL', 'Entry', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(result.parts.roleFit).toBe(0.85);
+    expect(result.reasons).toContain('Needs Support — you can fill it');
+  });
+
+  it('names full coverage of two or more needed roles', () => {
+    const twoRoles = scoreLobby(
+      lobby({ game: 'League of Legends', neededRoles: ['Jungle', 'Support'] }),
+      {
+        email: 'viewer@purdue.edu',
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid', 'Top', 'Jungle', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(twoRoles.parts.roleFit).toBe(0.85);
+    expect(twoRoles.reasons).toContain('Covers both needed lanes');
+
+    const allRoles = scoreLobby(
+      lobby({
+        game: 'CS2',
+        neededRoles: ['AWPer', 'Lurker', 'Support'],
+      }),
+      {
+        ...viewer,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(allRoles.parts.roleFit).toBe(0.85);
+    expect(allRoles.reasons).toContain('Covers all 3 needed roles');
+  });
+
+  it('names partial coverage of needed roles', () => {
+    const result = scoreLobby(
+      lobby({ neededRoles: ['Support', 'Lurker'] }),
+      {
+        ...viewer,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['IGL', 'Entry', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(result.parts.roleFit).toBe(0.5);
+    expect(result.reasons).toContain('Covers 1 of 2 needed roles');
   });
 
   it('distinguishes same campus, other .edu, and unknown domains', () => {
@@ -201,7 +306,7 @@ describe('rankLobbyRecommendations', () => {
     expect(results[2].exploration).toBe(true);
   });
 
-  it('returns the best joinable lobby when every score is low', () => {
+  it('suppresses lobbies below the minimum score', () => {
     const results = rankLobbyRecommendations(
       [
         lobby({
@@ -221,8 +326,197 @@ describe('rankLobbyRecommendations', () => {
       { now: NOW },
     );
 
-    expect(results).toHaveLength(1);
-    expect(results[0].exploration).toBe(true);
-    expect(results[0].reasons).toContain('New lobby — be the first to join');
+    expect(results).toEqual([]);
+  });
+
+  it('keeps a lobby scoring exactly at the 0.5 threshold', () => {
+    const neutralViewer = {
+      email: null,
+      gamingProfiles: viewer.gamingProfiles,
+    };
+    const updatedAt = new Date(NOW - 48 * HOUR);
+    const candidates = [
+      lobby({
+        id: 'exactly-threshold',
+        hostId: 'host-a',
+        skillLevel: 'Advanced',
+        neededRoles: [],
+        participantLimit: 4,
+        memberCount: 2,
+        updatedAt,
+      }),
+      lobby({
+        id: 'below-threshold',
+        hostId: 'host-b',
+        skillLevel: 'Advanced',
+        neededRoles: [],
+        participantLimit: 4,
+        memberCount: 1,
+        updatedAt,
+      }),
+    ];
+
+    expect(scoreLobby(candidates[0], neutralViewer, NOW).score).toBe(0.5);
+    expect(scoreLobby(candidates[1], neutralViewer, NOW).score).toBe(0.475);
+
+    const results = rankLobbyRecommendations(candidates, neutralViewer, {
+      now: NOW,
+    });
+
+    expect(results.map(({ lobby: item }) => item.id)).toEqual([
+      'exactly-threshold',
+    ]);
+  });
+
+  it('suppresses lobbies for a game the viewer has not added', () => {
+    const results = rankLobbyRecommendations(
+      [
+        lobby({
+          id: 'overwatch',
+          hostId: 'host-a',
+          game: 'Overwatch 2',
+          memberCount: 4,
+        }),
+      ],
+      viewer,
+      { now: NOW },
+    );
+
+    expect(results).toEqual([]);
+  });
+
+  it('returns the requested number of lobbies for limits above three', () => {
+    const candidates = Array.from({ length: 6 }, (_, index) =>
+      lobby({
+        id: `lobby-${index}`,
+        hostId: `host-${index}`,
+        updatedAt: new Date(NOW - (index + 1) * HOUR),
+      }),
+    );
+
+    for (const limit of [4, 5, 6, 10]) {
+      const results = rankLobbyRecommendations(candidates, viewer, {
+        limit,
+        now: NOW,
+      });
+      expect(results).toHaveLength(Math.min(limit, candidates.length));
+    }
+
+    const expanded = rankLobbyRecommendations(candidates, viewer, {
+      limit: 5,
+      now: NOW,
+    });
+    expect(expanded[2].exploration).toBe(true);
+  });
+
+  it('breaks score ties by covered roles and coverage ratio', () => {
+    const multiRoleViewer = {
+      email: 'viewer@purdue.edu',
+      gamingProfiles: [
+        {
+          game: 'CS2',
+          preferredRoles: ['Support', 'IGL'],
+          experienceLevel: 'Intermediate',
+        },
+      ],
+    };
+    const byCount = rankLobbyRecommendations(
+      [
+        lobby({
+          id: 'one-role',
+          hostId: 'host-a',
+          neededRoles: ['Support'],
+          updatedAt: new Date(NOW - HOUR),
+        }),
+        lobby({
+          id: 'two-roles',
+          hostId: 'host-b',
+          neededRoles: ['Support', 'IGL'],
+          updatedAt: new Date(NOW - HOUR),
+        }),
+      ],
+      multiRoleViewer,
+      { limit: 2, now: NOW },
+    );
+
+    expect(byCount.map(({ lobby: item }) => item.id)).toEqual([
+      'two-roles',
+      'one-role',
+    ]);
+
+    const byRatio = rankLobbyRecommendations(
+      [
+        lobby({
+          id: 'focused',
+          hostId: 'host-a',
+          neededRoles: ['Support'],
+          updatedAt: new Date(NOW - HOUR),
+        }),
+        lobby({
+          id: 'broad',
+          hostId: 'host-b',
+          neededRoles: ['Support', 'IGL'],
+          updatedAt: new Date(NOW - HOUR),
+        }),
+      ],
+      viewer,
+      { limit: 2, now: NOW },
+    );
+
+    expect(byRatio.map(({ lobby: item }) => item.id)).toEqual([
+      'focused',
+      'broad',
+    ]);
+  });
+
+  it('breaks remaining ties by recent activity', () => {
+    const results = rankLobbyRecommendations(
+      [
+        lobby({
+          id: 'a-old',
+          hostId: 'host-a',
+          updatedAt: new Date(NOW - HOUR - 1_000),
+        }),
+        lobby({
+          id: 'z-new',
+          hostId: 'host-z',
+          updatedAt: new Date(NOW - HOUR),
+        }),
+      ],
+      viewer,
+      { limit: 2, now: NOW },
+    );
+
+    expect(results[0].score).toBe(results[1].score);
+    expect(results[0].lobby.id).toBe('z-new');
+  });
+
+  it('promotes a tied lobby from a different campus', () => {
+    const neutralViewer = {
+      email: null,
+      gamingProfiles: viewer.gamingProfiles,
+    };
+    const updatedAt = new Date(NOW - HOUR);
+    const results = rankLobbyRecommendations(
+      [
+        lobby({ id: 'a', hostId: 'host-a', updatedAt }),
+        lobby({ id: 'b', hostId: 'host-b', updatedAt }),
+        lobby({
+          id: 'c',
+          hostId: 'host-c',
+          updatedAt,
+          host: {
+            id: 'host-c',
+            username: 'host-c',
+            email: 'host-c@illinois.edu',
+            gamingProfiles: [],
+          },
+        }),
+      ],
+      neutralViewer,
+      { limit: 2, now: NOW },
+    );
+
+    expect(results.map(({ lobby: item }) => item.id)).toEqual(['a', 'c']);
   });
 });

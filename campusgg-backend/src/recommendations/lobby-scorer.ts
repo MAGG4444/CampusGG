@@ -1,4 +1,4 @@
-import { findGamingProfile } from '../common/games.config';
+import { findGamingProfile, roleNounForGame } from '../common/games.config';
 import type { Lobby } from '../lobbies/lobby.entity';
 import type { GamingProfile } from '../users/user.entity';
 import {
@@ -7,6 +7,7 @@ import {
   EXPLORATION_MAX_AGE_HOURS,
   EXPLORATION_MAX_OCCUPANCY,
   LOBBY_RECOMMENDATION_WEIGHTS,
+  LOBBY_ROLE_FIT,
 } from './recommendation.config';
 import {
   ageHours,
@@ -17,6 +18,7 @@ import {
   levelValue,
   occupancy,
   roundScore,
+  selectWithCampusDiversity,
   skillFit,
   uniqueRoles,
   type FitLabel,
@@ -38,13 +40,24 @@ interface LobbyScoreParts {
   freshness: number;
 }
 
+export interface LobbyTieBreak {
+  /** How many of the viewer's roles the lobby still needs. */
+  coveredRoleCount: number;
+  /** Share of the lobby's needed roles the viewer can cover. */
+  coverageRatio: number;
+  /** Internal only; never serialized in recommendation responses. */
+  campusDomain: string | null;
+}
+
 export interface ScoredLobby {
   lobby: LobbyCandidate;
   score: number;
   fit: FitLabel;
   reasons: string[];
   exploration: boolean;
+  profileMatch: boolean;
   parts: LobbyScoreParts;
+  tieBreak: LobbyTieBreak;
 }
 
 function sameRole(a: string, b: string): boolean {
@@ -67,16 +80,23 @@ export function scoreLobby(
 ): ScoredLobby {
   const viewerProfile = findGamingProfile(viewer.gamingProfiles, lobby.game);
   const viewerLevel = viewerProfile?.experienceLevel ?? null;
-  const viewerRoles = viewerProfile?.preferredRoles ?? [];
+  const viewerRoles = uniqueRoles(viewerProfile?.preferredRoles ?? []);
   const viewerDomain =
     viewer.campusDomain ?? campusDomainFromEmail(viewer.email);
   const hostDomain = campusDomainFromEmail(lobby.host?.email);
   const targetLevel = lobbySkillLevel(lobby);
   const neededRoles = uniqueRoles(lobby.neededRoles ?? []);
+  const coveredRoles = neededRoles.filter((neededRole) =>
+    viewerRoles.some((viewerRole) => sameRole(neededRole, viewerRole)),
+  );
+  const coveredRoleCount = coveredRoles.length;
+  const coverageRatio =
+    neededRoles.length === 0 ? 0 : coveredRoleCount / neededRoles.length;
+  const roleNoun = roleNounForGame(lobby.game);
 
-  const parts = {
+  const parts: LobbyScoreParts = {
     skillFit: skillFit(viewerLevel, targetLevel),
-    roleFit: 0.5,
+    roleFit: LOBBY_ROLE_FIT.noRoles,
     campusFit: campusFit(viewerDomain, hostDomain),
     occupancy: occupancy(lobby.memberCount, lobby.participantLimit),
     freshness: freshness(lobby.updatedAt, now),
@@ -89,17 +109,42 @@ export function scoreLobby(
   const secondaryRole = viewerRoles[1]
     ? neededRoles.find((role) => sameRole(role, viewerRoles[1]))
     : undefined;
+  const anchorRole = primaryRole ?? secondaryRole;
+  const alsoCoveredRoles = coveredRoles.filter(
+    (role) => !anchorRole || !sameRole(role, anchorRole),
+  );
 
   if (neededRoles.length === 0) {
-    parts.roleFit = 0.5;
+    parts.roleFit = LOBBY_ROLE_FIT.noRoles;
   } else if (primaryRole) {
-    parts.roleFit = 1;
-    reasons.push(`Needs ${primaryRole} — your main role`);
+    parts.roleFit = LOBBY_ROLE_FIT.primary;
+    reasons.push(`Needs ${primaryRole} — your main ${roleNoun}`);
   } else if (secondaryRole) {
-    parts.roleFit = 0.7;
-    reasons.push(`Needs ${secondaryRole} — your secondary role`);
+    parts.roleFit = LOBBY_ROLE_FIT.secondary;
+    reasons.push(`Needs ${secondaryRole} — your secondary ${roleNoun}`);
   } else {
-    parts.roleFit = 0.15;
+    parts.roleFit =
+      LOBBY_ROLE_FIT.uncovered + LOBBY_ROLE_FIT.coverageWeight * coverageRatio;
+  }
+
+  if (anchorRole && alsoCoveredRoles.length > 0) {
+    reasons.push(`Also covers ${alsoCoveredRoles.join(' + ')}`);
+  }
+
+  if (!anchorRole && coveredRoleCount > 0) {
+    if (neededRoles.length === 1) {
+      reasons.push(`Needs ${coveredRoles[0]} — you can fill it`);
+    } else if (coveredRoleCount === neededRoles.length) {
+      reasons.push(
+        neededRoles.length === 2
+          ? `Covers both needed ${roleNoun}s`
+          : `Covers all ${neededRoles.length} needed ${roleNoun}s`,
+      );
+    } else {
+      reasons.push(
+        `Covers ${coveredRoleCount} of ${neededRoles.length} needed ${roleNoun}s`,
+      );
+    }
   }
 
   if (parts.skillFit === 1 && targetLevel) {
@@ -139,7 +184,13 @@ export function scoreLobby(
     fit: fitLabel(score),
     reasons: reasons.slice(0, 3),
     exploration: false,
+    profileMatch: Boolean(viewerProfile),
     parts,
+    tieBreak: {
+      coveredRoleCount,
+      coverageRatio,
+      campusDomain: hostDomain,
+    },
   };
 }
 
@@ -154,11 +205,27 @@ export function isExplorationLobby(
   );
 }
 
-function byScore(a: ScoredLobby, b: ScoredLobby): number {
+function compareLobbies(a: ScoredLobby, b: ScoredLobby): number {
   if (b.score !== a.score) return b.score - a.score;
+  if (b.tieBreak.coveredRoleCount !== a.tieBreak.coveredRoleCount) {
+    return b.tieBreak.coveredRoleCount - a.tieBreak.coveredRoleCount;
+  }
+  if (b.tieBreak.coverageRatio !== a.tieBreak.coverageRatio) {
+    return b.tieBreak.coverageRatio - a.tieBreak.coverageRatio;
+  }
   const updated = b.lobby.updatedAt.getTime() - a.lobby.updatedAt.getTime();
   if (updated !== 0) return updated;
   return a.lobby.id.localeCompare(b.lobby.id);
+}
+
+/** Campus is excluded here so diversity is only applied to true rank ties. */
+function sameLobbyRank(a: ScoredLobby, b: ScoredLobby): boolean {
+  return (
+    a.score === b.score &&
+    a.tieBreak.coveredRoleCount === b.tieBreak.coveredRoleCount &&
+    a.tieBreak.coverageRatio === b.tieBreak.coverageRatio &&
+    a.lobby.updatedAt.getTime() === b.lobby.updatedAt.getTime()
+  );
 }
 
 function withExplorationReason(reasons: string[]): string[] {
@@ -169,9 +236,16 @@ function withExplorationReason(reasons: string[]): string[] {
   return next.slice(0, 3);
 }
 
+function campusOf(item: ScoredLobby): string | null {
+  return item.tieBreak.campusDomain;
+}
+
 /**
  * Rank joinable lobbies, keep one per host, and reserve the third slot for a
  * new or under-filled lobby so exploration is not crowded out by fit scores.
+ *
+ * A viewer without a profile for the lobby's game is never recommended: the
+ * scorer would only produce a neutral, reasonless result for them.
  */
 export function rankLobbyRecommendations(
   candidates: readonly LobbyCandidate[],
@@ -186,42 +260,43 @@ export function rankLobbyRecommendations(
   const seenHosts = new Set<string>();
   for (const item of candidates
     .map((lobby) => scoreLobby(lobby, viewer, now))
-    .sort(byScore)) {
+    .filter((item) => item.profileMatch && item.score >= minScore)
+    .sort(compareLobbies)) {
     const hostId = item.lobby.host?.id ?? item.lobby.id;
     if (seenHosts.has(hostId)) continue;
     seenHosts.add(hostId);
     deduped.push(item);
   }
-  if (deduped.length === 0) return [];
+  if (deduped.length === 0 || limit <= 0) return [];
 
-  const eligible = deduped.filter((item) => item.score >= minScore);
-  if (eligible.length === 0) {
-    const fallback = deduped[0];
-    return [
-      {
-        ...fallback,
-        exploration: true,
-        reasons: withExplorationReason(fallback.reasons),
-      },
-    ];
+  if (deduped.length <= 2 || limit <= 2) {
+    return selectWithCampusDiversity(deduped, limit, campusOf, sameLobbyRank);
   }
 
-  if (limit < 3 || eligible.length <= limit) {
-    return eligible.slice(0, limit);
-  }
+  const head = selectWithCampusDiversity(deduped, 2, campusOf, sameLobbyRank);
+  const headIds = new Set(head.map((item) => item.lobby.id));
+  const rest = deduped.filter((item) => !headIds.has(item.lobby.id));
 
-  const selected = eligible.slice(0, 2);
-  const rest = eligible.slice(2);
   const exploration = rest.find((item) => isExplorationLobby(item.lobby, now));
   const third = exploration ?? rest[0];
+  const isExploration = isExplorationLobby(third.lobby, now);
+  const tailPool = rest.filter((item) => item.lobby.id !== third.lobby.id);
+  const tail = selectWithCampusDiversity(
+    tailPool,
+    limit - 3,
+    campusOf,
+    sameLobbyRank,
+  );
+
   return [
-    ...selected,
-    {
-      ...third,
-      exploration: isExplorationLobby(third.lobby, now),
-      reasons: isExplorationLobby(third.lobby, now)
-        ? withExplorationReason(third.reasons)
-        : third.reasons,
-    },
-  ];
+    ...head,
+    isExploration
+      ? {
+          ...third,
+          exploration: true,
+          reasons: withExplorationReason(third.reasons),
+        }
+      : third,
+    ...tail,
+  ].slice(0, limit);
 }

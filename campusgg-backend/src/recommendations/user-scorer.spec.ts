@@ -34,7 +34,7 @@ describe('scoreSuggestedUser', () => {
     expect(result.parts.roleFit).toBe(1);
     expect(result.parts.campusFit).toBe(1);
     expect(result.score).toBe(1);
-    expect(result.reasons).toContain("Brings roles you don't play");
+    expect(result.reasons).toContain("Brings Support — you don't play them");
     expect(result.reasons).toContain('Same skill level: Intermediate');
     expect(result.reasons).toContain('Same campus');
   });
@@ -57,7 +57,59 @@ describe('scoreSuggestedUser', () => {
     );
 
     expect(result.parts.roleFit).toBe(0.6);
-    expect(result.reasons).toContain('Plays the same roles');
+    expect(result.reasons).toContain('Plays the same roles: IGL');
+  });
+
+  it('names every complementary and shared role', () => {
+    const result = scoreSuggestedUser(
+      {
+        ...candidate,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['Support', 'Lurker', 'IGL'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      viewer,
+      'CS2',
+      'complement',
+    );
+
+    expect(result.reasons).toContain(
+      "Brings Support + Lurker — you don't play them",
+    );
+    expect(result.reasons).toContain('Also plays IGL');
+  });
+
+  it('uses the game role noun when every role overlaps', () => {
+    const result = scoreSuggestedUser(
+      {
+        ...candidate,
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      {
+        email: 'viewer@purdue.edu',
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      'League of Legends',
+      'complement',
+    );
+
+    expect(result.reasons).toContain('Plays the same lanes: Mid');
   });
 
   it('supports an overlap mode switch', () => {
@@ -127,5 +179,150 @@ describe('scoreSuggestedUser', () => {
 
     expect(results).toHaveLength(1);
     expect(results[0].user.id).toBe('user-2');
+  });
+
+  it('prefers more complementary roles when scores tie', () => {
+    const activity = new Date('2026-11-15T12:00:00.000Z');
+    const results = rankSuggestedUsers(
+      [
+        {
+          ...candidate,
+          id: 'one-role',
+          username: 'one-role',
+          updatedAt: activity,
+          gamingProfiles: [
+            {
+              game: 'CS2',
+              preferredRoles: ['Support'],
+              experienceLevel: 'Intermediate',
+            },
+          ],
+        },
+        {
+          ...candidate,
+          id: 'two-roles',
+          username: 'two-roles',
+          updatedAt: activity,
+          gamingProfiles: [
+            {
+              game: 'CS2',
+              preferredRoles: ['Support', 'Lurker'],
+              experienceLevel: 'Intermediate',
+            },
+          ],
+        },
+      ],
+      viewer,
+      'CS2',
+      { limit: 2 },
+    );
+
+    expect(results[0].score).toBe(results[1].score);
+    expect(results[0].user.id).toBe('two-roles');
+  });
+
+  it('prefers a purer complement when complementary counts tie', () => {
+    const activity = new Date('2026-11-15T12:00:00.000Z');
+    const results = rankSuggestedUsers(
+      [
+        {
+          ...candidate,
+          id: 'mixed',
+          username: 'mixed',
+          updatedAt: activity,
+          gamingProfiles: [
+            {
+              game: 'CS2',
+              preferredRoles: ['Support', 'IGL'],
+              experienceLevel: 'Intermediate',
+            },
+          ],
+        },
+        {
+          ...candidate,
+          id: 'pure',
+          username: 'pure',
+          updatedAt: activity,
+          gamingProfiles: [
+            {
+              game: 'CS2',
+              preferredRoles: ['Support'],
+              experienceLevel: 'Intermediate',
+            },
+          ],
+        },
+      ],
+      viewer,
+      'CS2',
+      { limit: 2 },
+    );
+
+    expect(results[0].score).toBe(results[1].score);
+    expect(results[0].user.id).toBe('pure');
+  });
+
+  it('breaks remaining ties by recent activity', () => {
+    const older = new Date('2026-11-01T12:00:00.000Z');
+    const newer = new Date('2026-11-15T12:00:00.000Z');
+    const results = rankSuggestedUsers(
+      [
+        {
+          ...candidate,
+          id: 'a-old',
+          username: 'a-old',
+          updatedAt: older,
+        },
+        {
+          ...candidate,
+          id: 'z-new',
+          username: 'z-new',
+          updatedAt: newer,
+        },
+      ],
+      viewer,
+      'CS2',
+      { limit: 2 },
+    );
+
+    expect(results[0].score).toBe(results[1].score);
+    expect(results[0].user.id).toBe('z-new');
+  });
+
+  it('promotes a tied candidate from a different campus', () => {
+    const neutralViewer = {
+      email: null,
+      gamingProfiles: viewer.gamingProfiles,
+    };
+    const activity = new Date('2026-11-15T12:00:00.000Z');
+    const results = rankSuggestedUsers(
+      [
+        {
+          ...candidate,
+          id: 'a',
+          username: 'a',
+          email: 'a@purdue.edu',
+          updatedAt: activity,
+        },
+        {
+          ...candidate,
+          id: 'b',
+          username: 'b',
+          email: 'b@purdue.edu',
+          updatedAt: activity,
+        },
+        {
+          ...candidate,
+          id: 'c',
+          username: 'c',
+          email: 'c@illinois.edu',
+          updatedAt: activity,
+        },
+      ],
+      neutralViewer,
+      'CS2',
+      { limit: 2 },
+    );
+
+    expect(results.map(({ user }) => user.username)).toEqual(['a', 'c']);
   });
 });

@@ -1,10 +1,11 @@
-import { FindManyOptions, In, Repository } from 'typeorm';
+import { FindManyOptions, FindOperator, In, Repository } from 'typeorm';
 import { BadRequestException, ConflictException } from '@nestjs/common';
 
 import { LobbiesService } from './lobbies.service';
 import { Lobby, LobbyVisibility } from './lobby.entity';
 import { UsersService } from '../users/users.service';
 import { LobbyMember, LobbyMemberRole } from './lobby-member.entity';
+import { MAX_RECOMMENDATION_CANDIDATES } from '../recommendations/recommendation.config';
 
 describe('LobbiesService', () => {
   it('returns the authenticated user’s lobby roles without exposing user or lobby data', async () => {
@@ -199,14 +200,20 @@ describe('LobbiesService', () => {
 
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: {
-          game: 'Valorant',
-          skillLevel: 'Beginner',
-          visibility: LobbyVisibility.PUBLIC,
-        },
         order: { createdAt: 'DESC' },
       }),
     );
+
+    const [options] = find.mock.calls[0];
+    const where = options.where as {
+      game?: FindOperator<string>;
+      skillLevel?: string;
+      visibility?: LobbyVisibility;
+    };
+    expect(where.skillLevel).toBe('Beginner');
+    expect(where.visibility).toBe(LobbyVisibility.PUBLIC);
+    expect(where.game).toBeInstanceOf(FindOperator);
+    expect(where.game?.getSql?.('lobby.game')).toContain('LOWER(lobby.game)');
   });
 
   it('should filter lobbies by game only', async () => {
@@ -218,9 +225,85 @@ describe('LobbiesService', () => {
 
     expect(find).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { game: 'Valorant', visibility: LobbyVisibility.PUBLIC },
         order: { createdAt: 'DESC' },
       }),
+    );
+
+    const [options] = find.mock.calls[0];
+    const where = options.where as {
+      game?: FindOperator<string>;
+      visibility?: LobbyVisibility;
+    };
+    expect(where.visibility).toBe(LobbyVisibility.PUBLIC);
+    expect(where.game).toBeInstanceOf(FindOperator);
+    expect(where.game?.getSql?.('lobby.game')).toContain('LOWER(lobby.game)');
+  });
+
+  function setupRecommendationCandidates() {
+    const query = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    };
+    const repository = {
+      createQueryBuilder: jest.fn(() => query),
+      manager: {
+        getRepository: () => ({
+          createQueryBuilder: () => ({
+            select: jest.fn().mockReturnThis(),
+            addSelect: jest.fn().mockReturnThis(),
+            where: jest.fn().mockReturnThis(),
+            groupBy: jest.fn().mockReturnThis(),
+            getRawMany: jest.fn().mockResolvedValue([]),
+          }),
+        }),
+      },
+    } as unknown as Repository<Lobby>;
+    return {
+      query,
+      service: new LobbiesService(repository, {} as UsersService),
+    };
+  }
+
+  it('filters recommendation candidates by game in SQL before limiting', async () => {
+    const { service, query } = setupRecommendationCandidates();
+
+    await service.findRecommendationCandidates('viewer', 'lol');
+
+    expect(query.andWhere).toHaveBeenCalledWith(
+      'LOWER(lobby.game) IN (:...gameKeys)',
+      { gameKeys: ['league of legends', 'league', 'lol'] },
+    );
+    expect(query.take).toHaveBeenCalledWith(MAX_RECOMMENDATION_CANDIDATES);
+  });
+
+  it('keeps the public and freshness predicates for recommendation candidates', async () => {
+    const { service, query } = setupRecommendationCandidates();
+
+    await service.findRecommendationCandidates('viewer', 'Dota 2');
+
+    expect(query.where).toHaveBeenCalledWith('lobby.visibility = :visibility', {
+      visibility: LobbyVisibility.PUBLIC,
+    });
+    expect(query.andWhere).toHaveBeenCalledWith(
+      'lobby.updatedAt >= :staleBefore',
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- expect.any() is typed as any
+      { staleBefore: expect.any(Date) },
+    );
+  });
+
+  it('does not add a game predicate when no game is requested', async () => {
+    const { service, query } = setupRecommendationCandidates();
+
+    await service.findRecommendationCandidates('viewer');
+
+    expect(query.andWhere).not.toHaveBeenCalledWith(
+      'LOWER(lobby.game) IN (:...gameKeys)',
+      expect.anything(),
     );
   });
 });

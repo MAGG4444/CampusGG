@@ -10,6 +10,8 @@ export interface GameDefinition {
   name: string;
   roles: readonly string[];
   aliases: readonly string[];
+  /** Noun used in recommendation reasons, e.g. "lane" for League. */
+  roleNoun?: string;
 }
 
 export interface GamingProfileLike {
@@ -30,36 +32,43 @@ export const GAME_DEFINITIONS: readonly GameDefinition[] = [
     name: 'CS2',
     roles: ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support'],
     aliases: ['cs2', 'csgo', 'cs:go', 'counter-strike 2', 'counter strike 2'],
+    roleNoun: 'role',
   },
   {
     name: 'Valorant',
     roles: ['Duelist', 'Initiator', 'Controller', 'Sentinel'],
     aliases: ['valorant', 'val'],
+    roleNoun: 'role',
   },
   {
     name: 'League of Legends',
     roles: ['Top', 'Jungle', 'Mid', 'ADC', 'Support'],
     aliases: ['league of legends', 'league', 'lol'],
+    roleNoun: 'lane',
   },
   {
     name: 'Dota 2',
     roles: ['Carry', 'Mid', 'Offlane', 'Soft Support', 'Hard Support'],
     aliases: ['dota 2', 'dota', 'dota2'],
+    roleNoun: 'position',
   },
   {
     name: 'Overwatch 2',
     roles: ['Tank', 'Damage', 'Support'],
     aliases: ['overwatch 2', 'overwatch', 'overwatch2', 'ow2', 'ow'],
+    roleNoun: 'role',
   },
   {
     name: 'Rocket League',
     roles: [],
     aliases: ['rocket league', 'rocketleague', 'rl'],
+    roleNoun: 'role',
   },
   {
     name: 'It Takes Two',
     roles: [],
     aliases: ['it takes two', 'itt'],
+    roleNoun: 'role',
   },
 ];
 
@@ -103,10 +112,33 @@ export function gamesMatch(a?: string | null, b?: string | null): boolean {
   return Boolean(left) && left === right;
 }
 
+/**
+ * Every spelling a stored game value may use, lowercased. Stored values are
+ * normally canonical, but older rows can still contain an alias.
+ */
+export function gameMatchKeys(game?: string | null): string[] {
+  const trimmed = (game ?? '').trim();
+  if (!trimmed) return [];
+  const definition = findGameDefinition(trimmed);
+  if (!definition) return [trimmed.toLowerCase()];
+  return [
+    ...new Set(
+      [definition.name, ...definition.aliases].map((value) =>
+        value.toLowerCase(),
+      ),
+    ),
+  ];
+}
+
 /** Canonical roles for a game; unknown games use the generic role list. */
 export function rolesForGame(game?: string | null): readonly string[] {
   const definition = findGameDefinition(game);
   return definition ? definition.roles : GENERIC_ROLE_OPTIONS;
+}
+
+/** Noun used in recommendation copy; unknown games fall back to "role". */
+export function roleNounForGame(game?: string | null): string {
+  return findGameDefinition(game)?.roleNoun ?? 'role';
 }
 
 /** Resolve a role to its canonical spelling, or null when invalid. */
