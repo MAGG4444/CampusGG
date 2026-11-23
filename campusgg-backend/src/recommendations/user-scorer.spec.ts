@@ -34,7 +34,7 @@ describe('scoreSuggestedUser', () => {
     expect(result.parts.roleFit).toBe(1);
     expect(result.parts.campusFit).toBe(1);
     expect(result.score).toBe(1);
-    expect(result.reasons).toContain("Brings roles you don't play");
+    expect(result.reasons).toContain("Brings Support — you don't play them");
     expect(result.reasons).toContain('Same skill level: Intermediate');
     expect(result.reasons).toContain('Same campus');
   });
@@ -57,7 +57,59 @@ describe('scoreSuggestedUser', () => {
     );
 
     expect(result.parts.roleFit).toBe(0.6);
-    expect(result.reasons).toContain('Plays the same roles');
+    expect(result.reasons).toContain('Plays the same roles: IGL');
+  });
+
+  it('names every complementary and shared role', () => {
+    const result = scoreSuggestedUser(
+      {
+        ...candidate,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['Support', 'Lurker', 'IGL'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      viewer,
+      'CS2',
+      'complement',
+    );
+
+    expect(result.reasons).toContain(
+      "Brings Support + Lurker — you don't play them",
+    );
+    expect(result.reasons).toContain('Also plays IGL');
+  });
+
+  it('uses the game role noun when every role overlaps', () => {
+    const result = scoreSuggestedUser(
+      {
+        ...candidate,
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      {
+        email: 'viewer@purdue.edu',
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      'League of Legends',
+      'complement',
+    );
+
+    expect(result.reasons).toContain('Plays the same lanes: Mid');
   });
 
   it('supports an overlap mode switch', () => {

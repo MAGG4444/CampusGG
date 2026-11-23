@@ -1,4 +1,4 @@
-import { findGamingProfile } from '../common/games.config';
+import { findGamingProfile, roleNounForGame } from '../common/games.config';
 import type { GamingProfile } from '../users/user.entity';
 import {
   SUGGESTED_USER_ROLE_MODE,
@@ -39,6 +39,10 @@ export interface SuggestedRoleFit {
   value: number;
   complementary: boolean;
   overlaps: boolean;
+  /** Candidate roles the viewer does not play, in profile order. */
+  complementaryRoles: string[];
+  /** Candidate roles the viewer also plays, in profile order. */
+  sharedRoles: string[];
   complementaryRoleCount: number;
   sharedRoleCount: number;
   sharedRoleRatio: number;
@@ -83,22 +87,26 @@ export function suggestedRoleFit(
   mode: SuggestedUserRoleMode,
 ): SuggestedRoleFit {
   const viewer = uniqueRoles(viewerRoles).map(roleKey);
-  const candidate = uniqueRoles(candidateRoles).map(roleKey);
+  const candidate = uniqueRoles(candidateRoles);
   if (viewer.length === 0 || candidate.length === 0) {
     return {
       value: 0.5,
       complementary: false,
       overlaps: false,
+      complementaryRoles: [],
+      sharedRoles: [],
       complementaryRoleCount: 0,
       sharedRoleCount: 0,
       sharedRoleRatio: 0,
     };
   }
   const viewerSet = new Set(viewer);
-  const sharedRoleCount = candidate.filter((role) =>
-    viewerSet.has(role),
-  ).length;
-  const complementaryRoleCount = candidate.length - sharedRoleCount;
+  const sharedRoles = candidate.filter((role) => viewerSet.has(roleKey(role)));
+  const complementaryRoles = candidate.filter(
+    (role) => !viewerSet.has(roleKey(role)),
+  );
+  const sharedRoleCount = sharedRoles.length;
+  const complementaryRoleCount = complementaryRoles.length;
   const sharedRoleRatio = sharedRoleCount / candidate.length;
   const overlaps = sharedRoleCount > 0;
   const complementary = complementaryRoleCount > 0;
@@ -108,6 +116,8 @@ export function suggestedRoleFit(
       value: overlaps ? 1 : 0.2,
       complementary,
       overlaps,
+      complementaryRoles,
+      sharedRoles,
       complementaryRoleCount,
       sharedRoleCount,
       sharedRoleRatio,
@@ -117,6 +127,8 @@ export function suggestedRoleFit(
     value: complementary ? 1 : 0.6,
     complementary,
     overlaps,
+    complementaryRoles,
+    sharedRoles,
     complementaryRoleCount,
     sharedRoleCount,
     sharedRoleRatio,
@@ -156,13 +168,29 @@ export function scoreSuggestedUser(
     campusFit: campusFit(viewerDomain, candidateDomain),
   };
   const reasons: string[] = [];
+  const roleNoun = roleNounForGame(game);
 
-  if (parts.roleFit.value === 1) {
+  if (mode === 'overlap' && parts.roleFit.sharedRoleCount > 0) {
+    reasons.push(`Shares ${parts.roleFit.sharedRoles.join(' + ')}`);
+    if (parts.roleFit.complementaryRoleCount > 0) {
+      reasons.push(
+        `Also plays ${parts.roleFit.complementaryRoles.join(' + ')}`,
+      );
+    }
+  } else if (
+    mode === 'complement' &&
+    parts.roleFit.complementaryRoleCount > 0
+  ) {
     reasons.push(
-      mode === 'overlap' ? 'Shares your roles' : "Brings roles you don't play",
+      `Brings ${parts.roleFit.complementaryRoles.join(' + ')} — you don't play them`,
     );
-  } else if (mode === 'complement' && parts.roleFit.overlaps) {
-    reasons.push('Plays the same roles');
+    if (parts.roleFit.sharedRoleCount > 0) {
+      reasons.push(`Also plays ${parts.roleFit.sharedRoles.join(' + ')}`);
+    }
+  } else if (mode === 'complement' && parts.roleFit.sharedRoleCount > 0) {
+    reasons.push(
+      `Plays the same ${roleNoun}s: ${parts.roleFit.sharedRoles.join(' + ')}`,
+    );
   }
 
   if (parts.skillFit === 1 && candidateProfile?.experienceLevel) {

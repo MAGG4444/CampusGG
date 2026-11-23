@@ -27,7 +27,25 @@ export const SUGGESTED_USER_LIMIT = 5;
  * Below this score a lobby is hidden entirely. Weak no-profile or cross-game
  * candidates should produce an empty list, not a reasonless "possible" card.
  */
-export const LOBBY_RECOMMENDATION_MIN_SCORE = 0.45;
+export const LOBBY_RECOMMENDATION_MIN_SCORE = 0.5;
+
+/**
+ * Role-fit values for lobby recommendations. A viewer's main role is the
+ * strongest signal, their secondary role is slightly weaker, and any other
+ * covered roles earn partial credit based on how much of the lobby they cover.
+ */
+export const LOBBY_ROLE_FIT = {
+  /** Lobbies without listed roles stay neutral. */
+  noRoles: 0.5,
+  /** Viewer's first preferred role is needed. */
+  primary: 1,
+  /** Viewer's second preferred role is needed. */
+  secondary: 0.85,
+  /** Floor for a viewer who covers none of the needed roles. */
+  uncovered: 0.15,
+  /** Credit added per share of needed roles the viewer covers. */
+  coverageWeight: 0.7,
+} as const;
 
 /** Lobbies untouched for this long are not recommended. */
 export const LOBBY_STALE_HOURS = 14 * 24;

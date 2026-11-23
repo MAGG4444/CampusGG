@@ -95,13 +95,118 @@ describe('scoreLobby', () => {
       NOW,
     );
 
-    expect(result.parts.roleFit).toBe(0.7);
+    expect(result.parts.roleFit).toBe(0.85);
     expect(result.reasons).toContain('Needs Support — your secondary role');
   });
 
   it('stays neutral when the lobby lists no roles', () => {
     const result = scoreLobby(lobby({ neededRoles: [] }), viewer, NOW);
     expect(result.parts.roleFit).toBe(0.5);
+  });
+
+  it('credits extra covered roles and names them', () => {
+    const result = scoreLobby(
+      lobby({
+        game: 'League of Legends',
+        neededRoles: ['Mid', 'Jungle'],
+      }),
+      {
+        email: 'viewer@purdue.edu',
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid', 'Top', 'Jungle'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(result.parts.roleFit).toBe(1);
+    expect(result.reasons).toContain('Needs Mid — your main lane');
+    expect(result.reasons).toContain('Also covers Jungle');
+  });
+
+  it('scores roles outside the main and secondary as coverage', () => {
+    const result = scoreLobby(
+      lobby({ neededRoles: ['Support'] }),
+      {
+        ...viewer,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['IGL', 'Entry', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(result.parts.roleFit).toBe(0.85);
+    expect(result.reasons).toContain('Needs Support — you can fill it');
+  });
+
+  it('names full coverage of two or more needed roles', () => {
+    const twoRoles = scoreLobby(
+      lobby({ game: 'League of Legends', neededRoles: ['Jungle', 'Support'] }),
+      {
+        email: 'viewer@purdue.edu',
+        gamingProfiles: [
+          {
+            game: 'League of Legends',
+            preferredRoles: ['Mid', 'Top', 'Jungle', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(twoRoles.parts.roleFit).toBe(0.85);
+    expect(twoRoles.reasons).toContain('Covers both needed lanes');
+
+    const allRoles = scoreLobby(
+      lobby({
+        game: 'CS2',
+        neededRoles: ['AWPer', 'Lurker', 'Support'],
+      }),
+      {
+        ...viewer,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['IGL', 'Entry', 'AWPer', 'Lurker', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(allRoles.parts.roleFit).toBe(0.85);
+    expect(allRoles.reasons).toContain('Covers all 3 needed roles');
+  });
+
+  it('names partial coverage of needed roles', () => {
+    const result = scoreLobby(
+      lobby({ neededRoles: ['Support', 'Lurker'] }),
+      {
+        ...viewer,
+        gamingProfiles: [
+          {
+            game: 'CS2',
+            preferredRoles: ['IGL', 'Entry', 'Support'],
+            experienceLevel: 'Intermediate',
+          },
+        ],
+      },
+      NOW,
+    );
+
+    expect(result.parts.roleFit).toBe(0.5);
+    expect(result.reasons).toContain('Covers 1 of 2 needed roles');
   });
 
   it('distinguishes same campus, other .edu, and unknown domains', () => {
@@ -222,6 +327,45 @@ describe('rankLobbyRecommendations', () => {
     );
 
     expect(results).toEqual([]);
+  });
+
+  it('keeps a lobby scoring exactly at the 0.5 threshold', () => {
+    const neutralViewer = {
+      email: null,
+      gamingProfiles: viewer.gamingProfiles,
+    };
+    const updatedAt = new Date(NOW - 48 * HOUR);
+    const candidates = [
+      lobby({
+        id: 'exactly-threshold',
+        hostId: 'host-a',
+        skillLevel: 'Advanced',
+        neededRoles: [],
+        participantLimit: 4,
+        memberCount: 2,
+        updatedAt,
+      }),
+      lobby({
+        id: 'below-threshold',
+        hostId: 'host-b',
+        skillLevel: 'Advanced',
+        neededRoles: [],
+        participantLimit: 4,
+        memberCount: 1,
+        updatedAt,
+      }),
+    ];
+
+    expect(scoreLobby(candidates[0], neutralViewer, NOW).score).toBe(0.5);
+    expect(scoreLobby(candidates[1], neutralViewer, NOW).score).toBe(0.475);
+
+    const results = rankLobbyRecommendations(candidates, neutralViewer, {
+      now: NOW,
+    });
+
+    expect(results.map(({ lobby: item }) => item.id)).toEqual([
+      'exactly-threshold',
+    ]);
   });
 
   it('suppresses lobbies for a game the viewer has not added', () => {

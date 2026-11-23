@@ -2,6 +2,7 @@ import {
   canonicalGameName,
   gameMatchKeys,
   gamesMatch,
+  roleNounForGame,
   rolesForGame,
 } from './games.config';
 
@@ -44,5 +45,16 @@ describe('games.config', () => {
       'Support',
       'Flex',
     ]);
+  });
+
+  it('uses game-appropriate role nouns', () => {
+    expect(roleNounForGame('lol')).toBe('lane');
+    expect(roleNounForGame('League')).toBe('lane');
+    expect(roleNounForGame('Dota 2')).toBe('position');
+    expect(roleNounForGame('csgo')).toBe('role');
+    expect(roleNounForGame('Valorant')).toBe('role');
+    expect(roleNounForGame('Overwatch 2')).toBe('role');
+    expect(roleNounForGame('Apex')).toBe('role');
+    expect(roleNounForGame(null)).toBe('role');
   });
 });

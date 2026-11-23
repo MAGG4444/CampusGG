@@ -1,4 +1,4 @@
-import { findGamingProfile } from '../common/games.config';
+import { findGamingProfile, roleNounForGame } from '../common/games.config';
 import type { Lobby } from '../lobbies/lobby.entity';
 import type { GamingProfile } from '../users/user.entity';
 import {
@@ -7,6 +7,7 @@ import {
   EXPLORATION_MAX_AGE_HOURS,
   EXPLORATION_MAX_OCCUPANCY,
   LOBBY_RECOMMENDATION_WEIGHTS,
+  LOBBY_ROLE_FIT,
 } from './recommendation.config';
 import {
   ageHours,
@@ -85,15 +86,17 @@ export function scoreLobby(
   const hostDomain = campusDomainFromEmail(lobby.host?.email);
   const targetLevel = lobbySkillLevel(lobby);
   const neededRoles = uniqueRoles(lobby.neededRoles ?? []);
-  const coveredRoleCount = viewerRoles.filter((viewerRole) =>
-    neededRoles.some((role) => sameRole(role, viewerRole)),
-  ).length;
+  const coveredRoles = neededRoles.filter((neededRole) =>
+    viewerRoles.some((viewerRole) => sameRole(neededRole, viewerRole)),
+  );
+  const coveredRoleCount = coveredRoles.length;
   const coverageRatio =
     neededRoles.length === 0 ? 0 : coveredRoleCount / neededRoles.length;
+  const roleNoun = roleNounForGame(lobby.game);
 
-  const parts = {
+  const parts: LobbyScoreParts = {
     skillFit: skillFit(viewerLevel, targetLevel),
-    roleFit: 0.5,
+    roleFit: LOBBY_ROLE_FIT.noRoles,
     campusFit: campusFit(viewerDomain, hostDomain),
     occupancy: occupancy(lobby.memberCount, lobby.participantLimit),
     freshness: freshness(lobby.updatedAt, now),
@@ -106,17 +109,42 @@ export function scoreLobby(
   const secondaryRole = viewerRoles[1]
     ? neededRoles.find((role) => sameRole(role, viewerRoles[1]))
     : undefined;
+  const anchorRole = primaryRole ?? secondaryRole;
+  const alsoCoveredRoles = coveredRoles.filter(
+    (role) => !anchorRole || !sameRole(role, anchorRole),
+  );
 
   if (neededRoles.length === 0) {
-    parts.roleFit = 0.5;
+    parts.roleFit = LOBBY_ROLE_FIT.noRoles;
   } else if (primaryRole) {
-    parts.roleFit = 1;
-    reasons.push(`Needs ${primaryRole} — your main role`);
+    parts.roleFit = LOBBY_ROLE_FIT.primary;
+    reasons.push(`Needs ${primaryRole} — your main ${roleNoun}`);
   } else if (secondaryRole) {
-    parts.roleFit = 0.7;
-    reasons.push(`Needs ${secondaryRole} — your secondary role`);
+    parts.roleFit = LOBBY_ROLE_FIT.secondary;
+    reasons.push(`Needs ${secondaryRole} — your secondary ${roleNoun}`);
   } else {
-    parts.roleFit = 0.15;
+    parts.roleFit =
+      LOBBY_ROLE_FIT.uncovered + LOBBY_ROLE_FIT.coverageWeight * coverageRatio;
+  }
+
+  if (anchorRole && alsoCoveredRoles.length > 0) {
+    reasons.push(`Also covers ${alsoCoveredRoles.join(' + ')}`);
+  }
+
+  if (!anchorRole && coveredRoleCount > 0) {
+    if (neededRoles.length === 1) {
+      reasons.push(`Needs ${coveredRoles[0]} — you can fill it`);
+    } else if (coveredRoleCount === neededRoles.length) {
+      reasons.push(
+        neededRoles.length === 2
+          ? `Covers both needed ${roleNoun}s`
+          : `Covers all ${neededRoles.length} needed ${roleNoun}s`,
+      );
+    } else {
+      reasons.push(
+        `Covers ${coveredRoleCount} of ${neededRoles.length} needed ${roleNoun}s`,
+      );
+    }
   }
 
   if (parts.skillFit === 1 && targetLevel) {

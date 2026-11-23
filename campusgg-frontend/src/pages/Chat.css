@@ -262,7 +262,7 @@
 .suggested-user-bio { margin: 0 0 14px; color: var(--text-soft); font-size: 0.88rem; line-height: 1.55; }
 .suggested-user-bio-empty { color: var(--muted); font-style: italic; }
 .suggested-user-reasons { margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; list-style: none; }
-.suggested-user-reasons li { padding: 4px 9px; border: 1px solid rgba(240, 207, 114, 0.34); border-radius: var(--radius-pill); background: rgba(213, 178, 82, 0.1); color: var(--gold-soft); font-size: 0.7rem; font-weight: 700; }
+.suggested-user-reasons li { max-width: 100%; padding: 4px 9px; border: 1px solid rgba(240, 207, 114, 0.34); border-radius: var(--radius-pill); background: rgba(213, 178, 82, 0.1); color: var(--gold-soft); font-size: 0.7rem; font-weight: 700; overflow-wrap: anywhere; }
 .suggested-user-facts { margin: 0 0 18px; display: grid; gap: 10px; }
 .suggested-user-facts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; padding-bottom: 9px; border-bottom: 1px solid var(--border); }
 .suggested-user-facts dt { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 0.74rem; font-weight: 700; }
