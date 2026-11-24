@@ -13,6 +13,8 @@ import { RedisModule } from './redis/redis.module';
 import { DatabaseController } from './database/database.controller';
 import { ForumModule } from './forum/forum.module';
 import { SteamModule } from './steam/steam.module';
+import { ConnectionsModule } from './connections/connections.module';
+import { DirectMessagesModule } from './direct-messages/direct-messages.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { SteamModule } from './steam/steam.module';
     RecommendationsModule,
     ForumModule,
     SteamModule,
+    ConnectionsModule,
+    DirectMessagesModule,
   ],
 
   controllers: [AppController, DatabaseController],

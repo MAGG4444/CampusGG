@@ -1,35 +1,25 @@
 import { MessageCircle, PanelRightClose } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useRef, useState } from 'react'
 import { useChat } from '../context/chatContext.js'
 
 import ConversationSearch from './chat/ConversationSearch.jsx'
 import ConversationList from './chat/ConversationList.jsx'
-import ChatHeader from './chat/ChatHeader.jsx'
-import ChatMessage from './chat/ChatMessage.jsx'
-import ChatComposer from './chat/ChatComposer.jsx'
+import ConnectionConversation from './ConnectionConversation.jsx'
 import '../pages/Chat.css'
 import './ConnectionSidebar.css'
 
 export default function ConnectionSidebar({ isOpen, onToggle }) {
   const ToggleIcon = isOpen ? PanelRightClose : MessageCircle
   const action = isOpen ? 'Close messages' : 'Open messages'
-  const { pathname } = useLocation()
   const [search, setSearch] = useState('')
-  const historyRef = useRef(null)
   const searchRef = useRef(null)
   const panelRef = useRef(null)
   const toggleRef = useRef(null)
   const { chatConversations, selectedConversationId, selectedConversation, messageDraft,
-    setMessageDraft, selectConversation, sendMessage } = useChat()
+    setMessageDraft, selectConversation, sendMessage, userId, markRead, error, historyError, sending, hasOlder, loadOlder, loadingOlder } = useChat()
   const unreadCount = chatConversations.reduce((total, conversation) => total + (conversation.unreadCount || 0), 0)
   const filtered = chatConversations.filter((conversation) =>
     conversation.username.toLowerCase().includes(search.trim().toLowerCase()))
-  const messageCount = selectedConversation?.messages.length ?? 0
-
-  useEffect(() => {
-    if (isOpen && historyRef.current) historyRef.current.scrollTop = historyRef.current.scrollHeight
-  }, [isOpen, selectedConversationId, messageCount])
 
   function toggleSidebar() {
     if (!isOpen) {
@@ -76,17 +66,11 @@ export default function ConnectionSidebar({ isOpen, onToggle }) {
             <MessageCircle size={20} strokeWidth={2} aria-hidden="true" />
             <h2>Messages</h2>
           </header>
-          {selectedConversation ? <>
-            <ChatHeader conversation={selectedConversation} titleId="sidebar-conversation-title"
-              onBack={backToConversations} />
-            <div className="chat-history" ref={historyRef} role="log"
-              aria-label={`Messages with ${selectedConversation.username}`} aria-live={pathname === '/chat' ? 'off' : 'polite'} aria-relevant="additions">
-              {selectedConversation.messages.map((message) => <ChatMessage key={message.id}
-                message={message} currentUserId={null} senderName={selectedConversation.username} />)}
-            </div>
-            <ChatComposer value={messageDraft} onChange={setMessageDraft} onSend={sendMessage}
-              recipientName={selectedConversation.username} />
-          </> : <>
+          {(error || historyError) && <p role="alert">{historyError || error}</p>}
+          {selectedConversation ? <ConnectionConversation key={selectedConversation.id} conversation={selectedConversation}
+            currentUserId={userId} draft={messageDraft} setDraft={setMessageDraft} sendMessage={sendMessage}
+            onReadMessages={markRead} sending={sending} onLoadOlder={hasOlder ? loadOlder : undefined} loadingOlder={loadingOlder}
+            onBack={backToConversations} /> : <>
             <ConversationSearch id="sidebar-conversation-search" inputRef={searchRef} value={search} onChange={setSearch} />
             <ConversationList conversations={filtered} selectedId={selectedConversationId}
               onSelect={selectConversation} hasSearchQuery={Boolean(search.trim())} />

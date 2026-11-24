@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { AuthRateLimitMiddleware } from './auth-rate-limit.middleware';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -33,4 +34,10 @@ import { MailService } from './mail.service';
 
   exports: [AuthService, MailService, JwtModule],
 })
-export class AuthModule {}
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(AuthRateLimitMiddleware)
+      .forRoutes(AuthController, LoginController);
+  }
+}

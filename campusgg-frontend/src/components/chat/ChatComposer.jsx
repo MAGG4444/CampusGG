@@ -1,10 +1,10 @@
 import { useId, useLayoutEffect, useRef } from 'react'
 import { Send } from 'lucide-react'
 
-function ChatComposer({ value, onChange, onSend, recipientName }) {
+function ChatComposer({ value, onChange, onSend, recipientName, sending = false }) {
   const textareaRef = useRef(null)
   const textareaId = useId()
-  const canSend = value.trim().length > 0
+  const canSend = !sending && value.trim().length > 0 && value.length <= 2000
 
   useLayoutEffect(() => {
     const textarea = textareaRef.current
@@ -14,17 +14,17 @@ function ChatComposer({ value, onChange, onSend, recipientName }) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 112)}px`
   }, [value])
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     if (!canSend) return
 
-    const messageSent = onSend(value)
+    const messageSent = await onSend(value)
     if (messageSent) textareaRef.current?.focus()
   }
 
   function handleKeyDown(event) {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent?.isComposing) {
       event.preventDefault()
       event.currentTarget.form?.requestSubmit()
     }
@@ -37,6 +37,7 @@ function ChatComposer({ value, onChange, onSend, recipientName }) {
         id={textareaId}
         ref={textareaRef}
         rows={1}
+        maxLength={2000}
         placeholder={`Message ${recipientName}`}
         value={value}
         onChange={(event) => onChange(event.target.value)}

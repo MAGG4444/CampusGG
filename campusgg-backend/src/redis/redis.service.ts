@@ -111,6 +111,43 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return client.set(key, value);
   }
 
+  /** Atomic fixed-window limiter; a rejected request does not extend the window. */
+  async consumeAuthRateLimit(
+    key: string,
+    limit: number,
+    seconds: number,
+  ): Promise<{ allowed: boolean; retryAfter: number }> {
+    const result = await this.getClient().eval(
+      `local count = tonumber(redis.call('GET', KEYS[1]) or '0')
+       if count < tonumber(ARGV[1]) then
+         count = redis.call('INCR', KEYS[1])
+         if count == 1 then redis.call('EXPIRE', KEYS[1], ARGV[2]) end
+         return {1, 0}
+       end
+       local ttl = redis.call('TTL', KEYS[1])
+       if ttl < 0 then redis.call('EXPIRE', KEYS[1], ARGV[2]); ttl = tonumber(ARGV[2]) end
+       return {0, ttl}`,
+      { keys: [key], arguments: [String(limit), String(seconds)] },
+    );
+    if (
+      !Array.isArray(result) ||
+      result.length !== 2 ||
+      (result[0] !== 0 && result[0] !== 1) ||
+      typeof result[1] !== 'number'
+    ) {
+      throw new Error('Invalid rate limiter result');
+    }
+    return { allowed: result[0] === 1, retryAfter: Math.max(1, result[1]) };
+  }
+
+  async evalScript(
+    script: string,
+    keys: string[],
+    args: string[],
+  ): Promise<unknown> {
+    return this.getClient().eval(script, { keys, arguments: args });
+  }
+
   async get(key: string) {
     return this.getClient().get(key);
   }

@@ -5,7 +5,7 @@ import ChatMessage from './chat/ChatMessage.jsx'
 import ChatComposer from './chat/ChatComposer.jsx'
 import { messageGroupPositions } from '../utils/messageGroups.js'
 
-export default function ConnectionConversation({ conversation, currentUserId, draft, setDraft, sendMessage, onBack, onProfile, profileOpen, profileButtonRef, onReadMessages }) {
+export default function ConnectionConversation({ conversation, currentUserId, draft, setDraft, sendMessage, onBack, onProfile, profileOpen, profileButtonRef, onReadMessages, sending, onLoadOlder, loadingOlder }) {
   const historyRef = useRef(null)
   const dividerRef = useRef(null)
   const previousRef = useRef(null)
@@ -76,8 +76,9 @@ export default function ConnectionConversation({ conversation, currentUserId, dr
   return <>
     <div className="connection-conversation-header"><ChatHeader conversation={conversation} onBack={onBack} />{onProfile && <button ref={profileButtonRef} type="button" className="connection-icon-button connection-profile-button" aria-label={`View ${conversation.username}'s profile`} aria-controls="connection-profile-drawer" aria-expanded={profileOpen} onClick={onProfile}><UserRound size={19} aria-hidden="true" /></button>}</div>
     <div className="chat-history" ref={historyRef} onScroll={event => { const node = event.currentTarget; nearBottomRef.current = node.scrollHeight - node.clientHeight - node.scrollTop < 80; rememberPosition(node) }} role="log" aria-label={`Messages with ${conversation.username}`} aria-live="polite" tabIndex={0}>
+      {onLoadOlder && <button type="button" className="connection-back-link" disabled={loadingOlder} onClick={onLoadOlder}>{loadingOlder ? 'Loading…' : 'Load older messages'}</button>}
       {conversation.messages.length ? conversation.messages.map((message, index) => <div className={`chat-message-entry ${positions[index].startsGroup ? 'chat-message-group-start' : 'chat-message-group-continued'}`} key={message.id} data-message-id={message.id}>{message.id === unreadDividerId && <div className="chat-unread-divider" ref={dividerRef}>Unread Messages</div>}<ChatMessage message={message} currentUserId={currentUserId} senderName={conversation.username} showTimestamp={positions[index].endsGroup} /></div>) : <div className="chat-history-empty"><strong>No messages yet</strong><span>Send a message to start this conversation.</span></div>}
     </div>
-    <ChatComposer value={draft} onChange={setDraft} onSend={sendMessage} recipientName={conversation.username} />
+    <ChatComposer value={draft} onChange={setDraft} onSend={sendMessage} sending={sending} recipientName={conversation.username} />
   </>
 }

@@ -65,3 +65,5 @@ dist/
 .env
 .env.*
 !.env.example
+# CampusGG installer backups
+.campusgg-*-backup*/

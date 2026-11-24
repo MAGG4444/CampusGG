@@ -14,6 +14,9 @@ import { AddForumPostFollows1792368009000 } from './migrations/add-forum-post-fo
 import { AddForumCommentThreads1792368010000 } from './migrations/add-forum-comment-threads';
 import { AddForumReports1792368011000 } from './migrations/add-forum-reports';
 import { AddForumCommentTombstones1792368012000 } from './migrations/add-forum-comment-tombstones';
+import { AddConnections1792368013000 } from './migrations/add-connections';
+import { AddDirectMessages1792368014000 } from './migrations/add-direct-messages';
+import { AddSharedLobbyHistory1792368015000 } from './migrations/add-shared-lobby-history';
 
 if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required');
 
@@ -37,6 +40,9 @@ export default new DataSource({
     AddForumCommentThreads1792368010000,
     AddForumReports1792368011000,
     AddForumCommentTombstones1792368012000,
+    AddConnections1792368013000,
+    AddDirectMessages1792368014000,
+    AddSharedLobbyHistory1792368015000,
   ],
   migrationsTransactionMode: 'all',
 });
