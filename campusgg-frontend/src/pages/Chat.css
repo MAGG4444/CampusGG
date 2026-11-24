@@ -209,6 +209,12 @@
 .find-friends-row .connection-actions { margin: 0; }
 .find-player-section + .find-player-section { padding-top: 20px; border-top: 1px solid var(--border); }
 .find-friends-body .find-player-section h3 { color: var(--gold-soft); font-weight: 750; }
+.find-player-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.find-player-heading h3 { margin: 0; }
+.find-player-game { min-width: 0; display: inline-flex; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; background: rgba(255,255,255,.025); color: var(--muted); font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.find-player-game select { min-width: 0; max-width: 170px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: .78rem; font-weight: 750; letter-spacing: 0; text-transform: none; outline: none; cursor: pointer; }
+.find-player-game select:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; border-radius: 4px; }
+.find-player-game-label { min-width: 0; flex: none; padding: 3px 9px; border: 1px solid var(--border); border-radius: var(--radius-pill); color: var(--muted); font-size: .72rem; font-weight: 700; }
 .find-friends-body .find-player-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .find-player-grid .find-friends-row { min-width: 0; min-height: 150px; align-items: stretch; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,.025); transition: background var(--transition-fast), border-color var(--transition-fast); }
 .find-player-grid .find-friends-row:hover { border-color: var(--border-strong); background: var(--surface-soft); }
