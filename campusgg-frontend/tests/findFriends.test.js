@@ -33,3 +33,40 @@ test('player cards use supplied relationship state and dispatch explicit actions
     globalThis.IS_REACT_ACT_ENVIRONMENT = oldAct
   }
 })
+
+test('suggested players can switch games and name the active game in empty and profile states', async () => {
+  const oldAct = globalThis.IS_REACT_ACT_ENVIRONMENT
+  globalThis.IS_REACT_ACT_ENVIRONMENT = true
+  const server = await createServer({ envDir: false, server: { middlewareMode: true }, appType: 'custom' })
+  let renderer
+  try {
+    const { default: FindFriends } = await server.ssrLoadModule('/src/components/FindFriends.jsx')
+    const changes = []
+    const render = props => React.createElement(MemoryRouter, null, React.createElement(FindFriends, {
+      people: [],
+      status: 'ready',
+      games: ['League of Legends', 'Dota 2'],
+      selectedGame: 'League of Legends',
+      onGameChange: game => changes.push(game),
+      onBack() {},
+      ...props,
+    }))
+    await act(async () => { renderer = TestRenderer.create(render()) })
+    const select = () => renderer.root.findByProps({ 'aria-label': 'Suggested players game' })
+    assert.equal(select().props.value, 'League of Legends')
+    assert.match(JSON.stringify(renderer.toJSON()), /No compatible League of Legends players yet/)
+    await act(async () => select().props.onChange({ target: { value: 'Dota 2' } }))
+    assert.deepEqual(changes, ['Dota 2'])
+    await act(async () => renderer.update(render({ status: 'profile', missingGame: 'Overwatch 2' })))
+    const profileCopy = JSON.stringify(renderer.toJSON())
+    assert.match(profileCopy, /Overwatch 2/)
+    assert.match(profileCopy, /to your profile to see suggestions/)
+    await act(async () => renderer.update(render({ games: ['Dota 2'], selectedGame: 'Dota 2' })))
+    assert.equal(renderer.root.findAllByProps({ 'aria-label': 'Suggested players game' }).length, 0)
+    assert.match(JSON.stringify(renderer.toJSON()), /find-player-game-label/)
+  } finally {
+    if (renderer) await act(async () => renderer.unmount())
+    await server.close()
+    globalThis.IS_REACT_ACT_ENVIRONMENT = oldAct
+  }
+})

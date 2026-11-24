@@ -3,9 +3,11 @@ import { ArrowLeft, Clock3, Inbox } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import ChatAvatar from './chat/ChatAvatar.jsx'
 
-export default function FindFriends({ people, status, onRetry, onBack, incoming = null, outgoing = null, recentPeople = null, onAction, onMessage }) {
+export default function FindFriends({ people, status, onRetry, onBack, incoming = null, outgoing = null, recentPeople = null, onAction, onMessage, games = [], selectedGame = '', missingGame = null, onGameChange }) {
   const [drawer, setDrawer] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
+  const gameLabel = missingGame || selectedGame
+  const showGameSelect = games.length > 1
   const selected = [...people, ...(recentPeople || []), ...(incoming || []), ...(outgoing || [])].find(person => person.id === selectedId)
   function actions(person) {
     if (person.relationship === 'friend') return <button type="button" disabled={!onMessage} onClick={() => onMessage?.(person)}>Message</button>
@@ -30,7 +32,15 @@ export default function FindFriends({ people, status, onRetry, onBack, incoming 
       {drawer ? <section aria-label={drawer === 'incoming' ? 'Received Requests' : 'Sent Requests'}><div className="find-friends-section-heading"><h3>{drawer === 'incoming' ? 'Received Requests' : 'Sent Requests'}</h3><button type="button" onClick={() => setDrawer(null)}>Close</button></div>{(drawer === 'incoming' ? incoming : outgoing) === null ? <p>Friend requests are not available yet.</p> : (drawer === 'incoming' ? incoming : outgoing).length ? <ul>{(drawer === 'incoming' ? incoming : outgoing).map(requestRow)}</ul> : <p>No pending requests.</p>}</section> : selected ? <section className="find-friends-profile"><button type="button" className="connection-back-link" onClick={() => setSelectedId(null)}>← Back to Find Friends</button><ChatAvatar name={selected.name} size="profile" /><h3>{selected.name}</h3>{selected.username && <p>@{selected.username}</p>}<p>{selected.bio || 'No bio yet.'}</p><dl><div><dt>Favorite games</dt><dd>{selected.game || 'Not set'}</dd></div><div><dt>Skill level</dt><dd>{selected.experienceLevel || 'Not set'}</dd></div><div><dt>Relationship</dt><dd>{({ friend: 'Friends', incoming: 'Incoming request', outgoing: 'Request pending', none: 'Not connected' })[selected.relationship] || 'Unavailable'}</dd></div></dl>{selected.reasons?.length > 0 && <><h3>Why you match</h3><ul>{selected.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul></>}<div className="connection-actions">{actions(selected)}</div>{!onAction && !onMessage && <p>Friend management is not available yet.</p>}</section> : <>
         <label className="find-friends-search">Search CampusGG Players<input type="search" placeholder="Player search unavailable" disabled /></label><p>CampusGG player search is not available yet.</p>
         <section className="find-player-section"><h3>Recently Played With</h3>{recentPeople === null ? <p>Recent shared Lobby history is not available yet.</p> : recentPeople.length ? <ul className="find-player-grid">{recentPeople.map(playerCard)}</ul> : <p>No recent players found.</p>}</section>
-        <section className="find-player-section"><h3>Suggested Players</h3>{status === 'signin' ? <p>Sign in to see suggested teammates.</p> : status === 'loading' || status === 'idle' ? <p role="status">Looking for compatible players…</p> : status === 'error' ? <p role="alert">Could not load suggested teammates. <button type="button" onClick={onRetry}>Try again</button></p> : status === 'profile' ? <p>Add a game to your profile to see suggestions. <Link to="/profile">Update profile</Link></p> : people.length ? <ul className="find-player-grid">{people.map(playerCard)}</ul> : <p>No suggested players found.</p>}</section>
+        <section className="find-player-section">
+          <div className="find-player-heading">
+            <h3>Suggested Players</h3>
+            {showGameSelect
+              ? <label className="find-player-game"><span>Game</span><select aria-label="Suggested players game" value={selectedGame} onChange={event => onGameChange?.(event.target.value)}>{games.map(game => <option key={game} value={game}>{game}</option>)}</select></label>
+              : selectedGame ? <span className="find-player-game-label">{selectedGame}</span> : null}
+          </div>
+          {status === 'signin' ? <p>Sign in to see suggested teammates.</p> : status === 'loading' || status === 'idle' ? <p role="status">Looking for compatible players…</p> : status === 'error' ? <p role="alert">Could not load suggested teammates. <button type="button" onClick={onRetry}>Try again</button></p> : status === 'profile' ? <p>Add {gameLabel || 'a game'} to your profile to see suggestions. <Link to="/profile">Update profile</Link></p> : people.length ? <ul className="find-player-grid">{people.map(playerCard)}</ul> : <p>{gameLabel ? `No compatible ${gameLabel} players yet.` : 'No suggested players found.'} Check back after more students join.</p>}
+        </section>
       </>}
     </div>
   </div>
